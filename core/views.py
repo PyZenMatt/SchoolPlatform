@@ -1,3 +1,7 @@
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.shortcuts import redirect
+from django.http import HttpResponseForbidden
 from django.db import transaction
 from .models import User,Lesson, Exercise, Course, Notification, TeoCoinTransaction
 from .serializers import RegisterSerializer, LessonSerializer, ExerciseSerializer,CourseSerializer, UserSerializer,TeoCoinTransactionSerializer, NotificationSerializer
@@ -16,7 +20,8 @@ from django_filters import rest_framework as df_filters
 from django.utils import timezone
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+from django.views.decorators.http import require_GET
+from django.contrib.auth.decorators import user_passes_test
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -340,4 +345,16 @@ def teocoin_balance(request):
     return Response({
         'balance': int(request.user.teo_coins),
         'updated_at': timezone.now().isoformat()
+    })
+
+def is_student_or_superuser(user):
+    return user.role == 'student' or user.is_superuser
+
+@user_passes_test(is_student_or_superuser)
+@login_required
+@require_GET
+def dashboard_transactions(request):
+    transactions = TeoCoinTransaction.objects.filter(user=request.user).order_by('-created_at')[:5]
+    return render(request, 'dashboard/partials/transactions.html', {
+        'transactions': transactions
     })

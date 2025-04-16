@@ -13,6 +13,7 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('student', 'Studente'),
         ('teacher', 'Maestro'),
+        ('admin', 'Amministratore'),
     )
     role = models.CharField(
         max_length=10, 
@@ -25,6 +26,12 @@ class User(AbstractUser):
     email_verification_token = models.CharField(max_length=100, blank=True)
 
     REQUIRED_FIELDS = ['email', 'role']
+    
+    class Meta:
+        app_label = 'authentication'
+    
+    def __str__(self):
+        return self.username
 
     def send_verification_email(self):
         self.email_verification_token = get_random_string(50)

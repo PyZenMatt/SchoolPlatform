@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" id="dashboard-container">
+    <!-- Sezione Header -->
+    {% if request.user.is_superuser %}
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">
+            Benvenuto, <span class="text-blue-600">{{ request.user.username }}</span>
+        </h1>
+        <div class="mt-4">
+            <span class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                {{ request.user.get_role_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Griglia Dati -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Colonna Sinistra - Saldo e Transazioni -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Il Tuo Saldo</h2>
+                <div class="text-4xl font-bold text-blue-600" id="teocoin-balance">
+                    {{ request.user.teo_coins }}
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Ultime Transazioni</h2>
+                <div id="transactions-list" class="space-y-2">
+                    <!-- Popolato via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonna Destra - Lezioni Acquistate -->
+        <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">Le Tue Lezioni</h2>
+                <div id="lessons-list" class="space-y-4">
+                    <!-- Popolato via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -13,21 +13,25 @@ from django.conf import settings
 from django import forms
 
 class HomePage(Page):
-    hero_title = models.CharField(max_length=255, blank=True)
-
-    featured_lessons = models.ManyToManyField(
-        'core.Lesson',
+    hero_title = models.CharField(
+        max_length=255, 
         blank=True,
-        help_text="Seleziona lezioni da mettere in evidenza"
+        help_text="Titolo principale della homepage"
+    )
+    
+    featured_content = StreamField(
+        [
+            ('featured_lessons', blocks.PageChooserBlock(target_model='cms.LessonSnippet')),
+            ('featured_courses', blocks.PageChooserBlock(target_model='cms.CourseSnippet')),
+        ],
+        use_json_field=True,
+        blank=True
     )
 
     content_panels = Page.content_panels + [
         FieldPanel('hero_title'),
-        FieldPanel('featured_lessons', widget=forms.CheckboxSelectMultiple),
+        FieldPanel('featured_content'),
     ]
-    
-    class Meta:
-        verbose_name = "Homepage TeoArt"
 
 class LessonIndexPage(Page):
     intro = models.TextField(blank=True)
@@ -93,31 +97,6 @@ class CourseSnippet(models.Model):
     
     def __str__(self):
         return self.course.title
-
-class HomePage(Page):
-    hero_title = models.CharField(max_length=255, blank=True)
-    featured_content = StreamField([
-        ('featured_lessons', blocks.ListBlock(
-            blocks.PageChooserBlock(
-                target_model='cms.LessonSnippet',
-                icon='fa-book'
-            ),
-            label="Lezioni in evidenza",
-            help_text="Seleziona lezioni da mettere in evidenza"
-        )),
-        ('featured_courses', blocks.ListBlock(
-            blocks.PageChooserBlock(
-                target_model='cms.CourseSnippet',
-                icon='fa-graduation-cap'
-            ),
-            label="Corsi in evidenza"
-        )),
-    ], use_json_field=True, blank=True)
-
-    content_panels = Page.content_panels + [
-        FieldPanel('hero_title'),
-        FieldPanel('featured_content'),
-    ]
 
 class LessonAdmin(SnippetViewSet):
     model = Lesson
