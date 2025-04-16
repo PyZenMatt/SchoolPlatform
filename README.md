@@ -11,7 +11,7 @@ SchoolPlatform è una piattaforma concepita per rivoluzionare l’apprendimento 
 ## Tecnologie Utilizzate
 
 - **Backend:** [Django](https://www.djangoproject.com/) e [Django REST Framework](https://www.django-rest-framework.org/)  
-- **Frontend:** (Evento in sviluppo – puoi inserire qui il framework utilizzato, ad esempio Next.js se previsto)  
+- **Frontend:** (wagtail per MVP)  
 - **Database:** PostgreSQL (o SQLite per il testing locale)
 - **Ambiente di sviluppo:** Ubuntu 24.04 su WSL, Visual Studio Code
 - **Token (fase sperimentale):** TeoCoin simulato sul database  
