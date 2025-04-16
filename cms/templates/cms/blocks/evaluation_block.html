@@ -1,0 +1,15 @@
+<div class="evaluation-block bg-yellow-50 p-4 rounded-lg my-4">
+    <h4 class="font-bold mb-2">Criteri di Valutazione:</h4>
+    <table class="w-full mb-4">
+        {% for item in value.rubric %}
+            <tr class="border-b">
+                <td class="py-2">{{ item.criteria }}</td>
+                <td class="text-right">{{ item.points }} punti</td>
+            </tr>
+        {% endfor %}
+    </table>
+    
+    <div class="teacher-notes prose">
+        {{ value.teacher_notes }}
+    </div>
+</div>

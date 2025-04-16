@@ -1,0 +1,7 @@
+.dashboard-link {
+    @apply block p-2 rounded hover:bg-gray-100 transition-colors;
+}
+
+.dashboard-link.active {
+    @apply bg-blue-100 text-blue-600;
+}

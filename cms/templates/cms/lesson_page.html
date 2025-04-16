@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block content %}
+<article class="max-w-3xl mx-auto px-4">
+    <header class="mb-8">
+        <h1 class="text-4xl font-bold mb-2">{{ page.title }}</h1>
+        <div class="flex items-center space-x-4 text-gray-600">
+            <span>Difficoltà: {{ page.get_difficulty_display }}</span>
+            <span>•</span>
+            <span>Insegnante: {{ page.teacher.username }}</span>
+        </div>
+    </header>
+
+    <section class="prose lg:prose-xl">
+        {% for block in page.body %}
+            {% include_block block %}
+        {% endfor %}
+    </section>
+</article>
+{% endblock %}
