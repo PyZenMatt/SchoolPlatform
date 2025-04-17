@@ -79,7 +79,7 @@ class Lesson(models.Model):
         ]
     title = models.CharField(max_length=200)
     content = models.TextField()
-    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons')
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons', db_index=True)
     price = models.PositiveIntegerField(
         default=0,
         validators=[
@@ -90,7 +90,7 @@ class Lesson(models.Model):
         ]
     )
     duration = models.PositiveIntegerField(default=0, help_text="Durata in minuti")
-    students = models.ManyToManyField(User, related_name='purchased_lessons', blank=True)
+    students = models.ManyToManyField(User, related_name='purchased_lessons', blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

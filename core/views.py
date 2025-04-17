@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponseForbidden
 from django.db import transaction
 from .models import User,Lesson, Exercise, Course, Notification, TeoCoinTransaction
-from .serializers import RegisterSerializer, LessonSerializer, ExerciseSerializer,CourseSerializer, UserSerializer,TeoCoinTransactionSerializer, NotificationSerializer
+from .serializers import RegisterSerializer, LessonSerializer, ExerciseSerializer,CourseSerializer, UserSerializer,TeoCoinTransactionSerializer, NotificationSerializer, TeacherLessonSerializer, TeacherCourseSerializer
 from django.shortcuts import render
 from rest_framework import generics, status, permissions
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -22,6 +22,8 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import user_passes_test
+from .permissions import IsTeacher
+from django.db.models import Count, F
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -358,3 +360,59 @@ def dashboard_transactions(request):
     return render(request, 'dashboard/partials/transactions.html', {
         'transactions': transactions
     })
+
+
+class TeacherDashboardAPI(APIView):
+    permission_classes = [IsTeacher]
+    
+    def get(self, request):
+        # Ottimizzazione con annotazioni del database
+        lessons = request.user.lessons.annotate(
+            total_students=Count('students'),
+            total_earnings=F('price') * Count('students') * 0.9  # Usiamo F() per operazioni a DB
+        )
+        
+        # Calcolo statistiche aggregate
+        total_stats = lessons.aggregate(
+            total_lessons=Count('id'),
+            total_earnings=Sum(F('price') * Count('students') * 0.9),
+            total_students=Count('students', distinct=True)
+        )
+
+        data = {
+            "stats": {
+                "total_lessons": total_stats['total_lessons'],
+                "total_earnings": total_stats['total_earnings'] or 0,
+                "active_students": total_stats['total_students']
+            },
+            # Usiamo la queryset già annotata
+            "lessons": TeacherLessonSerializer(lessons, many=True).data,
+            # Ottimizzazione per i corsi
+            "courses": TeacherCourseSerializer(
+                request.user.courses.prefetch_related('lessons'), 
+                many=True
+            ).data
+        }
+        
+        return Response(data)
+        
+    
+class CreateLessonAPI(APIView):
+    permission_classes = [IsTeacher]
+
+    def post(self, request):
+        serializer = LessonSerializer(data=request.data)
+        if serializer.is_valid():
+            lesson = serializer.save(teacher=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateCourseAPI(APIView):
+    permission_classes = [IsTeacher]
+
+    def post(self, request):
+        serializer = CourseSerializer(data=request.data)
+        if serializer.is_valid():
+            course = serializer.save(teacher=request.user)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)

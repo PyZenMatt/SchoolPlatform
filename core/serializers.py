@@ -81,3 +81,33 @@ class NotificationSerializer(serializers.ModelSerializer):
                 }
         except Exception as e:
             return None
+        
+class TeacherLessonSerializer(serializers.ModelSerializer):
+    total_students = serializers.SerializerMethodField()
+    total_earnings = serializers.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        read_only=True
+    )
+    class Meta:
+        model = Lesson
+        fields = ['id', 'title', 'price', 'total_students', 'total_earnings']
+
+    def get_total_students(self, obj):
+        return obj.students.count()
+
+    def get_total_earnings(self, obj):
+        return obj.price * obj.students.count() * 0.9  # 10% fee to platform    
+
+    class Meta:
+        model = Lesson
+        fields = ['id', 'title', 'price', 'total_students', 'total_earnings']
+
+class TeacherCourseSerializer(serializers.ModelSerializer):
+    lessons = TeacherLessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'price', 'lessons', 'created_at']
+
+        
