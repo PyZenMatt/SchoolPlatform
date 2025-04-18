@@ -34,21 +34,6 @@ class Command(BaseCommand):
             student.save()
             self.stdout.write(f"Studente creato: {student.username}")
 
-        # Crea lezione demo
-        lesson = Lesson.objects.create(
-            title='Introduzione al Colore',
-            content='Lezione base sulla teoria del colore',
-            teacher=teacher,
-            price=300,
-            duration=90
-        )
-        lesson.students.add(student)
-        self.stdout.write(f"Lezione creata: {lesson.title}")
+        
 
-        # Crea transazione demo
-        TeoCoinTransaction.objects.create(
-            user=student,
-            amount=-lesson.price,
-            transaction_type='lesson_purchase'
-        )
-        self.stdout.write("Transazione demo creata")
+        

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import User, Lesson, Exercise, TeoCoinTransaction, Course, Notification
 from django.contrib.auth.password_validation import validate_password
 
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
@@ -25,18 +27,37 @@ class RegisterSerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = '__all__'
-        read_only_fields = ['teacher', 'students']
+        fields = ['id', 'title', 'content', 'course', 'teacher', 'created_at']
+        read_only_fields = ['teacher']
+    
+    def validate_course(self, value):
+        if value and value.teacher != self.context['request'].user:
+            raise serializers.ValidationError("Non sei il teacher di questo corso")
+        return value
 
 class ExerciseSerializer(serializers.ModelSerializer):
+    student = serializers.SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.filter(role='student')
+    )
+    lesson = serializers.PrimaryKeyRelatedField(queryset=Lesson.objects.all())
+
     class Meta:
         model = Exercise
-        fields = '__all__'
+        fields = ['id', 'student', 'lesson', 'submission', 'score', 'feedback']
+        read_only_fields = ['student', 'score', 'feedback']
+
+    def validate_lesson(self, value):
+        # Verifica che lo studente sia iscritto alla lezione
+        if not self.context['request'].user.purchased_lessons.filter(id=value.id).exists():
+            raise serializers.ValidationError("Non sei iscritto a questa lezione")
+        return value
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'teo_coins']
+        fields = ['id', 'username', 'role', 'teo_coins', 'email']
 
 class TeoCoinTransactionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,13 +68,28 @@ class CourseSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)
     teacher = UserSerializer(read_only=True)
     total_duration = serializers.SerializerMethodField()
+    students = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = '__all__'
+        fields = ['id', 'title', 'description', 'price', 'teacher', 'lessons','total_duration', 'students', 'created_at']
+        read_only_fields = ['teacher']
+    
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Il prezzo deve essere maggiore di zero")
+        return value
 
-    def get_total_duration(self, obj):
-        return obj.total_duration()
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'price', 'teacher', 'lessons', 'students', 'created_at']
+        read_only_fields = ['teacher', 'students']
+        extra_kwargs = {
+            'lessons': {'read_only': True}
+        }
+
+    def total_duration(self):
+        return sum(lesson.duration for lesson in self.lessons.all())
 
 class NotificationSerializer(serializers.ModelSerializer):
     related_object = serializers.SerializerMethodField()
@@ -104,10 +140,18 @@ class TeacherLessonSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'price', 'total_students', 'total_earnings']
 
 class TeacherCourseSerializer(serializers.ModelSerializer):
-    lessons = TeacherLessonSerializer(many=True, read_only=True)
+    total_earnings = serializers.SerializerMethodField()
+    total_students = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'price', 'lessons', 'created_at']
+        fields = ['id', 'title', 'price', 'total_earnings', 'total_students']
+
+    def get_total_earnings(self, obj):
+        return obj.price * obj.students.count() * 0.9
+
+    def get_total_students(self, obj):
+        return obj.students.count()
+
 
         

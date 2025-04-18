@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 
+
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -41,7 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'core',
     'authentication',
     'rest_framework_simplejwt',
     'django_filters',
@@ -59,7 +60,10 @@ INSTALLED_APPS = [
     'modelcluster',
     'taggit',
     'cms',
+    'rest_framework_simplejwt.token_blacklist',
+    'core.apps.CoreConfig',
 ]
+
 
 TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
@@ -197,4 +201,8 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
 }

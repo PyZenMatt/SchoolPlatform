@@ -1,9 +1,9 @@
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect
 from django.http import HttpResponseForbidden
 from django.db import transaction
-from .models import User,Lesson, Exercise, Course, Notification, TeoCoinTransaction
+from .models import User,Lesson, Exercise, Course, Notification, TeoCoinTransaction, Course
 from .serializers import RegisterSerializer, LessonSerializer, ExerciseSerializer,CourseSerializer, UserSerializer,TeoCoinTransactionSerializer, NotificationSerializer, TeacherLessonSerializer, TeacherCourseSerializer
 from django.shortcuts import render
 from rest_framework import generics, status, permissions
@@ -21,9 +21,10 @@ from django.utils import timezone
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.views.decorators.http import require_GET
-from django.contrib.auth.decorators import user_passes_test
 from .permissions import IsTeacher
-from django.db.models import Count, F
+from django.db.models import Count, F, Sum, ExpressionWrapper, FloatField
+from .permissions import IsStudent
+from rest_framework.permissions import BasePermission
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -324,21 +325,46 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("Non sei il proprietario di questo corso")
         serializer.save()
 
-from .services.transaction_services import TransactionService
+class IsStudent(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'student'
 
 class PurchaseCourseView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStudent]
 
     def post(self, request, course_id):
         course = get_object_or_404(Course, id=course_id)
-        user = request.user
+        student = request.user
 
-        try:
-            TransactionService.purchase_course(user, course)
-            return Response({"status": "success"}, status=status.HTTP_200_OK)
-        
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        if student.teo_coins < course.price:
+            return Response(
+                {"error": "TeoCoin insufficienti"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Transazione atomica
+        with transaction.atomic():
+            student.teo_coins -= course.price
+            student.save()
+            
+            course.teacher.teo_coins += course.price * 0.9
+            course.teacher.save()
+
+            course.students.add(student)
+
+            # Crea transazione
+            TeoCoinTransaction.objects.create(
+                user=student,
+                amount=-course.price,
+                transaction_type='course_purchase'
+            )
+            TeoCoinTransaction.objects.create(
+                user=course.teacher,
+                amount=course.price * 0.9,
+                transaction_type='course_earned'
+            )
+
+        return Response({"success": "Corso acquistato!"})
         
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, JWTAuthentication])
@@ -362,36 +388,28 @@ def dashboard_transactions(request):
     })
 
 
+
 class TeacherDashboardAPI(APIView):
     permission_classes = [IsTeacher]
-    
+
     def get(self, request):
-        # Ottimizzazione con annotazioni del database
-        lessons = request.user.lessons.annotate(
-            total_students=Count('students'),
-            total_earnings=F('price') * Count('students') * 0.9  # Usiamo F() per operazioni a DB
-        )
+        # Ottieni i corsi dell'insegnante con lezioni correlate
+        courses = request.user.courses_created.prefetch_related('lessons')
         
-        # Calcolo statistiche aggregate
-        total_stats = lessons.aggregate(
-            total_lessons=Count('id'),
-            total_earnings=Sum(F('price') * Count('students') * 0.9),
+        # Calcola le statistiche aggregate
+        total_stats = courses.aggregate(
+            total_courses=Count('id'),
+            total_earnings=Sum(F('price') * Count('students')) * 0.9,
             total_students=Count('students', distinct=True)
         )
 
         data = {
             "stats": {
-                "total_lessons": total_stats['total_lessons'],
+                "total_courses": total_stats['total_courses'],
                 "total_earnings": total_stats['total_earnings'] or 0,
                 "active_students": total_stats['total_students']
             },
-            # Usiamo la queryset già annotata
-            "lessons": TeacherLessonSerializer(lessons, many=True).data,
-            # Ottimizzazione per i corsi
-            "courses": TeacherCourseSerializer(
-                request.user.courses.prefetch_related('lessons'), 
-                many=True
-            ).data
+            "courses": TeacherCourseSerializer(courses, many=True).data
         }
         
         return Response(data)
@@ -416,3 +434,62 @@ class CreateCourseAPI(APIView):
             course = serializer.save(teacher=request.user)
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+    
+class CourseEnrollmentAPI(APIView):
+    def post(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id)
+        
+        if request.user in course.students.all():
+            return Response(
+                {"error": "Sei già iscritto a questo corso"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        course.students.add(request.user)
+        return Response(
+            {"success": "Iscrizione completata"},
+            status=status.HTTP_201_CREATED
+        )
+    
+class ExerciseSubmitAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Se lo studente è l'utente loggato
+        request.data['student'] = request.user.username
+        
+        serializer = ExerciseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    
+# View per creare corsi
+class CourseCreateAPI(generics.CreateAPIView):
+    serializer_class = CourseSerializer
+    permission_classes = [IsTeacher]
+
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
+
+# View per gestire lezioni
+class LessonCreateAPI(generics.CreateAPIView):
+    serializer_class = LessonSerializer
+    permission_classes = [IsTeacher]
+
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
+
+# View per assegnare lezioni a corsi
+class AssignLessonToCourseAPI(generics.UpdateAPIView):
+    queryset = Lesson.objects.all()
+    serializer_class = LessonSerializer
+    permission_classes = [IsTeacher]
+
+    def perform_update(self, serializer):
+        course = serializer.validated_data.get('course')
+        if course.teacher != self.request.user:
+            raise PermissionDenied("Non sei il proprietario di questo corso")
+        serializer.save()
+   
+    

@@ -1,21 +1,23 @@
 from rest_framework import serializers
-from core.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()  # Spostato prima delle definizioni
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
+        user = self.user
         
         data.update({
             'user': {
-                'id': self.user.id,
-                'username': self.user.username,
-                'role': self.user.role,
-                'teo_coins': self.user.teo_coins
+                'id': user.id,
+                'username': user.username,
+                'role': user.role,
+                'teo_coins': user.teo_coins
             }
         })
         return data
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(

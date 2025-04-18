@@ -27,8 +27,7 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = ['email', 'role']
     
-    class Meta:
-        app_label = 'authentication'
+  
     
     def __str__(self):
         return self.username
@@ -70,75 +69,75 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "Utente"
         verbose_name_plural = "Utenti"
+        app_label = 'core'
+        
 
-class Lesson(models.Model):
-    class Meta:
-        indexes = [
-            models.Index(fields=['teacher', 'created_at']),
-            models.Index(fields=['title'], name='title_idx')
-        ]
+
+class Course(models.Model):  
     title = models.CharField(max_length=200)
-    content = models.TextField()
-    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons', db_index=True)
+    description = models.TextField()
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_created')
     price = models.PositiveIntegerField(
         default=0,
-        validators=[
-            MinValueValidator(
-                0, 
-                message="Il prezzo non può essere negativo"
-            )
-        ]
+        validators=[MinValueValidator(0, message="Il prezzo non può essere negativo")]
     )
-    duration = models.PositiveIntegerField(default=0, help_text="Durata in minuti")
-    students = models.ManyToManyField(User, related_name='purchased_lessons', blank=True, db_index=True)
+    students = models.ManyToManyField(User, related_name='enrolled_courses', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def notify_purchased(self, student):
-        Notification.objects.create(
-            user=student,
-            message=f"Hai acquistato la lezione '{self.title}'",
-            notification_type='lesson_purchased',
-            related_object_id=self.id
-    )
-
-    def purchase_by_student(self, student):
-        with transaction.atomic():
-            if student in self.students.all():
-                raise ValueError("Lezione già acquistata")
-        
-        student.subtract_teo_coins(self.price)
-        self.students.add(student)
-        self.notify_purchased(student)
-        
-        # Crea notifica
-        Notification.objects.create(
-            user=student,
-            message=f"Hai acquistato la lezione '{self.title}'",
-            notification_type='lesson_purchased',
-            related_object_id=self.id
-        )
-  
-        TeoCoinTransaction.objects.create(
-            user=student,
-            amount=-self.price,
-            transaction_type='lesson_purchase'
-            )
-            
-        teacher_earnings = int(self.price * 0.9)
-        self.teacher.add_teo_coins(teacher_earnings)
-        TeoCoinTransaction.objects.create(
-            user=self.teacher,
-            amount=teacher_earnings,
-            transaction_type='lesson_earned'
-            )
+    lessons = models.ManyToManyField('Lesson', related_name='courses_included')
+     
 
     def __str__(self):
         return self.title
 
-    class Meta:
-        verbose_name = "Lezione"
-        verbose_name_plural = "Lezioni"
+    def purchase_by_student(self, student):
+        with transaction.atomic():
+            if student in self.students.all():
+                raise ValueError("Corso già acquistato")
+            
+            student.subtract_teo_coins(self.price)
+            self.students.add(student)
+            
+            Notification.objects.create(
+                user=student,
+                message=f"Hai acquistato il corso '{self.title}'",
+                notification_type='course_purchased',
+                related_object_id=self.id
+            )
+    
+            TeoCoinTransaction.objects.create(
+                user=student,
+                amount=-self.price,
+                transaction_type='course_purchase'
+            )
+                
+            teacher_earnings = int(self.price * 0.9)
+            self.teacher.add_teo_coins(teacher_earnings)
+            TeoCoinTransaction.objects.create(
+                user=self.teacher,
+                amount=teacher_earnings,
+                transaction_type='course_earned'
+            )
+
+    def total_duration(self):
+        return sum(lesson.duration for lesson in self.lessons.all())
+    
+class Lesson(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    course = models.ForeignKey('Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons_in_course')
+    duration = models.PositiveIntegerField(default=0, help_text="Durata in minuti")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons', db_index=True)
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        if self.course and self.teacher != self.course.teacher:
+            raise ValidationError("Il teacher della lezione deve corrispondere al teacher del corso")
+
 
 class Exercise(models.Model):
     STATUS_CHOICES = (
@@ -223,26 +222,6 @@ class TeoCoinTransaction(models.Model):
         verbose_name = "Transazione TeoCoin"
         verbose_name_plural = "Transazioni TeoCoin"
 
-class Course(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
-    lessons = models.ManyToManyField(Lesson, related_name='courses')
-    price = models.PositiveIntegerField(default=0)
-    students = models.ManyToManyField(User, related_name='enrolled_courses', blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.title
-
-    def total_duration(self):
-        return sum(lesson.duration for lesson in self.lessons.all())
-
-    class Meta:
-        verbose_name = "Corso"
-        verbose_name_plural = "Corsi"
-
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
         ('lesson_purchased', 'Acquisto Lezione'),
@@ -264,4 +243,8 @@ class Notification(models.Model):
         ordering = ['-created_at']
         verbose_name = "Notifica"
         verbose_name_plural = "Notifiche"
-        ordering = ['-created_at']
+        
+
+
+
+

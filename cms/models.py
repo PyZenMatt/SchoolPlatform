@@ -11,6 +11,9 @@ from .blocks import LessonContentBlock
 from django.contrib.auth.models import User
 from django.conf import settings
 from django import forms
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class HomePage(Page):
     hero_title = models.CharField(
@@ -68,7 +71,7 @@ class LessonPage(Page):
     )
 
     content_panels = Page.content_panels + [
-        FieldPanel('teacher'),
+        
         FieldPanel('difficulty'),
         FieldPanel('body'),
     ]
@@ -79,10 +82,7 @@ class LessonPage(Page):
 @register_snippet
 class LessonSnippet(models.Model):
     lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE)
-    
-    panels = [
-        FieldPanel('lesson')
-    ]
+
     
     def __str__(self):
         return self.lesson.title
@@ -92,7 +92,8 @@ class CourseSnippet(models.Model):
     course = models.OneToOneField(Course, on_delete=models.CASCADE)
     
     panels = [
-        FieldPanel('course')
+        FieldPanel('course'),
+        
     ]
     
     def __str__(self):
@@ -100,21 +101,15 @@ class CourseSnippet(models.Model):
 
 class LessonAdmin(SnippetViewSet):
     model = Lesson
-    menu_label = "Lezioni"
-    icon = "fa-book-open"
-    list_display = ('title', 'teacher', 'price')
-    list_filter = ('teacher',)
-    search_fields = ('title', 'content')
-    add_to_settings_menu = False
+    list_display = ('title', 'course', 'teacher')  # Aggiungi course
     panels = [
         FieldPanel('title'),
+        FieldPanel('course'),  # Campo obbligatorio prima di teacher
         FieldPanel('teacher'),
         FieldPanel('content'),
-        MultiFieldPanel([
-            FieldPanel('price'),
-            FieldPanel('duration'),
-        ], heading="Prezzo & Durata"),
+        FieldPanel('duration'),
     ]
+
 
 class CourseAdmin(SnippetViewSet):
     model = Course

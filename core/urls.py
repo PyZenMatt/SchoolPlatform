@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LessonListCreateView, ExerciseListCreateView, UserTeoCoinsView,TransferTeoCoinsView, earn_teo_coins, transfer_teo_coins, PurchaseLessonView, CourseListCreateView, CourseDetailView, TransactionHistoryView, NotificationListView, NotificationMarkReadView, teocoin_balance, dashboard_transactions,TeacherDashboardAPI, CreateLessonAPI, CreateCourseAPI
+from .views import RegisterView, LessonListCreateView, ExerciseListCreateView, UserTeoCoinsView,TransferTeoCoinsView, earn_teo_coins, transfer_teo_coins, PurchaseLessonView, CourseListCreateView, CourseDetailView, TransactionHistoryView, NotificationListView, NotificationMarkReadView, teocoin_balance, dashboard_transactions,TeacherDashboardAPI, CreateLessonAPI, CreateCourseAPI, CourseEnrollmentAPI, PurchaseCourseView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView 
 from .api import dashboard_data
 
@@ -14,6 +14,8 @@ urlpatterns = [
     path('earn-teo-coins/', earn_teo_coins, name='earn_teo_coins'),
     path('lessons/<int:lesson_id>/purchase/', PurchaseLessonView.as_view(), name='purchase-lesson'),
     path('courses/', CourseListCreateView.as_view()),
+    path('courses/<int:course_id>/enroll/', CourseEnrollmentAPI.as_view(), name='course_enroll'),
+    path('courses/<int:course_id>/purchase/', PurchaseCourseView.as_view(), name='course_purchase'),
     path('courses/<int:pk>/', CourseDetailView.as_view()),
     path('transactions/', TransactionHistoryView.as_view(),name='transaction-history'),
     path('notifications/', NotificationListView.as_view(), name='notification-list'),

@@ -16,6 +16,8 @@ from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from core.models import User
 from .forms import CustomUserCreationForm
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class VerifyEmailView(APIView):
     def get(self, request, token):
