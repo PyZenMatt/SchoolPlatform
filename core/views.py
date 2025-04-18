@@ -25,6 +25,10 @@ from .permissions import IsTeacher
 from django.db.models import Count, F, Sum, ExpressionWrapper, FloatField
 from .permissions import IsStudent
 from rest_framework.permissions import BasePermission
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
+
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -387,31 +391,68 @@ def dashboard_transactions(request):
         'transactions': transactions
     })
 
+class StudentDashboardView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]  # Assicurati che IsStudent sia definito correttamente
+
+    def get(self, request):
+        user = request.user
+
+        # Lezioni acquistate dallo studente
+        purchased_lessons = Lesson.objects.filter(students=user)
+        lessons_data = LessonSerializer(purchased_lessons, many=True).data
+
+        # Transazioni recenti TeoCoin
+        recent_transactions = TeoCoinTransaction.objects.filter(user=user).order_by('-created_at')[:5]
+        transactions_data = TeoCoinTransactionSerializer(recent_transactions, many=True).data
+
+        # Esercizi completati (supponendo che tu abbia una logica per questo)
+        completed_exercises = Exercise.objects.filter(completed_by=user) if hasattr(Exercise, 'completed_by') else []
+
+        # Notifiche (se hai implementato questo modello)
+        notifications = Notification.objects.filter(user=user, is_read=False).order_by('-created_at')[:5]
+        notifications_data = NotificationSerializer(notifications, many=True).data
+
+        return Response({
+            "username": user.username,
+            "teo_coins": user.teo_coins,
+            "lessons": lessons_data,
+            "recent_transactions": transactions_data,
+            "completed_exercises_count": len(completed_exercises),
+            "notifications": notifications_data,
+        })
+
+
 
 
 class TeacherDashboardAPI(APIView):
     permission_classes = [IsTeacher]
 
     def get(self, request):
-        # Ottieni i corsi dell'insegnante con lezioni correlate
-        courses = request.user.courses_created.prefetch_related('lessons')
-        
-        # Calcola le statistiche aggregate
-        total_stats = courses.aggregate(
-            total_courses=Count('id'),
-            total_earnings=Sum(F('price') * Count('students')) * 0.9,
-            total_students=Count('students', distinct=True)
+        # Ottieni i corsi dell'insegnante con lezioni e studenti
+        courses = request.user.courses_created.prefetch_related('lessons', 'students')
+
+        # Statistiche individuali per ogni corso
+        course_data = courses.annotate(
+            student_count=Count('students', distinct=True)
         )
+
+        total_courses = courses.count()
+        total_earnings = 0
+        total_students_set = set()
+
+        for course in course_data:
+            total_earnings += (course.price or 0) * course.student_count * 0.9
+            total_students_set.update(course.students.values_list('id', flat=True))
 
         data = {
             "stats": {
-                "total_courses": total_stats['total_courses'],
-                "total_earnings": total_stats['total_earnings'] or 0,
-                "active_students": total_stats['total_students']
+                "total_courses": total_courses,
+                "total_earnings": round(total_earnings, 2),
+                "active_students": len(total_students_set),
             },
             "courses": TeacherCourseSerializer(courses, many=True).data
         }
-        
+
         return Response(data)
         
     
@@ -491,5 +532,6 @@ class AssignLessonToCourseAPI(generics.UpdateAPIView):
         if course.teacher != self.request.user:
             raise PermissionDenied("Non sei il proprietario di questo corso")
         serializer.save()
-   
+
+
     

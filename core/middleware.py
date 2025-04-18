@@ -22,3 +22,22 @@ class AutoJWTFromSessionMiddleware(MiddlewareMixin):
                 expires=datetime.datetime.now() + datetime.timedelta(minutes=30)
             )
         return response
+    
+class DashboardAccessMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        if request.path.startswith('/dashboard/'):
+            if not request.user.is_authenticated:
+                return redirect(f'/login/?next={request.path}')
+            
+            if 'student' in request.path and request.user.role != 'student':
+                return HttpResponseForbidden("Accesso negato: area studenti")
+                
+            if 'mentor' in request.path and request.user.role != 'teacher':
+                return HttpResponseForbidden("Accesso negato: area mentori")
+
+        return response

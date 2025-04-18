@@ -43,25 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'authentication',
     'rest_framework_simplejwt',
     'django_filters',
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail',
     'modelcluster',
     'taggit',
-    'cms',
     'rest_framework_simplejwt.token_blacklist',
     'core.apps.CoreConfig',
+    
 ]
 
 
@@ -92,7 +80,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'core.middleware.AutoJWTFromSessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
@@ -109,8 +96,7 @@ SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'schoolplatform.urls'
 
-WAGTAIL_SITE_NAME = 'TeoArt CMS'
-WAGTAILADMIN_BASE_URL = 'http://localhost:8000/cms/'
+
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -189,8 +175,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-WAGTAIL_SITE_NAME = 'TeoArt CMS'
-WAGTAILADMIN_BASE_URL = 'http://localhost:8000/cms/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 

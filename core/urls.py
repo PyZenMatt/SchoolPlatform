@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LessonListCreateView, ExerciseListCreateView, UserTeoCoinsView,TransferTeoCoinsView, earn_teo_coins, transfer_teo_coins, PurchaseLessonView, CourseListCreateView, CourseDetailView, TransactionHistoryView, NotificationListView, NotificationMarkReadView, teocoin_balance, dashboard_transactions,TeacherDashboardAPI, CreateLessonAPI, CreateCourseAPI, CourseEnrollmentAPI, PurchaseCourseView
+from .views import RegisterView, LessonListCreateView, ExerciseListCreateView, UserTeoCoinsView,TransferTeoCoinsView, earn_teo_coins, transfer_teo_coins, PurchaseLessonView, CourseListCreateView, CourseDetailView, TransactionHistoryView, NotificationListView, NotificationMarkReadView, teocoin_balance, dashboard_transactions,TeacherDashboardAPI, CreateLessonAPI, CreateCourseAPI, CourseEnrollmentAPI, PurchaseCourseView, StudentDashboardView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView 
 from .api import dashboard_data
 
@@ -26,5 +26,6 @@ urlpatterns = [
     path('teacher/dashboard/', TeacherDashboardAPI.as_view(), name='teacher_dashboard'),
     path('teacher/lessons/', CreateLessonAPI.as_view(), name='create_lesson'),
     path('teacher/courses/', CreateCourseAPI.as_view(), name='create_courses'),
+    path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
    
 ]
