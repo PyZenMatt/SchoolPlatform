@@ -49,6 +49,10 @@ INSTALLED_APPS = [
     'taggit',
     'rest_framework_simplejwt.token_blacklist',
     'core.apps.CoreConfig',
+    'users',
+    'courses',
+    'rewards',
+    'notifications',
     
 ]
 
@@ -69,7 +73,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'users.User'
 
 
 MIDDLEWARE = [

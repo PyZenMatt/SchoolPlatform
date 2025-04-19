@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from core.models import User, Course, TeoCoinTransaction
+from core.models import User
+from courses.models import Course
+from rewards.models import TeoCoinTransaction
 
 class TransactionService:
     @classmethod

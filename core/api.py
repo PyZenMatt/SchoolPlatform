@@ -1,8 +1,12 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Lesson, TeoCoinTransaction, Notification
-from .serializers import LessonSerializer, TeoCoinTransactionSerializer, NotificationSerializer
+from rewards.models import TeoCoinTransaction 
+from notifications.models import Notification
+from notifications.serializers import NotificationSerializer
+from rewards.serializers import TeoCoinTransactionSerializer
+from courses.models import Lesson 
+from courses.serializers import LessonSerializer
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

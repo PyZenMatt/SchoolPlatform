@@ -1,7 +1,8 @@
 # signals.py
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from core.models import Exercise, Notification
+from notifications.models import Notification
+from courses.models import Exercise
 
 @receiver(post_save, sender=Exercise)
 def handle_exercise_graded(sender, instance, **kwargs):
