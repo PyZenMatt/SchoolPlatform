@@ -1,0 +1,94 @@
+/* CourseCreateModal styles */
+
+/* Image upload area */
+.image-upload-area {
+  border: 2px dashed #dee2e6;
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+}
+
+.image-upload-area:hover {
+  border-color: #007bff;
+  background: #e7f3ff;
+}
+
+.image-upload-area.drag-over {
+  border-color: #007bff;
+  background: #e7f3ff;
+  transform: scale(1.01);
+}
+
+/* Image preview container */
+.image-preview {
+  position: relative;
+  max-width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+/* Preview image with size constraints */
+.preview-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 300px; /* Limit height to prevent overflow */
+  object-fit: cover; /* Maintain aspect ratio */
+  border-radius: 10px;
+  transition: transform 0.3s ease;
+}
+
+/* Image overlay for controls */
+.image-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+/* Remove image button */
+.remove-image-btn {
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Upload content */
+.upload-content {
+  padding: 1rem;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .image-upload-area {
+    padding: 1.5rem 1rem;
+  }
+  
+  .preview-image {
+    max-height: 200px;
+  }
+  
+  .upload-content h5 {
+    font-size: 1.1rem;
+  }
+}
+
+/* Modal size adjustments for better image display */
+@media (min-width: 992px) {
+  .modal-lg {
+    max-width: 900px;
+  }
+}

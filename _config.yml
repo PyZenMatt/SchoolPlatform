@@ -1,0 +1,55 @@
+# GitHub Pages Configuration
+root: .
+url: https://yourusername.github.io/teoart-school
+plugins:
+  - jekyll-default-layout
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+
+# Site settings
+title: TeoArt School
+description: Web3 Educational Platform - Blockchain-powered art school with tokenized rewards
+author: TeoArt Team
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# GitHub Pages specific
+github:
+  repository_name: teoart-school
+  owner_name: yourusername
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Navigation
+header_pages:
+  - index.html
+  - docs/TECHNICAL.md
+  - docs/USER_GUIDE.md
+
+# Social links
+social:
+  github: yourusername/teoart-school
+
+# Analytics (optional)
+google_analytics: # Add your Google Analytics ID
+
+# Exclude from processing
+exclude:
+  - schoolplatform/
+  - node_modules/
+  - .git/
+  - .gitignore
+  - Dockerfile
+  - docker-compose.yml
+  - requirements.txt
+  - manage.py
+  - "*.py"
+  - "*.pyc"
+  - __pycache__/

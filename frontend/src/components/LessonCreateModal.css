@@ -1,0 +1,76 @@
+/* LessonCreateModal Component Styles */
+
+/* File input and interaction styles */
+.lesson-modal-clickable {
+  cursor: pointer;
+}
+
+.lesson-modal-badge {
+  font-size: 1rem;
+}
+
+.lesson-modal-remove-icon {
+  font-size: 1rem;
+}
+
+.lesson-modal-hidden-input {
+  display: none;
+}
+
+/* Video preview styles */
+.lesson-modal-video-preview {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Form section styles */
+.lesson-modal-form-section {
+  margin-bottom: 1.5rem;
+}
+
+.lesson-modal-form-section h6 {
+  color: #6c757d;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.5rem;
+}
+
+/* Lesson type selection */
+.lesson-modal-type-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.lesson-modal-type-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-modal-type-card.selected {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Upload area styles */
+.lesson-modal-upload-area {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+}
+
+.lesson-modal-upload-area:hover {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.lesson-modal-upload-area.drag-active {
+  border-color: #007bff;
+  background-color: rgba(0, 123, 255, 0.1);
+}
