@@ -16,6 +16,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Clear wallet state from localStorage to prevent cross-user contamination
+  useEffect(() => {
+    localStorage.removeItem('isWalletLocked');
+    localStorage.removeItem('lockedWalletAddress');
+    localStorage.removeItem('connectedWalletAddress');
+    console.log('🧹 Wallet localStorage cleared for per-user isolation');
+  }, []);
+
   const refreshUser = async () => {
     try {
       setLoading(true);

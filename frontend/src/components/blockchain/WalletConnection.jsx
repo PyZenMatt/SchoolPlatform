@@ -60,112 +60,25 @@ const WalletConnection = ({ user, onWalletConnected }) => {
 
   useEffect(() => {
     loadTokenInfo();
-    checkExistingConnection();
     
-    // Setup MetaMask event listeners
-    if (window.ethereum) {
-      const handleAccountsChanged = async (accounts) => {
-        console.log('MetaMask accounts changed:', accounts);
-        if (accounts.length === 0) {
-          // User disconnected all accounts from MetaMask
-          console.log('Tutti gli account MetaMask disconnessi, mantengo il wallet collegato');
-          // Do NOT disconnect - keep the wallet linked to the user
-          // The user can still interact with their linked wallet address
-        } else {
-          // User switched to a different account in MetaMask
-          console.log('Account MetaMask cambiato, ma mantengo il wallet collegato all\'indirizzo:', walletAddress);
-          // Do NOT change the connected wallet address
-          // The user's wallet remains linked to their chosen address
-        }
-      };
-
-      const handleChainChanged = (chainId) => {
-        console.log('MetaMask chain changed:', chainId);
-        // Optionally reload balance when chain changes
-        if (walletAddress) {
-          loadBalance();
-        }
-      };
-
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
-
-      // Cleanup event listeners
-      return () => {
-        if (window.ethereum) {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          window.ethereum.removeListener('chainChanged', handleChainChanged);
-        }
-      };
+    // Set wallet address from user prop instead of localStorage
+    if (user && user.wallet_address) {
+      console.log('Setting wallet address from user:', user.wallet_address);
+      setWalletAddress(user.wallet_address);
+    } else {
+      console.log('No wallet address found in user data');
+      setWalletAddress(null);
     }
-  }, []);
+    
+    setIsCheckingConnection(false);
+  }, [user]);
 
   useEffect(() => {
     if (walletAddress) {
-      loadBalance(); // This will use cache if available
-      // Save wallet address to localStorage for persistence
-      localStorage.setItem('connectedWalletAddress', walletAddress);
-      console.log('Wallet address aggiornato e salvato:', walletAddress);
+      loadBalance(); // Load balance when wallet address is set
+      console.log('Wallet address set:', walletAddress);
     }
   }, [walletAddress]);
-
-  const checkExistingConnection = async () => {
-    try {
-      setIsCheckingConnection(true);
-      
-      // Check if MetaMask is installed
-      if (!web3Service.isMetamaskInstalled()) {
-        setIsCheckingConnection(false);
-        return;
-      }
-
-      // Check localStorage for previous connection - this takes PRIORITY
-      const savedWalletAddress = localStorage.getItem('connectedWalletAddress');
-      
-      if (savedWalletAddress) {
-        // If we have a saved address, use it regardless of MetaMask's current account
-        console.log('Ripristino wallet salvato:', savedWalletAddress);
-        setWalletAddress(savedWalletAddress);
-        
-        // Optionally try to re-link with backend to ensure sync
-        try {
-          await blockchainAPI.linkWallet(savedWalletAddress);
-          console.log('Wallet salvato re-linkato con successo al backend');
-        } catch (error) {
-          console.warn('Warning: Could not re-link saved wallet with backend:', error.message);
-          // If there's a 400 error, the wallet might be invalid or linked to another account
-          if (error.response && error.response.status === 400) {
-            console.error('Il wallet salvato non è più valido o è stato collegato ad un altro account');
-            localStorage.removeItem('connectedWalletAddress');
-            setWalletAddress(null);
-            setError('Il wallet precedentemente salvato non è più disponibile. Riconnetti il tuo wallet.');
-            return;
-          }
-        }
-        
-        if (onWalletConnected) {
-          onWalletConnected(savedWalletAddress);
-        }
-      } else {
-        // No saved wallet, check if MetaMask has any connected accounts
-        const connectedAddress = await web3Service.checkConnection();
-        
-        if (connectedAddress) {
-          // MetaMask has a connected account, but no saved wallet
-          // This means it's a fresh connection
-          console.log('Nessun wallet salvato, ma MetaMask è connesso:', connectedAddress);
-          // Do NOT auto-connect - let user explicitly connect
-          // This prevents automatic connection when user didn't intend to connect
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error checking existing wallet connection:', error);
-      // Keep saved address even on error - don't clear it unnecessarily
-    } finally {
-      setIsCheckingConnection(false);
-    }
-  };
 
   const loadTokenInfo = async () => {
     try {
@@ -225,7 +138,7 @@ const WalletConnection = ({ user, onWalletConnected }) => {
     setError(null);
 
     try {
-      // Connect to Metamask
+      // Connect to Metamask to get wallet address
       const address = await web3Service.connectWallet();
       
       try {
@@ -234,9 +147,6 @@ const WalletConnection = ({ user, onWalletConnected }) => {
         
         setWalletAddress(address);
         setBalance(linkResult.balance || '0');
-        
-        // Save to localStorage for persistence
-        localStorage.setItem('connectedWalletAddress', address);
         
         if (onWalletConnected) {
           onWalletConnected(address);
@@ -256,15 +166,10 @@ const WalletConnection = ({ user, onWalletConnected }) => {
         } else {
           setError('Errore nel collegamento del wallet al tuo account. Riprova più tardi.');
         }
-        
-        // Reset connection state
-        localStorage.removeItem('connectedWalletAddress');
       }
     } catch (error) {
       setError(error.message);
       console.error('Errore connessione wallet:', error);
-      // Clear any saved address on connection error
-      localStorage.removeItem('connectedWalletAddress');
     } finally {
       setIsConnecting(false);
     }
@@ -282,9 +187,8 @@ const WalletConnection = ({ user, onWalletConnected }) => {
     setWalletAddress(null);
     setBalance('0');
     setLastBalanceUpdate(null);
-    localStorage.removeItem('connectedWalletAddress');
     web3Service.disconnect();
-    console.log('Wallet disconnesso, localStorage e cache puliti');
+    console.log('Wallet disconnesso');
   };
 
   const refreshBalance = async () => {

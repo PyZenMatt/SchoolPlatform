@@ -25,9 +25,8 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
 
   // Determina se il wallet è connesso dal profilo utente
   const walletConnected = Boolean(user?.wallet_address);
-  // Get wallet address - prioritize locked wallet address
-  const lockedWallet = web3Service.getLockedWalletAddress();
-  const walletAddress = lockedWallet || user?.wallet_address || '';
+  // Always use the user's registered wallet address, not MetaMask current account
+  const walletAddress = user?.wallet_address;
 
   // Carica i saldi quando si apre il modal
   React.useEffect(() => {
@@ -50,7 +49,13 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         
       } catch (err) {
         console.error('Errore nel caricamento saldi:', err);
-        setError('Errore nel caricamento dei saldi wallet');
+        
+        // Gestisci specificamente l'errore di wallet non specificato
+        if (err.message && err.message.includes('Nessun indirizzo wallet specificato')) {
+          setError('Devi collegare un wallet dal tuo profilo prima di visualizzare i saldi');
+        } else {
+          setError('Errore nel caricamento dei saldi wallet');
+        }
       }
     };
     
@@ -242,14 +247,14 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
                 <Alert variant="info" className="d-flex justify-content-between align-items-center">
                   <div>
                     <i className="feather icon-lock me-2"></i>
-                    <strong>Wallet connesso:</strong>
+                    <strong>Wallet registrato:</strong>
                     <br />
                     <code className="text-break" style={{ fontSize: '12px' }}>
                       {walletAddress}
                     </code>
                     <br />
                     <small className="text-muted">
-                      Il tuo wallet rimane connesso anche se cambi account in MetaMask
+                      Wallet collegato al tuo profilo utente
                     </small>
                   </div>
                   <Button 
