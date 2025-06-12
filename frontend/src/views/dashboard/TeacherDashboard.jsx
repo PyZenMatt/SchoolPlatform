@@ -5,12 +5,15 @@ import './TeacherDashboard.css';
 
 import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDisplay';
 import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
-import TransactionHistory from '../../components/blockchain/TransactionHistory';
+import DashboardTransactionHistory from '../../components/blockchain/DashboardTransactionHistory';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
 import { fetchLessonsForCourse } from '../../services/api/courses';
 import CourseCreateModal from '../../components/CourseCreateModal';
 import LessonCreateModal from '../../components/LessonCreateModal';
 import ExerciseCreateModal from '../../components/ExerciseCreateModal';
+
+// Import dashboard styles
+import './dashboard-styles.css';
 
 // Placeholder avatar
 import avatar1 from '../../assets/images/user/avatar-1.jpg';
@@ -127,88 +130,166 @@ const TeacherDashboard = () => {
     handleHideExerciseModal(lessonId);
   };
 
-  // Dashboard stats data in Datta Able format
+  // Dashboard stats data in unified Student Dashboard format
   const dashStatsData = [
     { 
-      title: 'Vendite Giornaliere', 
-      amount: `€${sales.daily}`, 
-      icon: 'fas fa-coins', 
-      color: 'c1' 
+      title: 'Corsi Creati', 
+      amount: courses.length.toString(), 
+      icon: 'icon-book-open text-c-green', 
+      value: 85, 
+      class: 'progress-c-theme' 
     },
     { 
       title: 'Vendite Mensili', 
       amount: `€${sales.monthly}`, 
-      icon: 'fas fa-calendar-check', 
-      color: 'c2' 
+      icon: 'icon-trending-up text-c-green', 
+      value: 75, 
+      class: 'progress-c-theme2' 
     },
     { 
-      title: 'Corsi Attivi', 
-      amount: courses.length, 
-      icon: 'fas fa-book', 
-      color: 'c3' 
-    },
+      title: 'Vendite Totali', 
+      amount: `€${sales.yearly}`, 
+      icon: 'icon-award text-c-green', 
+      value: 90, 
+      class: 'progress-c-theme3' 
+    }
   ];
+
+  if (loading) {
+    return (
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-md-12">
+            <div className="card">
+              <div className="card-body">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                  <div className="text-center">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p className="mt-3">Caricamento dashboard...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <React.Fragment>
-      
-      {loading ? (
-        <div className="text-center my-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Caricamento...</span>
-          </Spinner>
-          <p className="mt-2">Caricamento dashboard...</p>
-        </div>
-      ) : error ? (
-        <div className="alert alert-danger">{error}</div>
-      ) : (
-        <>
-          {/* Stats Cards */}
-          <Row>
-            {dashStatsData.map((stat, idx) => (
-              <Col md={4} key={idx}>
-                <Card>
-                  <Card.Body className="p-0">
-                    <div className={`widget-card-1 card-${stat.color}`}>
-                      <div className="icon">
-                        <i className={stat.icon}></i>
-                      </div>
-                      <div className="info">
-                        <h5 className="title">{stat.title}</h5>
-                        <h2 className="value">{stat.amount}</h2>
-                      </div>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
+      {/* Welcome Section */}
+      <Row className="mb-4">
+        <Col md={12}>
+          <Card>
+            <Card.Body className="text-center py-5">
+              <h2 className="f-w-300 d-flex align-items-center justify-content-center m-b-0">
+                <i className="feather icon-user text-c-green f-30 m-r-10" />
+                Benvenuto, {userProfile?.first_name || userProfile?.username || 'Insegnante'}!
+              </h2>
+              <p className="text-muted mt-3">Gestisci i tuoi corsi e monitora le tue vendite dalla dashboard.</p>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-          {/* User Profile Section */}
-          <Row className="mb-4">
-            <Col md={12}>
+      {/* Stats Cards */}
+      <Row>
+        {dashStatsData.map((data, index) => {
+          return (
+            <Col key={index} md={6} xl={4}>
               <Card>
-                <Card.Body className="d-flex align-items-center">
-                  <div className="teacher-profile-img me-4">
-                    <img src={userProfile?.avatar || avatar1} alt="Teacher" className="rounded-circle" width="80" />
-                  </div>
-                  <div className="teacher-profile-info">
-                    <h4 className="mb-1">{`${userProfile?.first_name || ''} ${userProfile?.last_name || ''}`}</h4>
-                    <p className="text-muted mb-2">Insegnante di {userProfile?.profession || 'Arte'}</p>
-                    {userProfile?.bio && <p className="mb-2">{userProfile.bio}</p>}
-                    <div className="d-flex">
-                      <Link to="/profile" className="btn btn-sm btn-outline-primary me-2">
-                        <i className="fas fa-user me-1"></i> Profilo
-                      </Link>
-                      <Link to="/wallet" className="btn btn-sm btn-outline-info">
-                        <i className="fas fa-wallet me-1"></i> Wallet
-                      </Link>
+                <Card.Body>
+                  <h6 className="mb-4">{data.title}</h6>
+                  <div className="row d-flex align-items-center">
+                    <div className="col-9">
+                      <h3 className="f-w-300 d-flex align-items-center m-b-0">
+                        <i className={`feather ${data.icon} f-30 m-r-5`} />
+                        {data.amount}
+                      </h3>
+                    </div>
+                    <div className="col-3 text-end">
+                      <p className="m-b-0">{data.value}%</p>
                     </div>
                   </div>
-                  <div className="ms-auto">
-                    <div className="d-flex gap-2 align-items-center">
-                      <WalletBalanceDisplay />
-                      <ProfileWalletDisplay />
+                  <div className="progress m-t-30" style={{ height: '7px' }}>
+                    <div
+                      className={`progress-bar ${data.class}`}
+                      role="progressbar"
+                      style={{ width: data.value + '%' }}
+                      aria-valuenow={data.value}
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    />
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          );
+        })}
+      </Row>
+
+      {/* Error Alert */}
+      {error && (
+        <Row>
+          <Col md={12}>
+            <Card className="bg-danger text-white">
+              <Card.Body>
+                <i className="feather icon-alert-triangle me-2"></i>
+                {error}
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* Main Content Row */}
+      <Row>
+        {/* Full Width Column - following StudentDashboard layout */}
+        <Col lg={12} className="mb-4">
+          {/* Wallet Balance Display - Unified style with StudentDashboard */}
+          <Row className="mb-4">
+            {/* Balance Card - TEO and MATIC */}
+            <Col md={6} lg={4}>
+              <Card className="balance-card h-100 wallet-transactions-unified">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-start mb-3">
+                    <div className="h6 text-muted mb-0 card-title h5">Saldi Wallet</div>
+                  </div>
+                  <WalletBalanceDisplay user={userProfile} />
+                </Card.Body>
+              </Card>
+            </Col>
+
+            {/* Wallet Address Card */}
+            <Col md={6} lg={4}>
+              <Card className="wallet-address-card h-100 wallet-transactions-unified">
+                <Card.Body>
+                  <div className="h6 text-muted mb-3">Indirizzo Wallet</div>
+                  <ProfileWalletDisplay />
+                </Card.Body>
+              </Card>
+            </Col>
+
+            {/* Teacher Stats Card */}
+            <Col md={6} lg={4}>
+              <Card className="teacher-stats-card h-100">
+                <Card.Body>
+                  <div className="h6 text-muted mb-3">Statistiche</div>
+                  <div className="stats-info">
+                    <div className="stat-item mb-2">
+                      <div className="stat-value">{courses.length}</div>
+                      <div className="stat-label">Corsi Creati</div>
+                    </div>
+                    <div className="stat-item mb-2">
+                      <div className="stat-value">€{sales.monthly}</div>
+                      <div className="stat-label">Vendite Mensili</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">€{sales.yearly}</div>
+                      <div className="stat-label">Vendite Totali</div>
                     </div>
                   </div>
                 </Card.Body>
@@ -216,260 +297,182 @@ const TeacherDashboard = () => {
             </Col>
           </Row>
 
-          {/* Create Course Button */}
-          <Row className="mb-4">
-            <Col md={12}>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h3 className="mb-0">I Tuoi Corsi</h3>
-                <Button 
-                  variant="primary" 
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  <i className="fas fa-plus me-2"></i>
-                  Crea Nuovo Corso
-                </Button>
-              </div>
-            </Col>
-          </Row>
-
-          {/* Courses Table */}
-          <Row className="mb-4">
-            <Col md={12}>
-              <Card>
-                <Card.Body>
-                  <div className="table-responsive">
-                    <Table striped hover>
-                      <thead>
-                        <tr>
-                          <th>Titolo</th>
-                          <th>Categoria</th>
-                          <th>Prezzo</th>
-                          <th>Studenti</th>
-                          <th>Guadagni</th>
-                          <th>Azioni</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {courses.length === 0 ? (
-                          <tr>
-                            <td colSpan="6" className="text-center py-4">
-                              <p className="mb-2">Non hai ancora creato corsi</p>
-                              <Button 
-                                variant="primary" 
-                                size="sm"
-                                onClick={() => setShowCreateModal(true)}
-                              >
-                                <i className="fas fa-plus me-2"></i>
-                                Crea il tuo primo corso
-                              </Button>
+          {/* Courses Management Section */}
+          <Card>
+            <Card.Header className="d-flex justify-content-between align-items-center">
+              <Card.Title as="h5">
+                <i className="feather icon-book me-2"></i>
+                I Miei Corsi
+              </Card.Title>
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <i className="feather icon-plus me-1"></i>
+                Nuovo Corso
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              {courses.length === 0 ? (
+                <div className="text-center py-4">
+                  <i className="feather icon-book" style={{ fontSize: '3rem', color: '#999', marginBottom: '1rem' }}></i>
+                  <h4 className="mb-3">Nessun corso creato</h4>
+                  <p className="text-muted mb-4">Inizia creando il tuo primo corso</p>
+                  <Button 
+                    variant="primary"
+                    onClick={() => setShowCreateModal(true)}
+                  >
+                    <i className="feather icon-plus me-2"></i>
+                    Crea Primo Corso
+                  </Button>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <Table striped hover>
+                    <thead>
+                      <tr>
+                        <th>Corso</th>
+                        <th>Lezioni</th>
+                        <th>Prezzo</th>
+                        <th>Creato</th>
+                        <th>Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {courses.map(course => (
+                        <React.Fragment key={course.id}>
+                          <tr 
+                            className={expandedCourse === course.id ? 'table-active' : ''}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td onClick={() => handleExpandCourse(course.id)}>
+                              <div className="d-flex align-items-center">
+                                <i className={`feather ${expandedCourse === course.id ? 'icon-chevron-down' : 'icon-chevron-right'} me-2`}></i>
+                                <div>
+                                  <strong>{course.title}</strong>
+                                  <br />
+                                  <small className="text-muted">{course.description?.substring(0, 50)}...</small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <Badge bg="info">{course.lessons_count || 0} lezioni</Badge>
+                            </td>
+                            <td>
+                              <strong>{course.price} TEO</strong>
+                            </td>
+                            <td>
+                              <small>{new Date(course.created_at).toLocaleDateString('it-IT')}</small>
+                            </td>
+                            <td>
+                              <div className="d-flex gap-1">
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleShowLessonModal(course.id)}
+                                >
+                                  <i className="feather icon-plus me-1"></i>
+                                  Lezione
+                                </Button>
+                                <Link to={`/corsi/${course.id}`} className="btn btn-outline-secondary btn-sm">
+                                  <i className="feather icon-eye"></i>
+                                </Link>
+                              </div>
                             </td>
                           </tr>
-                        ) : (
-                          courses.map(course => (
-                            <React.Fragment key={course.id}>
-                              <tr 
-                                onClick={() => handleExpandCourse(course.id)}
-                                className={`lesson-row ${expandedCourse === course.id ? 'table-active' : ''}`}
-                              >
-                                <td>
-                                  <div className="d-flex align-items-center">
-                                    {expandedCourse === course.id ? (
-                                      <i className="fas fa-caret-down me-2"></i>
-                                    ) : (
-                                      <i className="fas fa-caret-right me-2"></i>
-                                    )}
-                                    {course.title}
-                                  </div>
-                                </td>
-                                <td>{course.category_name || 'N/A'}</td>
-                                <td>€{course.price}</td>
-                                <td>{course.students_count}</td>
-                                <td>€{(course.price * course.students_count * 0.9).toFixed(2)}</td>
-                                <td>
-                                  <Link 
-                                    to={`/courses/${course.id}/edit`} 
-                                    className="btn btn-sm btn-primary me-2"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <i className="fas fa-edit"></i>
-                                  </Link>
-                                </td>
-                              </tr>
-                              
-                              {/* Expanded Course Details */}
-                              {expandedCourse === course.id && (
-                                <tr>
-                                  <td colSpan="6" className="p-0">
-                                    <div className="p-3 bg-light">
-                                      <div className="d-flex justify-content-between mb-3">
-                                        <h5>Lezioni</h5>
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleShowLessonModal(course.id);
-                                          }}
-                                        >
-                                          <i className="fas fa-plus me-1"></i>
-                                          Aggiungi Lezione
-                                        </Button>
-                                      </div>
-                                      
-                                      {loadingLessons[course.id] ? (
-                                        <div className="text-center py-3">
-                                          <Spinner animation="border" size="sm" />
-                                          <span className="ms-2">Caricamento lezioni...</span>
-                                        </div>
-                                      ) : courseLessons[course.id]?.length > 0 ? (
-                                        <Table bordered size="sm">
-                                          <thead>
-                                            <tr>
-                                              <th>Titolo</th>
-                                              <th>Durata</th>
-                                              <th>Esercizi</th>
-                                              <th>Azioni</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            {courseLessons[course.id].map(lesson => (
-                                              <tr key={lesson.id}>
-                                                <td>
-                                                  <div className="d-flex align-items-center">
-                                                    <span className="me-2">
-                                                      {lesson.lesson_type === 'video' && <i className="fas fa-video text-warning"></i>}
-                                                      {lesson.lesson_type === 'theory' && <i className="fas fa-book text-primary"></i>}
-                                                      {lesson.lesson_type === 'practical' && <i className="fas fa-tools text-success"></i>}
-                                                      {lesson.lesson_type === 'mixed' && <i className="fas fa-layer-group text-info"></i>}
-                                                    </span>
-                                                    {lesson.title}
-                                                  </div>
-                                                </td>
-                                                <td>{lesson.duration} min</td>
-                                                <td>
-                                                  <div className="d-flex align-items-center justify-content-between">
-                                                    <Badge bg="secondary" className="me-2">
-                                                      {(lesson.exercises_count || 0)} esercizi
-                                                    </Badge>
-                                                    <Button
-                                                      variant="outline-success"
-                                                      size="sm"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleShowExerciseModal({ ...lesson, course_id: course.id });
-                                                      }}
-                                                      title="Aggiungi esercizio"
-                                                    >
-                                                      <i className="fas fa-plus"></i>
-                                                    </Button>
-                                                  </div>
-                                                </td>
-                                                <td>
-                                                  <Link 
-                                                    to={`/courses/${course.id}/lessons/${lesson.id}/edit`}
-                                                    className="btn btn-sm btn-outline-primary me-1"
-                                                    title="Modifica lezione"
-                                                  >
-                                                    <i className="fas fa-edit"></i>
-                                                  </Link>
-                                                  {(lesson.exercises_count || 0) > 0 && (
-                                                    <Link
-                                                      to={`/courses/${course.id}/lessons/${lesson.id}/exercises`}
-                                                      className="btn btn-sm btn-outline-info"
-                                                      title="Gestisci esercizi"
-                                                    >
-                                                      <i className="fas fa-list"></i>
-                                                    </Link>
-                                                  )}
-                                                </td>
-                                              </tr>
-                                            ))}
-                                          </tbody>
-                                        </Table>
-                                      ) : (
-                                        <div className="text-center py-3">
-                                          <p className="mb-2">Nessuna lezione creata</p>
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleShowLessonModal(course.id);
-                                            }}
-                                          >
-                                            Crea la prima lezione
-                                          </Button>
-                                        </div>
-                                      )}
+                          
+                          {/* Lessons List */}
+                          {expandedCourse === course.id && (
+                            <tr>
+                              <td colSpan="5" className="p-0">
+                                <div className="bg-light p-3">
+                                  {loadingLessons[course.id] ? (
+                                    <div className="text-center py-2">
+                                      <Spinner animation="border" size="sm" className="me-2" />
+                                      Caricamento lezioni...
                                     </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
-                          ))
-                        )}
-                      </tbody>
-                    </Table>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+                                  ) : courseLessons[course.id]?.length > 0 ? (
+                                    <div className="lessons-list">
+                                      <h6 className="mb-3">Lezioni del corso:</h6>
+                                      {courseLessons[course.id].map(lesson => (
+                                        <div key={lesson.id} className="lesson-item d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border">
+                                          <div>
+                                            <strong>{lesson.title}</strong>
+                                            <br />
+                                            <small className="text-muted">
+                                              {lesson.exercises_count || 0} esercizi
+                                            </small>
+                                          </div>
+                                          <div>
+                                            <Button
+                                              variant="outline-success"
+                                              size="sm"
+                                              onClick={() => handleShowExerciseModal(lesson)}
+                                            >
+                                              <i className="feather icon-plus me-1"></i>
+                                              Esercizio
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-3">
+                                      <p className="text-muted mb-0">Nessuna lezione ancora creata per questo corso</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
 
-          {/* Transactions History */}
-          <Row>
-            <Col md={12}>
-              <Card>
-                <Card.Header>
-                  <h5>Storia Transazioni</h5>
-                </Card.Header>
-                <Card.Body>
-                  <TransactionHistory transactions={transactions} />
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </>
-      )}
+        {/* Transactions History */}
+        <Col lg={12}>
+          <Card className="wallet-transactions-unified">
+            <Card.Body>
+              <DashboardTransactionHistory user={userProfile} />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
-      {/* Course Creation Modal */}
-      {showCreateModal && (
-        <CourseCreateModal
-          show={showCreateModal}
-          onHide={() => setShowCreateModal(false)}
-          onCreated={(newCourse) => {
-            setCourses(prev => [...prev, newCourse]);
-            setShowCreateModal(false);
-          }}
-        />
-      )}
-
+      {/* Modals */}
+      <CourseCreateModal 
+        show={showCreateModal} 
+        handleClose={() => setShowCreateModal(false)} 
+      />
+      
       {/* Lesson Creation Modals */}
-      {Object.entries(showLessonModal).map(([courseId, show]) => 
-        show && (
-          <LessonCreateModal
-            key={courseId}
-            show={show}
-            onHide={() => handleHideLessonModal(courseId)}
-            onCreated={() => handleLessonCreated(courseId)}
-            courseId={parseInt(courseId)}
-          />
-        )
-      )}
-
-      {/* Exercise Create Modals */}
-      {Object.entries(showExerciseModal).map(([lessonId, show]) => 
-        show && selectedLesson && (
-          <ExerciseCreateModal
-            key={lessonId}
-            show={show}
-            onHide={() => handleHideExerciseModal(lessonId)}
-            onCreated={() => handleExerciseCreated(lessonId, selectedLesson.course_id)}
-            lessonId={parseInt(lessonId)}
-            courseId={selectedLesson.course_id}
-          />
-        )
-      )}
+      {Object.keys(showLessonModal).map(courseId => (
+        <LessonCreateModal
+          key={`lesson-${courseId}`}
+          show={showLessonModal[courseId]}
+          handleClose={() => handleHideLessonModal(courseId)}
+          courseId={courseId}
+          onLessonCreated={() => handleLessonCreated(courseId)}
+        />
+      ))}
+      
+      {/* Exercise Creation Modals */}
+      {Object.keys(showExerciseModal).map(lessonId => (
+        <ExerciseCreateModal
+          key={`exercise-${lessonId}`}
+          show={showExerciseModal[lessonId]}
+          handleClose={() => handleHideExerciseModal(lessonId)}
+          lesson={selectedLesson}
+          onExerciseCreated={() => handleExerciseCreated(lessonId, selectedLesson?.course)}
+        />
+      ))}
     </React.Fragment>
   );
 };

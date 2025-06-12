@@ -636,33 +636,212 @@ class Web3Service {
       }
       console.log(`✅ TEO check passed: ${teoBalance} TEO available`);
 
-      // Step 3: Setup Web3 connection for MetaMask
-      await this.connectWallet();
+      // Step 3: Setup MetaMask connection and ensure correct account
+      console.log('🔗 Setting up MetaMask connection...');
       
-      // Special handling for locked wallet: we need a signer for transactions
-      if (this.isWalletLocked && this.lockedWalletAddress) {
-        console.log('🔒 Wallet locked - enabling signing for transactions');
+      if (!this.isMetamaskInstalled()) {
+        throw new Error('MetaMask non è installato. Installa MetaMask per continuare.');
+      }
+
+      // Request access to accounts and switch to the correct one
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      // Setup provider and signer
+      const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
+      await this.switchToPolygonAmoy();
+      const signer = await metamaskProvider.getSigner();
+      
+      // Check if MetaMask is on the correct account
+      const currentMetaMaskAddress = await signer.getAddress();
+      console.log('� Current MetaMask address:', currentMetaMaskAddress);
+      console.log('🎯 Required address:', effectiveAddress);
+      
+      if (currentMetaMaskAddress.toLowerCase() !== effectiveAddress.toLowerCase()) {
+        // Try multiple methods to switch to the correct account
+        console.log('🔄 Attempting to switch MetaMask to correct account...');
+        
+        let switchSuccessful = false;
+        let lastError = null;
+        
+        // Method 1: Try experimental wallet_switchEthereumAccount (if available)
         try {
-          await this.enableSigning();
-        } catch (signingError) {
-          // If signing fails due to account mismatch, provide helpful error message
-          if (signingError.message.includes('MetaMask è connesso')) {
+          console.log('📱 Trying wallet_switchEthereumAccount...');
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumAccount',
+            params: [effectiveAddress]
+          });
+          
+          // Check if switch was successful
+          const newSigner = await metamaskProvider.getSigner();
+          const newAddress = await newSigner.getAddress();
+          
+          if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+            console.log('✅ Successfully switched via wallet_switchEthereumAccount');
+            this.signer = newSigner;
+            switchSuccessful = true;
+          }
+        } catch (error) {
+          console.log('❌ wallet_switchEthereumAccount failed or not supported:', error.message);
+          lastError = error;
+        }
+        
+        // Method 2: Try wallet_requestPermissions with account hint
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying wallet_requestPermissions with account hint...');
+            await window.ethereum.request({
+              method: 'wallet_requestPermissions',
+              params: [{ 
+                eth_accounts: {},
+                // Try to hint the desired account
+                ...(effectiveAddress && { preferredAccount: effectiveAddress })
+              }]
+            });
+            
+            // Wait a bit for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via wallet_requestPermissions');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ wallet_requestPermissions failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // Method 3: Try force re-requesting accounts
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying force eth_requestAccounts...');
+            
+            // First disconnect any existing permissions
+            try {
+              await window.ethereum.request({
+                method: 'wallet_revokePermissions',
+                params: [{ eth_accounts: {} }]
+              });
+            } catch (revokeError) {
+              console.log('Revoke permissions not supported or failed');
+            }
+            
+            // Then request accounts again
+            const accounts = await window.ethereum.request({
+              method: 'eth_requestAccounts',
+              params: []
+            });
+            
+            console.log('Available accounts after request:', accounts);
+            
+            // Wait a bit for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via force eth_requestAccounts');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ force eth_requestAccounts failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // Method 4: As last resort, try to trigger MetaMask popup with specific error
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying to trigger MetaMask account selection...');
+            
+            // Send a dummy transaction request that will fail but should trigger account selection
+            const dummyTx = {
+              from: effectiveAddress, // This should trigger MetaMask to ask for account switch
+              to: effectiveAddress,
+              value: '0x0',
+              data: '0x'
+            };
+            
+            try {
+              await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [dummyTx]
+              });
+            } catch (txError) {
+              // We expect this to fail, but it might trigger account selection
+              console.log('Dummy transaction triggered account selection popup');
+            }
+            
+            // Wait for user interaction
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via dummy transaction trigger');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ dummy transaction trigger failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // If all automatic methods failed, provide enhanced user instructions
+        if (!switchSuccessful) {
+          const availableAccounts = await window.ethereum.request({ method: 'eth_accounts' });
+          const isAccountAvailable = availableAccounts.some(account => 
+            account.toLowerCase() === effectiveAddress.toLowerCase()
+          );
+          
+          if (!isAccountAvailable) {
             throw new Error(
-              `${signingError.message}\n\n` +
-              `Istruzioni:\n` +
-              `1. Apri MetaMask\n` +
-              `2. Clicca sull'icona dell'account in alto a destra\n` +
-              `3. Seleziona l'account: ${this.lockedWalletAddress}\n` +
-              `4. Riprova l'acquisto`
+              `❌ L'account richiesto non è disponibile in MetaMask.\n\n` +
+              `Account richiesto: ${effectiveAddress}\n` +
+              `Account disponibili in MetaMask: ${availableAccounts.join(', ')}\n\n` +
+              `📥 Prima importa l'account in MetaMask:\n` +
+              `1. 🦊 Apri MetaMask\n` +
+              `2. ➕ Clicca "Aggiungi account o hardware wallet"\n` +
+              `3. 📋 Scegli "Importa account"\n` +
+              `4. 🔑 Inserisci la chiave privata per ${effectiveAddress}\n` +
+              `5. 🔄 Riprova l'acquisto`
             );
           }
-          throw signingError;
+          
+          throw new Error(
+            `🔄 MetaMask ha aperto la pagina di gestione connessioni.\n\n` +
+            `Account attuale connesso: ${currentMetaMaskAddress}\n` +
+            `Account richiesto: ${effectiveAddress}\n\n` +
+            `📋 Nella pagina MetaMask che si è aperta:\n` +
+            `1. ✅ Collega l'account che termina con: ...${effectiveAddress.slice(-6)}\n` +
+            `2. ❌ Scollega altri account se necessario\n` +
+            `3. 🔄 Torna qui e riprova l'acquisto\n\n` +
+            `💡 Account disponibili: ${availableAccounts.map(acc => `...${acc.slice(-6)}`).join(', ')}\n` +
+            `🔍 Dettaglio tecnico: ${lastError?.message || 'Switch automatico completato, verifica le connessioni'}`
+          );
         }
+      } else {
+        console.log('✅ MetaMask is already on the correct account');
+        this.signer = signer;
       }
       
-      if (!this.provider || !this.signer) {
-        throw new Error('MetaMask non connesso o firma non abilitata');
-      }
+      // Create contract instance with the correct signer
+      this.contract = new ethers.Contract(
+        TEOCOIN_CONTRACT_ADDRESS,
+        TEOCOIN_ABI,
+        this.signer
+      );
 
       // Calculate amounts
       const coursePriceWei = ethers.parseEther(coursePrice.toString());
@@ -735,6 +914,8 @@ class Web3Service {
 
       const result = await response.json();
       console.log('✅ Course payment executed successfully:', result);
+      console.log('🔍 Debug - teacher_payment_tx value:', result.teacher_payment_tx);
+      console.log('🔍 Debug - commission_tx value:', result.commission_tx);
 
       return {
         transactionHash: result.teacher_payment_tx,
@@ -924,6 +1105,59 @@ class Web3Service {
     } catch (error) {
       console.error('❌ Error enabling signing:', error);
       throw new Error('Impossibile abilitare firma: ' + error.message);
+    }
+  }
+
+  /**
+   * Helper function to prepare MetaMask for the correct account
+   * This can be called before transactions to ensure smooth UX
+   */
+  async prepareMetaMaskAccount(requiredAddress) {
+    if (!this.isMetamaskInstalled()) {
+      throw new Error('MetaMask non è installato');
+    }
+
+    try {
+      console.log('🔧 Preparing MetaMask for account:', requiredAddress);
+      
+      // Request account access
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const currentAddress = await signer.getAddress();
+      
+      if (currentAddress.toLowerCase() !== requiredAddress.toLowerCase()) {
+        // Try to trigger account selection
+        await window.ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }]
+        });
+        
+        // Check again after permission request
+        const newSigner = await provider.getSigner();
+        const newAddress = await newSigner.getAddress();
+        
+        return {
+          success: newAddress.toLowerCase() === requiredAddress.toLowerCase(),
+          currentAddress: newAddress,
+          requiredAddress: requiredAddress
+        };
+      }
+      
+      return {
+        success: true,
+        currentAddress: currentAddress,
+        requiredAddress: requiredAddress
+      };
+      
+    } catch (error) {
+      console.error('Error preparing MetaMask account:', error);
+      return {
+        success: false,
+        error: error.message,
+        requiredAddress: requiredAddress
+      };
     }
   }
 }

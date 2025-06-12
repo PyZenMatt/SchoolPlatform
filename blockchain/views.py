@@ -34,6 +34,28 @@ from courses.models import Course, CourseEnrollment
 logger = logging.getLogger(__name__)
 
 
+def format_hash_with_prefix(hash_value):
+    """
+    Ensure transaction hash has 0x prefix.
+    
+    Args:
+        hash_value: Hash string or HexBytes object
+        
+    Returns:
+        str: Hash with 0x prefix, or None if input is None/empty
+    """
+    if not hash_value:
+        return None
+    
+    # Convert HexBytes to string if needed
+    if hasattr(hash_value, 'hex'):
+        return hash_value.hex()
+    
+    # Ensure string has 0x prefix
+    hash_str = str(hash_value)
+    return hash_str if hash_str.startswith('0x') else f'0x{hash_str}'
+
+
 def mint_tokens(wallet_address, amount, description="TeoCoin Reward"):
     """
     Wrapper function for minting TeoCoins - used by the rewards system.
@@ -280,7 +302,7 @@ def reward_user(request):
             user=target_user,
             transaction_type='mint',
             amount=amount_decimal,
-            tx_hash=tx_hash,
+            tx_hash=format_hash_with_prefix(tx_hash),
             from_address=None,  # Mint operation
             to_address=target_user.wallet_address,
             status='pending'
@@ -324,9 +346,10 @@ def get_transaction_history(request):
     Returns:
         JSON response with:
         - transactions: List of transaction objects with:
-          - type: Transaction type (mint, transfer, etc.)
+          - transaction_type: Transaction type (mint, transfer, etc.)
           - amount: Transaction amount as string
-          - tx_hash: Blockchain transaction hash
+          - tx_hash: Blockchain transaction hash (preferred)
+          - transaction_hash: Alternative transaction hash field
           - from_address: Source address (null for mint)
           - to_address: Destination address
           - status: Transaction status (pending, confirmed, failed)
@@ -343,9 +366,11 @@ def get_transaction_history(request):
     transaction_list = []
     for tx in transactions:
         transaction_list.append({
-            'type': tx.transaction_type,
+            'transaction_type': tx.transaction_type,
+            'type': tx.transaction_type,  # Keep for backward compatibility
             'amount': str(tx.amount),
-            'tx_hash': tx.tx_hash,
+            'tx_hash': format_hash_with_prefix(tx.tx_hash),
+            'transaction_hash': format_hash_with_prefix(tx.transaction_hash),
             'from_address': tx.from_address,
             'to_address': tx.to_address,
             'status': tx.status,
@@ -659,7 +684,7 @@ def transfer_with_reward_pool_gas(request):
             amount=amount_decimal,
             from_address=from_address,
             to_address=to_address,
-            transaction_hash=tx_hash,
+            transaction_hash=format_hash_with_prefix(tx_hash),
             status='completed',
             notes=f'Transfer with reward pool gas fees'
         )
@@ -1110,19 +1135,16 @@ def execute_course_payment(request):
                 'error': 'Transfer to teacher failed'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Step 2: Transfer commission from student to reward pool with incremented nonce
-        commission_tx = teocoin_service.transfer_from_student_via_reward_pool_with_nonce(
-            student_address, reward_pool_address, commission_amount_decimal, current_nonce + 1
-        )
+        # Step 2: Transfer commission if needed
+        commission_tx = None
+        if commission_amount_decimal > 0:
+            commission_tx = teocoin_service.transfer_from_student_via_reward_pool_with_nonce(
+                student_address, settings.ADMIN_WALLET_ADDRESS, commission_amount_decimal, current_nonce + 1
+            )
         
-        if not commission_tx:
-            logger.warning("Commission transfer failed, but teacher payment succeeded")
-            commission_tx = 'commission_failed'
-        
-        # Create transaction records
+        # Prepare response data
         result = {
-            'student_address': student_address,
-            'teacher_address': teacher_address,
+            'message': 'Course payment executed successfully',
             'teacher_amount': str(teacher_amount_decimal),
             'commission_amount': str(commission_amount_decimal),
             'total_paid': str(course_price_decimal),
@@ -1140,7 +1162,7 @@ def execute_course_payment(request):
                 amount=-course_price_decimal,  # Negative = outgoing
                 from_address=student_address,
                 to_address=teacher_address,
-                transaction_hash=teacher_tx,
+                transaction_hash=format_hash_with_prefix(teacher_tx),
                 status='completed',
                 related_object_id=str(course_id),
                 notes=f'Course purchase payment via MetaMask - Total: {course_price_decimal} TEO'
@@ -1183,7 +1205,7 @@ def execute_course_payment(request):
                     amount=teacher_amount_decimal,  # Positive = incoming
                     from_address=student_address,
                     to_address=teacher_address,
-                    transaction_hash=teacher_tx,
+                    transaction_hash=format_hash_with_prefix(teacher_tx),
                     status='completed',
                     related_object_id=str(course_id),
                     notes=f'Course sale earnings via MetaMask from: {course.title}'

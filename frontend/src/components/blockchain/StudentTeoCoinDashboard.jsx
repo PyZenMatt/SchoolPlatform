@@ -164,6 +164,20 @@ const StudentTeoCoinDashboard = () => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
+  const openTransaction = (txHash) => {
+    if (txHash) {
+      // Ensure hash has 0x prefix for blockchain explorer
+      const formattedHash = txHash.startsWith('0x') ? txHash : `0x${txHash}`;
+      window.open(`https://amoy.polygonscan.com/tx/${formattedHash}`, '_blank');
+    }
+  };
+
+  const formatTransactionHash = (hash) => {
+    if (!hash) return null;
+    // Ensure hash has 0x prefix for display
+    return hash.startsWith('0x') ? hash : `0x${hash}`;
+  };
+
   const getNetworkStatusBadge = () => {
     switch (dashboardData.networkStatus) {
       case 'connected':
@@ -217,7 +231,7 @@ const StudentTeoCoinDashboard = () => {
       <Row>
         {/* Balance Card - Enhanced with TEO and MATIC */}
         <Col md={6} lg={4} className="mb-4">
-          <Card className="balance-card h-100">
+          <Card className="balance-card h-100 wallet-style">
             <Card.Body>
               <div className="d-flex justify-content-between align-items-start mb-3">
                 <Card.Title className="h6 text-muted mb-0">
@@ -349,7 +363,7 @@ const StudentTeoCoinDashboard = () => {
       {/* Recent Transactions */}
       <Row>
         <Col lg={12}>
-          <Card className="transactions-card">
+          <Card className="transactions-card wallet-style">
             <Card.Header>
               <div className="d-flex justify-content-between align-items-center">
                 <Card.Title className="mb-0">
@@ -404,12 +418,22 @@ const StudentTeoCoinDashboard = () => {
                                 }
                               </div>
                               <div className="transaction-meta small text-muted">
-                                {transaction.transaction_hash && (
+                                {(transaction.transaction_hash || transaction.tx_hash) && (
                                   <div className="hash mb-1">
-                                    <strong>Hash:</strong> 
-                                    <code className="ms-1 small">
-                                      {transaction.transaction_hash}
+                                    <strong style={{ color: '#ecf0f1' }}>Hash:</strong> 
+                                    <code className="ms-1 small" style={{ color: '#bdc3c7', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 4px', borderRadius: '3px' }}>
+                                      {formatTransactionHash(transaction.transaction_hash || transaction.tx_hash)}
                                     </code>
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      className="p-0 ms-2 text-decoration-none"
+                                      style={{ color: '#3498db' }}
+                                      onClick={() => openTransaction(transaction.transaction_hash || transaction.tx_hash)}
+                                      title="Vedi su Polygonscan"
+                                    >
+                                      <i className="feather icon-external-link" style={{ fontSize: '0.8rem' }}></i>
+                                    </Button>
                                   </div>
                                 )}
                                 {transaction.created_at && (
@@ -424,6 +448,20 @@ const StudentTeoCoinDashboard = () => {
                               <span className={`amount fw-bold ${parseFloat(transaction.amount) >= 0 ? 'text-success' : 'text-danger'}`}>
                                 {parseFloat(transaction.amount) >= 0 ? '+' : ''}{parseFloat(transaction.amount || 0).toFixed(4)} TEO
                               </span>
+                              {(transaction.transaction_hash || transaction.tx_hash) && (
+                                <div className="mt-1">
+                                  <Button
+                                    variant="outline-light"
+                                    size="sm"
+                                    className="p-1"
+                                    onClick={() => openTransaction(transaction.transaction_hash || transaction.tx_hash)}
+                                    title="Vedi su Blockchain"
+                                    style={{ minWidth: 'auto', borderColor: 'rgba(255,255,255,0.3)' }}
+                                  >
+                                    <i className="feather icon-external-link"></i>
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
