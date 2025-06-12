@@ -69,3 +69,18 @@ export const createExercise = async (data) => {
 export const fetchExercisesForLesson = async (lessonId) => {
   return api.get(`lessons/${lessonId}/exercises/`);
 };
+
+export const fetchCourseDetail = async (courseId) => {
+  const response = await api.get(`courses/${courseId}/`);
+  return response.data;
+};
+
+export const fetchLessonDetail = async (lessonId) => {
+  const response = await api.get(`lessons/${lessonId}/`);
+  return response.data;
+};
+
+export const fetchExerciseDetail = async (exerciseId) => {
+  const response = await api.get(`exercises/${exerciseId}/`);
+  return response.data;
+};

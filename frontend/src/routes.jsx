@@ -162,9 +162,16 @@ const routes = [
         element: lazy(() => import('./views/review/ReviewDetail'))
       },
       {
-        exact: 'true',
+        path: '/corsi-docente/:courseId',
+        element: lazy(() => import('./views/courses/TeacherCourseDetail'))
+      },
+      {
         path: '/lezioni-docente/:lessonId',
         element: lazy(() => import('./views/courses/TeacherLessonDetail'))
+      },
+      {
+        path: '/esercizi-docente/:exerciseId',
+        element: lazy(() => import('./views/courses/TeacherExerciseDetail'))
       },
       {
         exact: 'true',

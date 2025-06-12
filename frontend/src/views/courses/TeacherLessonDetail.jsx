@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Spinner, Alert } from 'react-bootstrap';
 import ExerciseCreateModal from '../../components/ExerciseCreateModal';
-import { fetchExercisesForLesson } from '../../services/api/courses';
+import { fetchExercisesForLesson, fetchLessonDetail } from '../../services/api/courses';
 
 const TeacherLessonDetail = () => {
   const { lessonId } = useParams();
@@ -13,21 +13,17 @@ const TeacherLessonDetail = () => {
   const [showExerciseModal, setShowExerciseModal] = useState(false);
 
   useEffect(() => {
-    const fetchLesson = async () => {
+    const loadLessonData = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access');
-        const res = await fetch(`/api/v1/lessons/${lessonId}/`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        const data = await res.json();
-        setLesson(data);
+        const lessonData = await fetchLessonDetail(lessonId);
+        setLesson(lessonData);
       } catch (err) {
         setError('Errore nel caricamento della lezione');
       } finally {
         setLoading(false);
       }
     };
-    fetchLesson();
+    loadLessonData();
   }, [lessonId]);
 
   const loadExercises = async () => {

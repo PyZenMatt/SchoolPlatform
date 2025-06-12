@@ -7,6 +7,7 @@ import ApprovalStats from '../../components/ApprovalStats';
 import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDisplay';
 import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
+import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
 import { fetchAdminDashboard } from '../../services/api/admin';
 import { fetchUserProfile } from '../../services/api/dashboard';
 import { getRewardPoolInfo } from '../../services/api/blockchain';
@@ -257,6 +258,13 @@ const AdminDashboard = () => {
               <AdminTransactionMonitor />
             </Card.Body>
           </Card>
+        </Col>
+      </Row>
+
+      {/* TeoCoin Dashboard */}
+      <Row className="mt-4">
+        <Col lg={12}>
+          <StudentTeoCoinDashboard />
         </Col>
       </Row>
     </div>

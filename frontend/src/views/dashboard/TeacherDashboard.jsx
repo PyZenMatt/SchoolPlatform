@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Table, Button, Modal, Spinner, Badge } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Row, Col, Card, Button, Modal, Spinner, Badge } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 
-import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDisplay';
-import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
-import DashboardTransactionHistory from '../../components/blockchain/DashboardTransactionHistory';
+import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
+import StatCard from '../../components/common/StatCard';
+import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
-import { fetchLessonsForCourse } from '../../services/api/courses';
+import { fetchLessonsForCourse, fetchExercisesForLesson } from '../../services/api/courses';
 import CourseCreateModal from '../../components/CourseCreateModal';
 import LessonCreateModal from '../../components/LessonCreateModal';
 import ExerciseCreateModal from '../../components/ExerciseCreateModal';
@@ -19,6 +19,7 @@ import './dashboard-styles.css';
 import avatar1 from '../../assets/images/user/avatar-1.jpg';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [sales, setSales] = useState({ daily: 0, monthly: 0, yearly: 0 });
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,8 @@ const TeacherDashboard = () => {
   // Exercise management
   const [showExerciseModal, setShowExerciseModal] = useState({});
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [lessonExercises, setLessonExercises] = useState({});
+  const [loadingExercises, setLoadingExercises] = useState({});
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -105,6 +108,20 @@ const TeacherDashboard = () => {
     handleHideLessonModal(courseId);
   };
 
+  // Load exercises for a lesson
+  const loadExercisesForLesson = async (lessonId) => {
+    try {
+      setLoadingExercises(prev => ({ ...prev, [lessonId]: true }));
+      const res = await fetchExercisesForLesson(lessonId);
+      setLessonExercises(prev => ({ ...prev, [lessonId]: res.data }));
+    } catch (error) {
+      console.error('Error loading exercises:', error);
+      setLessonExercises(prev => ({ ...prev, [lessonId]: [] }));
+    } finally {
+      setLoadingExercises(prev => ({ ...prev, [lessonId]: false }));
+    }
+  };
+
   // Exercise management functions
   const handleShowExerciseModal = (lesson) => {
     setSelectedLesson(lesson);
@@ -130,28 +147,56 @@ const TeacherDashboard = () => {
     handleHideExerciseModal(lessonId);
   };
 
-  // Dashboard stats data in unified Student Dashboard format
+  // Navigation functions
+  const handleViewCourse = (courseId) => {
+    navigate(`/corsi-docente/${courseId}`);
+  };
+
+  const handleViewLesson = (lessonId) => {
+    navigate(`/lezioni-docente/${lessonId}`);
+  };
+
+  const handleEditCourse = (courseId) => {
+    navigate(`/teacher/corsi/${courseId}/edit`);
+  };
+
+  const handleEditLesson = (lessonId) => {
+    navigate(`/teacher/lezioni/${lessonId}/edit`);
+  };
+
+  const handleViewExercise = (exerciseId) => {
+    navigate(`/esercizi-docente/${exerciseId}`);
+  };
+
+  const handleEditExercise = (exerciseId) => {
+    navigate(`/teacher/esercizi/${exerciseId}/edit`);
+  };
+
+  // Dashboard stats data per StatCard component
   const dashStatsData = [
     { 
       title: 'Corsi Creati', 
-      amount: courses.length.toString(), 
-      icon: 'icon-book-open text-c-green', 
-      value: 85, 
-      class: 'progress-c-theme' 
+      value: courses.length.toString(), 
+      icon: 'book-open',
+      percentage: 85, 
+      progressColor: 'progress-c-theme',
+      iconColor: 'text-c-green'
     },
     { 
       title: 'Vendite Mensili', 
-      amount: `€${sales.monthly}`, 
-      icon: 'icon-trending-up text-c-green', 
-      value: 75, 
-      class: 'progress-c-theme2' 
+      value: `€${sales.monthly}`, 
+      icon: 'trending-up',
+      percentage: 75, 
+      progressColor: 'progress-c-theme2',
+      iconColor: 'text-c-green'
     },
     { 
       title: 'Vendite Totali', 
-      amount: `€${sales.yearly}`, 
-      icon: 'icon-award text-c-green', 
-      value: 90, 
-      class: 'progress-c-theme3' 
+      value: `€${sales.yearly}`, 
+      icon: 'award',
+      percentage: 90, 
+      progressColor: 'progress-c-theme3',
+      iconColor: 'text-c-green'
     }
   ];
 
@@ -197,38 +242,18 @@ const TeacherDashboard = () => {
 
       {/* Stats Cards */}
       <Row>
-        {dashStatsData.map((data, index) => {
-          return (
-            <Col key={index} md={6} xl={4}>
-              <Card>
-                <Card.Body>
-                  <h6 className="mb-4">{data.title}</h6>
-                  <div className="row d-flex align-items-center">
-                    <div className="col-9">
-                      <h3 className="f-w-300 d-flex align-items-center m-b-0">
-                        <i className={`feather ${data.icon} f-30 m-r-5`} />
-                        {data.amount}
-                      </h3>
-                    </div>
-                    <div className="col-3 text-end">
-                      <p className="m-b-0">{data.value}%</p>
-                    </div>
-                  </div>
-                  <div className="progress m-t-30" style={{ height: '7px' }}>
-                    <div
-                      className={`progress-bar ${data.class}`}
-                      role="progressbar"
-                      style={{ width: data.value + '%' }}
-                      aria-valuenow={data.value}
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          );
-        })}
+        {dashStatsData.map((data, index) => (
+          <Col key={index} md={6} xl={4}>
+            <StatCard 
+              title={data.title}
+              value={data.value}
+              icon={data.icon}
+              percentage={data.percentage}
+              progressColor={data.progressColor}
+              iconColor={data.iconColor}
+            />
+          </Col>
+        ))}
       </Row>
 
       {/* Error Alert */}
@@ -249,51 +274,10 @@ const TeacherDashboard = () => {
       <Row>
         {/* Full Width Column - following StudentDashboard layout */}
         <Col lg={12} className="mb-4">
-          {/* Wallet Balance Display - Unified style with StudentDashboard */}
+          {/* TeoCoin Dashboard */}
           <Row className="mb-4">
-            {/* Balance Card - TEO and MATIC */}
-            <Col md={6} lg={4}>
-              <Card className="balance-card h-100 wallet-transactions-unified">
-                <Card.Body>
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <div className="h6 text-muted mb-0 card-title h5">Saldi Wallet</div>
-                  </div>
-                  <WalletBalanceDisplay user={userProfile} />
-                </Card.Body>
-              </Card>
-            </Col>
-
-            {/* Wallet Address Card */}
-            <Col md={6} lg={4}>
-              <Card className="wallet-address-card h-100 wallet-transactions-unified">
-                <Card.Body>
-                  <div className="h6 text-muted mb-3">Indirizzo Wallet</div>
-                  <ProfileWalletDisplay />
-                </Card.Body>
-              </Card>
-            </Col>
-
-            {/* Teacher Stats Card */}
-            <Col md={6} lg={4}>
-              <Card className="teacher-stats-card h-100">
-                <Card.Body>
-                  <div className="h6 text-muted mb-3">Statistiche</div>
-                  <div className="stats-info">
-                    <div className="stat-item mb-2">
-                      <div className="stat-value">{courses.length}</div>
-                      <div className="stat-label">Corsi Creati</div>
-                    </div>
-                    <div className="stat-item mb-2">
-                      <div className="stat-value">€{sales.monthly}</div>
-                      <div className="stat-label">Vendite Mensili</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value">€{sales.yearly}</div>
-                      <div className="stat-label">Vendite Totali</div>
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
+            <Col lg={12}>
+              <StudentTeoCoinDashboard />
             </Col>
           </Row>
 
@@ -328,119 +312,26 @@ const TeacherDashboard = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <Table striped hover>
-                    <thead>
-                      <tr>
-                        <th>Corso</th>
-                        <th>Lezioni</th>
-                        <th>Prezzo</th>
-                        <th>Creato</th>
-                        <th>Azioni</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {courses.map(course => (
-                        <React.Fragment key={course.id}>
-                          <tr 
-                            className={expandedCourse === course.id ? 'table-active' : ''}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <td onClick={() => handleExpandCourse(course.id)}>
-                              <div className="d-flex align-items-center">
-                                <i className={`feather ${expandedCourse === course.id ? 'icon-chevron-down' : 'icon-chevron-right'} me-2`}></i>
-                                <div>
-                                  <strong>{course.title}</strong>
-                                  <br />
-                                  <small className="text-muted">{course.description?.substring(0, 50)}...</small>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              <Badge bg="info">{course.lessons_count || 0} lezioni</Badge>
-                            </td>
-                            <td>
-                              <strong>{course.price} TEO</strong>
-                            </td>
-                            <td>
-                              <small>{new Date(course.created_at).toLocaleDateString('it-IT')}</small>
-                            </td>
-                            <td>
-                              <div className="d-flex gap-1">
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={() => handleShowLessonModal(course.id)}
-                                >
-                                  <i className="feather icon-plus me-1"></i>
-                                  Lezione
-                                </Button>
-                                <Link to={`/corsi/${course.id}`} className="btn btn-outline-secondary btn-sm">
-                                  <i className="feather icon-eye"></i>
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                          
-                          {/* Lessons List */}
-                          {expandedCourse === course.id && (
-                            <tr>
-                              <td colSpan="5" className="p-0">
-                                <div className="bg-light p-3">
-                                  {loadingLessons[course.id] ? (
-                                    <div className="text-center py-2">
-                                      <Spinner animation="border" size="sm" className="me-2" />
-                                      Caricamento lezioni...
-                                    </div>
-                                  ) : courseLessons[course.id]?.length > 0 ? (
-                                    <div className="lessons-list">
-                                      <h6 className="mb-3">Lezioni del corso:</h6>
-                                      {courseLessons[course.id].map(lesson => (
-                                        <div key={lesson.id} className="lesson-item d-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border">
-                                          <div>
-                                            <strong>{lesson.title}</strong>
-                                            <br />
-                                            <small className="text-muted">
-                                              {lesson.exercises_count || 0} esercizi
-                                            </small>
-                                          </div>
-                                          <div>
-                                            <Button
-                                              variant="outline-success"
-                                              size="sm"
-                                              onClick={() => handleShowExerciseModal(lesson)}
-                                            >
-                                              <i className="feather icon-plus me-1"></i>
-                                              Esercizio
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="text-center py-3">
-                                      <p className="text-muted mb-0">Nessuna lezione ancora creata per questo corso</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </Table>
-                </div>
+                <CoursesTable
+                  courses={courses}
+                  showActions={true}
+                  onCreateLesson={handleShowLessonModal}
+                  expandedCourse={expandedCourse}
+                  onExpandCourse={handleExpandCourse}
+                  courseLessons={courseLessons}
+                  loadingLessons={loadingLessons}
+                  onCreateExercise={handleShowExerciseModal}
+                  lessonExercises={lessonExercises}
+                  loadingExercises={loadingExercises}
+                  onLoadExercises={loadExercisesForLesson}
+                  onViewCourse={handleViewCourse}
+                  onViewLesson={handleViewLesson}
+                  onEditCourse={handleEditCourse}
+                  onEditLesson={handleEditLesson}
+                  onViewExercise={handleViewExercise}
+                  onEditExercise={handleEditExercise}
+                />
               )}
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Transactions History */}
-        <Col lg={12}>
-          <Card className="wallet-transactions-unified">
-            <Card.Body>
-              <DashboardTransactionHistory user={userProfile} />
             </Card.Body>
           </Card>
         </Col>
@@ -449,7 +340,7 @@ const TeacherDashboard = () => {
       {/* Modals */}
       <CourseCreateModal 
         show={showCreateModal} 
-        handleClose={() => setShowCreateModal(false)} 
+        onHide={() => setShowCreateModal(false)} 
       />
       
       {/* Lesson Creation Modals */}
@@ -457,9 +348,9 @@ const TeacherDashboard = () => {
         <LessonCreateModal
           key={`lesson-${courseId}`}
           show={showLessonModal[courseId]}
-          handleClose={() => handleHideLessonModal(courseId)}
+          onHide={() => handleHideLessonModal(courseId)}
           courseId={courseId}
-          onLessonCreated={() => handleLessonCreated(courseId)}
+          onCreated={() => handleLessonCreated(courseId)}
         />
       ))}
       
@@ -468,9 +359,9 @@ const TeacherDashboard = () => {
         <ExerciseCreateModal
           key={`exercise-${lessonId}`}
           show={showExerciseModal[lessonId]}
-          handleClose={() => handleHideExerciseModal(lessonId)}
+          onHide={() => handleHideExerciseModal(lessonId)}
           lesson={selectedLesson}
-          onExerciseCreated={() => handleExerciseCreated(lessonId, selectedLesson?.course)}
+          onCreated={() => handleExerciseCreated(lessonId, selectedLesson?.course)}
         />
       ))}
     </React.Fragment>
