@@ -1,0 +1,73 @@
+# Site settings
+title: "SchoolPlatform - EdTech Blockchain MVP"
+email: "invest@schoolplatform.io"
+description: >-
+  MVP blockchain educational platform ready for scale. 18-month development complete. 
+  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.
+
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://tuousername.github.io" # sostituisci 'tuousername' con il tuo username GitHub
+
+# Author
+author:
+  name: "Il Tuo Nome"
+  email: "tuaemail@example.com"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Navigation
+navigation:
+  - title: "Home"
+    url: "/"
+  - title: "Features"
+    url: "/features/"
+  - title: "Technology"
+    url: "/technology/"
+  - title: "Roadmap"
+    url: "/roadmap/"
+  - title: "Demo"
+    url: "/demo/"
+  - title: "FAQ"
+    url: "/faq/"
+  - title: "Invest"
+    url: "/contact/"
+
+# Social links
+github_username: tuousername  # sostituisci con il tuo username GitHub
+linkedin_username: tuolinkedin # sostituisci con il tuo username LinkedIn
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Collections
+collections:
+  features:
+    output: true
+    permalink: /:collection/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+  - scope:
+      path: ""
+      type: "features"
+    values:
+      layout: "feature"

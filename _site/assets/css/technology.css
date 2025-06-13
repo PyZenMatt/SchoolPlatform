@@ -1,0 +1,716 @@
+/* Technology Page Specific Styles - Clean Architecture */
+/* Tech Hero Section */
+.tech-hero {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--gradient-primary);
+  overflow: hidden;
+  padding: 100px 0 80px;
+  color: white;
+  text-align: center;
+}
+
+.tech-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--glassmorphism);
+  backdrop-filter: blur(5px);
+  z-index: 1;
+}
+
+.tech-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.tech-hero .section-header {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.tech-hero .section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--glassmorphism);
+  border: 1px solid var(--glassmorphism-border);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: white;
+  margin-bottom: 2rem;
+  animation: slideInDown 1s ease-out;
+}
+
+.tech-hero .modern-section-title {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+  animation: slideInLeft 1s ease-out 0.2s both;
+}
+
+.tech-hero .gradient-text {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tech-hero .section-description {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+  animation: slideInLeft 1s ease-out 0.4s both;
+}
+
+/* Tech Categories Section */
+.tech-categories {
+  padding: 100px 0;
+  background: var(--light-color);
+  position: relative;
+}
+
+.tech-categories .container {
+  padding: 0 4rem;
+  max-width: 1400px;
+}
+
+.tech-categories .row {
+  margin: 0 -20px;
+  justify-content: center;
+}
+
+.tech-categories .col-lg-6 {
+  padding: 0 20px;
+  max-width: 600px;
+}
+
+.tech-categories::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, transparent 49%, rgba(102, 126, 234, 0.03) 50%, transparent 51%);
+  pointer-events: none;
+}
+
+.tech-category-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.4s ease;
+  margin-bottom: 40px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tech-category-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-medium);
+}
+
+.tech-category-header {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 35px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tech-category-header i {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.tech-category-header h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.tech-category-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tech-item-detail {
+  padding: 30px 40px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.tech-item-detail:last-child {
+  border-bottom: none;
+}
+
+.tech-item-detail:hover {
+  background: #f8f9fa;
+  transform: translateX(5px);
+}
+
+.tech-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.tech-description {
+  color: var(--secondary-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.badge {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Architecture Diagram Section - Beautiful Style */
+.architecture-diagram {
+  padding: 8rem 0;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.architecture-diagram::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(79, 172, 254, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.architecture-diagram .section-header {
+  margin-bottom: 5rem;
+}
+
+.architecture-diagram .section-badge,
+.architecture-diagram .modern-section-title,
+.architecture-diagram .section-description {
+  color: white;
+}
+
+.architecture-container {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  z-index: 2;
+}
+
+.architecture-layer {
+  background: var(--glassmorphism);
+  border: 1px solid var(--glassmorphism-border);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  text-align: center;
+}
+
+.architecture-layer::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+  transition: opacity 0.4s ease;
+  opacity: 0;
+}
+
+.architecture-layer:hover::before {
+  opacity: 1;
+}
+
+.architecture-layer:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.architecture-layer.blockchain {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(230, 126, 34, 0.2));
+  border-color: rgba(243, 156, 18, 0.3);
+}
+
+.architecture-layer.blockchain:hover {
+  background: linear-gradient(135deg, rgba(243, 156, 18, 0.3), rgba(230, 126, 34, 0.3));
+  border-color: rgba(243, 156, 18, 0.5);
+}
+
+.architecture-layer h4 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.architecture-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.component {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.component::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  transition: left 0.4s ease;
+}
+
+.component:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.component:hover::before {
+  left: 0;
+}
+
+.architecture-arrow {
+  text-align: center;
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 1.5rem 0;
+  font-weight: bold;
+  animation: bounce 2s infinite;
+  text-shadow: 0 0 15px rgba(79, 172, 254, 0.5);
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+/* Performance Metrics Section - Dark Background Style */
+.performance-metrics {
+  padding: 8rem 0;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.performance-metrics::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 40%, rgba(79, 172, 254, 0.1) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.performance-metrics .section-header {
+  margin-bottom: 5rem;
+}
+
+.performance-metrics .section-badge,
+.performance-metrics .modern-section-title,
+.performance-metrics .section-description {
+  color: white;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-top: 60px;
+  position: relative;
+  z-index: 2;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  transition: all 0.4s ease;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(79, 172, 254, 0.1) 0%, transparent 70%);
+  transition: opacity 0.4s ease;
+  opacity: 0;
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+.metric-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.metric-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.metric-value {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.metric-label {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  color: white;
+}
+
+.metric-description {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
+/* Code Examples Section - Dark Background Style */
+.code-examples {
+  padding: 8rem 0;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.code-examples::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(-45deg, transparent 49%, rgba(255, 255, 255, 0.02) 50%, transparent 51%);
+  pointer-events: none;
+}
+
+.code-examples .section-header {
+  margin-bottom: 5rem;
+}
+
+.code-examples .section-badge,
+.code-examples .modern-section-title,
+.code-examples .section-description {
+  color: white;
+}
+
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 40px;
+  margin-top: 60px;
+  position: relative;
+  z-index: 2;
+}
+
+.code-example-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.code-example-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.code-example-header {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px 25px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.code-example-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.code-example-description {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  color: white;
+}
+
+.code-example-body {
+  position: relative;
+}
+
+.code-example-card pre {
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 25px;
+  color: #e8e8e8;
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+}
+
+.copy-btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+/* Responsive Technology Styles */
+@media (max-width: 768px) {
+  .tech-hero .modern-section-title {
+    font-size: 2.5rem;
+  }
+  .tech-categories {
+    padding: 60px 0;
+  }
+  .tech-categories .container {
+    padding: 0 2rem;
+  }
+  .tech-categories .row {
+    margin: 0 -10px;
+  }
+  .tech-categories .col-lg-6 {
+    padding: 0 10px;
+  }
+  .architecture-layer {
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .architecture-layer h4 {
+    font-size: 1.5rem;
+  }
+  .architecture-components {
+    justify-content: center;
+  }
+  .component {
+    font-size: 0.8rem;
+    padding: 8px 14px;
+  }
+  .metric-card {
+    padding: 2rem 1.5rem;
+  }
+  .metric-value {
+    font-size: 2.5rem;
+  }
+  .code-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .code-example-card pre {
+    padding: 20px;
+    font-size: 0.8rem;
+  }
+  .copy-btn {
+    position: static;
+    margin: 20px 20px 0;
+    display: block;
+    width: calc(100% - 40px);
+  }
+}
+/* Responsive Design */
+/* Desktop Large */
+@media (min-width: 1400px) {
+  .tech-categories .container {
+    padding: 0 6rem;
+  }
+  .tech-categories .row {
+    margin: 0 -30px;
+  }
+  .tech-categories .col-lg-6 {
+    padding: 0 30px;
+  }
+}
+/* Desktop */
+@media (max-width: 1199px) {
+  .tech-categories .container {
+    padding: 0 3rem;
+  }
+  .tech-categories .row {
+    margin: 0 -15px;
+  }
+  .tech-categories .col-lg-6 {
+    padding: 0 15px;
+  }
+}
+/* Tablet */
+@media (max-width: 768px) {
+  .tech-categories {
+    padding: 60px 0;
+  }
+  .tech-categories .container {
+    padding: 0 2rem;
+  }
+  .tech-categories .row {
+    margin: 0 -10px;
+  }
+  .tech-categories .col-lg-6 {
+    padding: 0 10px;
+    max-width: 100%;
+  }
+  .tech-category-card {
+    margin-bottom: 30px;
+  }
+  .tech-category-header {
+    padding: 30px 25px;
+  }
+  .tech-item-detail {
+    padding: 25px;
+  }
+}
+/* Mobile */
+@media (max-width: 480px) {
+  .tech-categories .container {
+    padding: 0 1rem;
+  }
+  .tech-categories .row {
+    margin: 0 -5px;
+  }
+  .tech-categories .col-lg-6 {
+    padding: 0 5px;
+  }
+  .tech-category-header {
+    padding: 20px;
+  }
+  .tech-category-header i {
+    font-size: 2.5rem;
+  }
+  .tech-category-header h3 {
+    font-size: 1.5rem;
+  }
+  .tech-item-detail {
+    padding: 20px;
+  }
+  .tech-name {
+    font-size: 1.1rem;
+  }
+  .tech-description {
+    font-size: 0.9rem;
+  }
+  .tech-name {
+    font-size: 1.1rem;
+  }
+}
+
+/*# sourceMappingURL=technology.css.map */

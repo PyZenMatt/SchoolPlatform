@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "it" }}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <title>{% if page.title %}{{ page.title | escape }} | {{ site.title | escape }}{% else %}{{ site.title | escape }}{% endif %}</title>
+  <meta name="description" content="{{ page.excerpt | default: site.description | strip_html | normalize_whitespace | truncate: 160 | escape }}">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}">
+  
+  <!-- Page-specific CSS -->
+  {% if page.layout == 'page' and page.url contains 'roadmap' %}
+    <link rel="stylesheet" href="{{ "/assets/css/roadmap.css" | relative_url }}">
+  {% endif %}
+  
+  {% seo %}
+  {% feed_meta %}
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="{{ "/assets/images/favicon.ico" | relative_url }}">
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container">
+        <a class="navbar-brand" href="{{ "/" | relative_url }}">
+          <img src="{{ "/assets/images/logo.png" | relative_url }}" alt="{{ site.title }}" height="40">
+          {{ site.title }}
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            {% for item in site.navigation %}
+              <li class="nav-item">
+                <a class="nav-link{% if page.url == item.url %} active{% endif %}" href="{{ item.url | relative_url }}">
+                  {{ item.title }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-content">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <h5>{{ site.title }}</h5>
+          <p>{{ site.description }}</p>
+        </div>
+        <div class="col-md-3">
+          <h6>Links</h6>
+          <ul class="footer-links">
+            {% for item in site.navigation %}
+              <li><a href="{{ item.url | relative_url }}">{{ item.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-3">
+          <h6>Contatti</h6>
+          <ul class="footer-links">
+            <li><a href="mailto:{{ site.email }}">{{ site.email }}</a></li>
+            {% if site.github_username %}
+              <li><a href="https://github.com/{{ site.github_username }}">GitHub</a></li>
+            {% endif %}
+            {% if site.linkedin_username %}
+              <li><a href="https://linkedin.com/in/{{ site.linkedin_username }}">LinkedIn</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      <hr>
+      <div class="row">
+        <div class="col-12 text-center">
+          <p>&copy; {{ "now" | date: "%Y" }} {{ site.title }}. Tutti i diritti riservati.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <script src="{{ "/assets/js/main.js" | relative_url }}"></script>
+</body>
+</html>

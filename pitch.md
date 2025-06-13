@@ -1,0 +1,568 @@
+---
+layout: modern
+title: "Investment Pitch"
+---
+
+<div class="pitch-hero">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">📊 Investment Pitch</span>
+      <h1 class="modern-section-title">
+        SchoolPlatform <span class="gradient-text">Executive Summary</span>
+      </h1>
+      <p class="section-description">
+        The investment opportunity at a glance. MVP ready • Market proven • Capital needed for scale.
+      </p>
+    </div>
+  </div>
+</div>
+
+<section class="pitch-summary">
+  <div class="container">
+    <div class="pitch-grid">
+      <div class="pitch-card problem" data-aos="fade-up">
+        <div class="pitch-number">01</div>
+        <h3>The Problem</h3>
+        <p><strong>Traditional education is broken</strong></p>
+        <ul>
+          <li>No incentive for peer collaboration</li>
+          <li>Centralized credentials easily faked</li>
+          <li>No economic rewards for learning</li>
+          <li>Limited transparency in assessment</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">$400B+</span>
+          <span class="stat-label">Global EdTech Market</span>
+        </div>
+      </div>
+
+      <div class="pitch-card solution" data-aos="fade-up" data-aos-delay="100">
+        <div class="pitch-number">02</div>
+        <h3>Our Solution</h3>
+        <p><strong>Blockchain-powered education platform</strong></p>
+        <ul>
+          <li>Token rewards for learning and teaching</li>
+          <li>NFT certificates, tamper-proof</li>
+          <li>Peer review system with economic incentives</li>
+          <li>Complete transparency and trust</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">100%</span>
+          <span class="stat-label">MVP Complete</span>
+        </div>
+      </div>
+
+      <div class="pitch-card market" data-aos="fade-up" data-aos-delay="200">
+        <div class="pitch-number">03</div>
+        <h3>Market Opportunity</h3>
+        <p><strong>Art education + blockchain early stage</strong></p>
+        <ul>
+          <li>$50B+ art education market globally</li>
+          <li>Premium pricing ($100-500+ per course)</li>
+          <li>Tech-savvy creative professionals</li>
+          <li>High willingness to pay for quality</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">20%</span>
+          <span class="stat-label">Annual Market Growth</span>
+        </div>
+      </div>
+
+      <div class="pitch-card product" data-aos="fade-up" data-aos-delay="300">
+        <div class="pitch-number">04</div>
+        <h3>Product Status</h3>
+        <p><strong>Production-ready MVP deployed</strong></p>
+        <ul>
+          <li>Django + React full-stack platform</li>
+          <li>Polygon blockchain integration</li>
+          <li>Smart contracts tested on testnet</li>
+          <li>Scalable architecture for millions</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">18</span>
+          <span class="stat-label">Months Development</span>
+        </div>
+      </div>
+
+      <div class="pitch-card business" data-aos="fade-up" data-aos-delay="400">
+        <div class="pitch-number">05</div>
+        <h3>Business Model</h3>
+        <p><strong>Multiple revenue streams proven</strong></p>
+        <ul>
+          <li>Course sales commission (60%)</li>
+          <li>Premium features subscription (25%)</li>
+          <li>Marketplace transaction fees (15%)</li>
+          <li>Institutional licensing</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">$50</span>
+          <span class="stat-label">ARPU Year 1 Target</span>
+        </div>
+      </div>
+
+      <div class="pitch-card traction" data-aos="fade-up" data-aos-delay="500">
+        <div class="pitch-number">06</div>
+        <h3>Competitive Edge</h3>
+        <p><strong>First-mover advantage secured</strong></p>
+        <ul>
+          <li>18+ month head start on competitors</li>
+          <li>Complete tech stack developed</li>
+          <li>Zero technical debt</li>
+          <li>Focused art education vertical</li>
+        </ul>
+        <div class="pitch-stat">
+          <span class="stat-value">0</span>
+          <span class="stat-label">Direct Competitors</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="financials-summary">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="modern-section-title">
+        Financial <span class="gradient-text">Projections</span>
+      </h2>
+    </div>
+    
+    <div class="financial-chart">
+      <div class="year-projection" data-aos="fade-up">
+        <div class="year-header">Year 1</div>
+        <div class="revenue-target">$500K</div>
+        <div class="users-target">10K Users</div>
+        <div class="key-metrics">
+          <div class="metric">
+            <span class="metric-label">ARPU</span>
+            <span class="metric-value">$50</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Retention</span>
+            <span class="metric-value">70%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="year-projection" data-aos="fade-up" data-aos-delay="100">
+        <div class="year-header">Year 2</div>
+        <div class="revenue-target">$2.5M</div>
+        <div class="users-target">50K Users</div>
+        <div class="key-metrics">
+          <div class="metric">
+            <span class="metric-label">ARPU</span>
+            <span class="metric-value">$75</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Retention</span>
+            <span class="metric-value">75%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="year-projection" data-aos="fade-up" data-aos-delay="200">
+        <div class="year-header">Year 3</div>
+        <div class="revenue-target">$10M</div>
+        <div class="users-target">200K Users</div>
+        <div class="key-metrics">
+          <div class="metric">
+            <span class="metric-label">ARPU</span>
+            <span class="metric-value">$100</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Retention</span>
+            <span class="metric-value">80%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="funding-ask">
+  <div class="container">
+    <div class="funding-content">
+      <div class="funding-amount">
+        <h2>Funding Ask</h2>
+        <div class="ask-amount">$500K - $1M</div>
+        <div class="ask-stage">Seed Round</div>
+      </div>
+      
+      <div class="use-of-funds">
+        <h3>Use of Funds</h3>
+        <div class="funds-breakdown">
+          <div class="fund-item">
+            <span class="fund-category">Team Expansion</span>
+            <span class="fund-percentage">40%</span>
+          </div>
+          <div class="fund-item">
+            <span class="fund-category">Marketing & User Acquisition</span>
+            <span class="fund-percentage">30%</span>
+          </div>
+          <div class="fund-item">
+            <span class="fund-category">Product Development</span>
+            <span class="fund-percentage">20%</span>
+          </div>
+          <div class="fund-item">
+            <span class="fund-category">Infrastructure & Security</span>
+            <span class="fund-percentage">10%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="investment-terms">
+  <div class="container">
+    <div class="terms-grid">
+      <div class="term-card" data-aos="zoom-in">
+        <div class="term-icon">📈</div>
+        <h3>Target Exit</h3>
+        <p>5-7 years via strategic acquisition or IPO</p>
+        <div class="term-value">$50-100M+ Valuation</div>
+      </div>
+      
+      <div class="term-card" data-aos="zoom-in" data-aos-delay="100">
+        <div class="term-icon">🎯</div>
+        <h3>Series A Target</h3>
+        <p>18-24 months, $5M+ round at scale</p>
+        <div class="term-value">$2M+ ARR Target</div>
+      </div>
+      
+      <div class="term-card" data-aos="zoom-in" data-aos-delay="200">
+        <div class="term-icon">⚡</div>
+        <h3>Quick ROI</h3>
+        <p>Revenue generation starts immediately</p>
+        <div class="term-value">6-month runway to revenue</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="call-to-action-pitch">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Ready to Revolutionize Education?</h2>
+      <p>Technology proven • Market validated • Team ready • Capital needed for scale</p>
+      <div class="cta-buttons">
+        <a href="/contact/" class="btn-modern btn-primary">
+          <span class="btn-text">Schedule Discussion</span>
+          <span class="btn-icon">💼</span>
+        </a>
+        <a href="/demo/" class="btn-modern btn-secondary">
+          <span class="btn-text">See Live Platform</span>
+          <span class="btn-icon">🚀</span>
+        </a>
+      </div>
+      <div class="contact-info">
+        <p>For detailed financials and technical due diligence materials</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.pitch-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 8rem 0 4rem;
+  color: white;
+  text-align: center;
+}
+
+.pitch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.pitch-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.pitch-card:hover {
+  transform: translateY(-10px);
+}
+
+.pitch-number {
+  position: absolute;
+  top: -15px;
+  left: 30px;
+  width: 50px;
+  height: 50px;
+  background: var(--gradient-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.pitch-card h3 {
+  color: var(--dark-color);
+  margin: 1rem 0;
+  font-size: 1.5rem;
+}
+
+.pitch-card p {
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+.pitch-card strong {
+  color: var(--primary-color);
+}
+
+.pitch-card ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.pitch-card li {
+  margin-bottom: 0.5rem;
+  color: var(--dark-color);
+}
+
+.pitch-stat {
+  background: var(--gradient-accent);
+  color: white;
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.financial-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.year-projection {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.year-projection:hover {
+  transform: translateY(-5px);
+}
+
+.year-header {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+.revenue-target {
+  font-size: 3rem;
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.users-target {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  margin-bottom: 1.5rem;
+}
+
+.key-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+  margin-bottom: 0.25rem;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.funding-ask {
+  background: var(--gradient-secondary);
+  padding: 4rem 0;
+  color: white;
+}
+
+.funding-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.funding-amount {
+  text-align: center;
+}
+
+.funding-amount h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.ask-amount {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.ask-stage {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.use-of-funds h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.funds-breakdown {
+  display: grid;
+  gap: 1rem;
+}
+
+.fund-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.fund-category {
+  font-weight: 500;
+}
+
+.fund-percentage {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.terms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.term-card {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.term-card:hover {
+  transform: translateY(-5px);
+}
+
+.term-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.term-card h3 {
+  color: var(--dark-color);
+  margin-bottom: 1rem;
+}
+
+.term-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin-top: 1rem;
+}
+
+.call-to-action-pitch {
+  background: var(--gradient-primary);
+  padding: 4rem 0;
+  text-align: center;
+  color: white;
+}
+
+.call-to-action-pitch h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.call-to-action-pitch p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.contact-info p {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .pitch-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .funding-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .financial-chart {
+    grid-template-columns: 1fr;
+  }
+  
+  .key-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

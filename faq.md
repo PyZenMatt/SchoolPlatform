@@ -1,0 +1,728 @@
+---
+layout: modern
+title: "FAQ Investitori"
+---
+
+<div class="features-hero">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">❓ FAQ Investitori</span>
+      <h1 class="modern-section-title">
+        Domande <span class="gradient-text">Frequenti</span>
+      </h1>
+      <p class="section-description">
+        Tutto quello che devi sapere per valutare l'opportunità di investimento in SchoolPlatform
+      </p>
+    </div>
+  </div>
+</div>
+
+<section class="investment-opportunity">
+  <div class="container">
+    <div class="investment-content">
+      <div class="section-header">
+        <span class="section-badge">📊 Metriche Chiave</span>
+        <h2 class="modern-section-title">
+          Opportunità <span class="gradient-text">di Mercato</span>
+        </h2>
+      </div>
+      
+      <div class="opportunity-grid">
+        <div class="opportunity-card" data-aos="fade-right">
+          <div class="opportunity-icon">📈</div>
+          <h3>Mercato EdTech</h3>
+          <p>Settore in crescita esplosiva con enormi opportunità nel segmento blockchain education.</p>
+          <div class="metric">
+            <span class="metric-value">€400B+</span>
+            <span class="metric-label">Mercato Globale</span>
+          </div>
+        </div>
+        
+        <div class="opportunity-card" data-aos="fade-up">
+          <div class="opportunity-icon">⚡</div>
+          <h3>MVP Pronto</h3>
+          <p>18 mesi di sviluppo completati. Tecnologia scalabile e testata, zero technical debt.</p>
+          <div class="metric">
+            <span class="metric-value">100%</span>
+            <span class="metric-label">Tech Complete</span>
+          </div>
+        </div>
+        
+        <div class="opportunity-card" data-aos="fade-left">
+          <div class="opportunity-icon">🎯</div>
+          <h3>Focus Verticale</h3>
+          <p>Specializzazione in arte e creatività - mercato di nicchia ad alto valore con early adopters.</p>
+          <div class="metric">
+            <span class="metric-value">€500+</span>
+            <span class="metric-label">Avg Course Price</span>
+          </div>
+        </div>
+<section class="features-grid-section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">💼 Business FAQ</span>
+      <h2 class="modern-section-title">
+        Modello <span class="gradient-text">di Business</span>
+      </h2>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="100">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-1">💡</div>
+        </div>
+        <h3>Qual è il modello di business?</h3>
+        <p>Revenue multipli e scalabili con focus su commissioni corsi (15-30%), premium subscriptions (€19.99/mese) e corporate licenses (€500-2000/mese).</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">Commissioni Corsi</span>
+          <span class="highlight-tag">Premium Features</span>
+          <span class="highlight-tag">Corporate B2B</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge revenue">💰 3+ Revenue Streams</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="200">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-2">�</div>
+        </div>
+        <h3>Proiezioni di crescita?</h3>
+        <p>Anno 1: 1K utenti, €50K ARR • Anno 2: 10K utenti, €500K ARR • Anno 3: 50K utenti, €2.5M ARR. Basato su benchmarks Udemy, Coursera, MasterClass.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">Conservative Growth</span>
+          <span class="highlight-tag">Validated Benchmarks</span>
+          <span class="highlight-tag">Scalable Model</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge growth">📈 10x-50x ROI</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="300">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-3">🎨</div>
+        </div>
+        <h3>Perché il focus sull'arte?</h3>
+        <p>Mercato di nicchia con meno competizione, alto valore dei corsi (€200-500), community creativa aperta alle innovazioni e trend creator economy in crescita.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">High LTV</span>
+          <span class="highlight-tag">Early Adopters</span>
+          <span class="highlight-tag">Creator Economy</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge market">🎯 Strategico</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="400">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-4">💰</div>
+        </div>
+        <h3>Quanto investimento serve?</h3>
+        <p>€500K per 18 mesi: Team scaling (€200K), Marketing (€150K), Infrastructure (€50K), Operations (€100K). Clear path to profitability.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">Team Expansion</span>
+          <span class="highlight-tag">Go-to-Market</span>
+          <span class="highlight-tag">Scale Ready</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge investment">💼 €500K Series A</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="investment-opportunity">
+  <div class="container">
+    <div class="investment-content">
+      <div class="section-header">
+        <span class="section-badge">⚙️ Technical FAQ</span>
+        <h2 class="modern-section-title">
+          Tecnologia <span class="gradient-text">& Scalabilità</span>
+        </h2>
+      </div>
+      
+      <div class="opportunity-grid">
+        <div class="opportunity-card" data-aos="fade-right">
+          <div class="opportunity-icon">🔗</div>
+          <h3>Perché Blockchain?</h3>
+          <p>Trasparenza totale, token economy (engagement 3-5x superiore), true ownership e interoperabilità futura con altre piattaforme.</p>
+          <div class="metric">
+            <span class="metric-value">5x</span>
+            <span class="metric-label">Engagement Boost</span>
+          </div>
+        </div>
+        
+        <div class="opportunity-card" data-aos="fade-up">
+          <div class="opportunity-icon">⚡</div>
+          <h3>Scalabilità Tecnica</h3>
+          <p>Architettura cloud-native: Docker, microservizi, auto-scaling. Supporta 1M+ utenti, 10K+ TPS su Polygon.</p>
+          <div class="metric">
+            <span class="metric-value">1M+</span>
+            <span class="metric-label">Users Supported</span>
+          </div>
+        </div>
+        
+        <div class="opportunity-card" data-aos="fade-left">
+          <div class="opportunity-icon">🏗️</div>
+          <h3>Stack Tecnologico</h3>
+          <p>React, Django, PostgreSQL, Polygon. Modern stack pronto per scaling enterprise senza technical debt.</p>
+          <div class="metric">
+            <span class="metric-value">99.9%</span>
+            <span class="metric-label">Uptime Target</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features-grid-section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-badge">📈 Market FAQ</span>
+      <h2 class="modern-section-title">
+        Analisi <span class="gradient-text">di Mercato</span>
+      </h2>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="100">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-5">🌍</div>
+        </div>
+        <h3>Dimensioni del mercato?</h3>
+        <p>EdTech globale €400B+ (+20% annuo), Arte & Creatività €50B+ (+25% annuo), Blockchain Education €2B+ (+300% annuo). Opportunità massive.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">€400B TAM</span>
+          <span class="highlight-tag">€50B SAM</span>
+          <span class="highlight-tag">Early Stage</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge market">🌟 Massive Opportunity</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="200">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-6">🏆</div>
+        </div>
+        <h3>Analisi competitiva?</h3>
+        <p>Udemy/Coursera sono generici senza blockchain. Domestika/Skillshare fanno arte ma senza Web3. Blockchain education frammentata - siamo first mover.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">Vertical Focus</span>
+          <span class="highlight-tag">Web3 Native</span>
+          <span class="highlight-tag">First Mover</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge competitive">✅ Strong Moat</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="300">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-1">🚀</div>
+        </div>
+        <h3>Go-to-market strategy?</h3>
+        <p>Q3 2025: Beta con 50 early adopters. Q4 2025: Public launch organico. 2026+: Paid acquisition e partnership. Growth phased e risk-minimized.</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">Beta Testing</span>
+          <span class="highlight-tag">Organic Launch</span>
+          <span class="highlight-tag">Paid Scaling</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge gtm">🎯 Phased Approach</span>
+        </div>
+      </div>
+
+      <div class="feature-card-modern" data-aos="fade-up" data-aos-delay="400">
+        <div class="feature-icon-modern">
+          <div class="icon-bg gradient-2">📊</div>
+        </div>
+        <h3>ROI atteso per investitori?</h3>
+        <p>Scenario conservativo: 10x ROI (€5M exit in 3 anni). Scenario ottimista: 40x ROI (€20M in 4 anni). Breakthrough: 200x+ ROI (€100M+ in 5 anni).</p>
+        <div class="feature-highlights">
+          <span class="highlight-tag">10x Conservative</span>
+          <span class="highlight-tag">40x Optimistic</span>
+          <span class="highlight-tag">200x+ Breakthrough</span>
+        </div>
+        <div class="feature-status">
+          <span class="status-badge roi">💎 High Return Potential</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="investment-opportunity">
+  <div class="container">
+    <div class="investment-content">
+      <div class="investment-cta">
+        <div class="cta-content">
+          <h3>Pronto per il Prossimo Passo?</h3>
+          <p>Discutiamo l'opportunità • Pitch deck dettagliato • Due diligence tecnica</p>
+          <a href="/contact/" class="btn-modern btn-primary">
+            <span class="btn-text">Richiedi Pitch Deck</span>
+            <span class="btn-icon">📊</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+              <li>Art education vertical: $50B+ globally</li>
+              <li>Target demographic: tech-savvy creatives willing to pay premium</li>
+            </ul>
+            <p>Serviceable addressable market: $2B+ in art education + blockchain adoption.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
+          <div class="faq-question">
+            <h3>Who are the main competitors?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Traditional EdTech:</strong> Coursera, Udemy, Skillshare (no blockchain integration)</p>
+            <p><strong>Art Platforms:</strong> Domestika, Proko (no token economy)</p>
+            <p><strong>Blockchain Ed:</strong> No major player has comprehensive art + blockchain platform</p>
+            <p><strong>Our advantage:</strong> First mover with complete tech stack, 18+ month head start.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="300">
+          <div class="faq-question">
+            <h3>What's the go-to-market strategy?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Phase 1:</strong> Partner with 10+ art schools for pilot programs</p>
+            <p><strong>Phase 2:</strong> Launch creator marketplace and invite influencer artists</p>
+            <p><strong>Phase 3:</strong> Scale through viral token mechanics and referral programs</p>
+            <p><strong>Phase 4:</strong> Expand to music, design, and other creative verticals</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technology Questions -->
+      <div class="faq-category" id="technology">
+        <div class="faq-item" data-aos="fade-up">
+          <div class="faq-question">
+            <h3>Is the technology production-ready?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Yes, 100% production-ready MVP.</strong></p>
+            <ul>
+              <li>Django 4.2+ backend with PostgreSQL</li>
+              <li>React 18+ frontend with TypeScript</li>
+              <li>Polygon blockchain integration (testnet proven)</li>
+              <li>Docker containerized, CI/CD pipeline ready</li>
+              <li>Zero technical debt, clean architecture</li>
+            </ul>
+            <p>18 months of development completed. Ready to scale immediately.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="100">
+          <div class="faq-question">
+            <h3>Why Polygon blockchain?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Strategic choice for user experience:</strong></p>
+            <ul>
+              <li>Low transaction fees (under $0.01)</li>
+              <li>Fast confirmation times (2-3 seconds)</li>
+              <li>Ethereum compatibility and security</li>
+              <li>Strong ecosystem and developer support</li>
+              <li>User-friendly for non-crypto natives</li>
+            </ul>
+            <p>Multi-chain ready: can expand to other networks as needed.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
+          <div class="faq-question">
+            <h3>How scalable is the architecture?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Designed for millions of users:</strong></p>
+            <ul>
+              <li>Microservices architecture with Django</li>
+              <li>Database optimization and caching layers</li>
+              <li>CDN-ready for global content delivery</li>
+              <li>Auto-scaling infrastructure with Docker</li>
+              <li>Blockchain layer handles transaction volume</li>
+            </ul>
+            <p>Current setup can handle 100K+ concurrent users with minimal changes.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="300">
+          <div class="faq-question">
+            <h3>What about regulatory compliance?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Built with compliance in mind:</strong></p>
+            <ul>
+              <li>Educational tokens (utility, not securities)</li>
+              <li>GDPR-compliant data handling</li>
+              <li>KYC/AML ready for institutional clients</li>
+              <li>Transparent smart contracts, auditable</li>
+              <li>Legal consultation throughout development</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Questions -->
+      <div class="faq-category" id="market">
+        <div class="faq-item" data-aos="fade-up">
+          <div class="faq-question">
+            <h3>Why focus on art education specifically?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Strategic vertical choice:</strong></p>
+            <ul>
+              <li>Artists are early adopters of new technology</li>
+              <li>High willingness to pay for quality education</li>
+              <li>Natural fit with NFTs and digital ownership</li>
+              <li>Strong community effects and peer learning</li>
+              <li>Premium pricing sustainable ($100-500+ per course)</li>
+            </ul>
+            <p>Art education has higher margins and better retention than generic online courses.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="100">
+          <div class="faq-question">
+            <h3>What's the user acquisition strategy?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Multi-channel acquisition:</strong></p>
+            <ul>
+              <li><strong>Institutional partnerships:</strong> Art schools and academies</li>
+              <li><strong>Creator program:</strong> Invite renowned artists as instructors</li>
+              <li><strong>Token incentives:</strong> Reward early adopters and referrals</li>
+              <li><strong>Community building:</strong> Discord, social media, art events</li>
+              <li><strong>Content marketing:</strong> Art tutorials, blockchain education</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
+          <div class="faq-question">
+            <h3>How do you plan to retain users?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Token economy drives retention:</strong></p>
+            <ul>
+              <li>Tokens earned through learning progress</li>
+              <li>Tokens spent on advanced courses and features</li>
+              <li>Peer review system creates community engagement</li>
+              <li>NFT certificates provide lasting value</li>
+              <li>Social features and artist networking</li>
+            </ul>
+            <p>Target: 70%+ monthly retention rate through gamification and value delivery.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Questions -->
+      <div class="faq-category" id="financial">
+        <div class="faq-item" data-aos="fade-up">
+          <div class="faq-question">
+            <h3>What are the revenue projections?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Conservative growth projections:</strong></p>
+            <ul>
+              <li><strong>Year 1:</strong> $500K ARR, 10K users</li>
+              <li><strong>Year 2:</strong> $2.5M ARR, 50K users</li>
+              <li><strong>Year 3:</strong> $10M ARR, 200K users</li>
+            </ul>
+            <p>Based on $50 average revenue per user per year, growing to $100+ with premium features.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="100">
+          <div class="faq-question">
+            <h3>What funding is needed for scale?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Seed Round: $500K - $1M</strong></p>
+            <ul>
+              <li>Team expansion (2-3 developers, 1 marketing)</li>
+              <li>Mainnet deployment and security audits</li>
+              <li>Initial partnership program</li>
+              <li>User acquisition and content creation</li>
+              <li>12-18 months runway to Series A</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
+          <div class="faq-question">
+            <h3>What's the exit strategy?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Multiple exit opportunities:</strong></p>
+            <ul>
+              <li><strong>Strategic acquisition:</strong> EdTech giants (Coursera, Adobe, Autodesk)</li>
+              <li><strong>Financial acquisition:</strong> Private equity focused on education</li>
+              <li><strong>IPO path:</strong> If we reach $50M+ ARR and market leadership</li>
+              <li><strong>Timeline:</strong> 5-7 years optimal exit window</li>
+            </ul>
+            <p>Target valuation: $50-100M+ based on revenue multiples in EdTech sector.</p>
+          </div>
+        </div>
+
+        <div class="faq-item" data-aos="fade-up" data-aos-delay="300">
+          <div class="faq-question">
+            <h3>What are the main risks?</h3>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p><strong>Identified risks and mitigations:</strong></p>
+            <ul>
+              <li><strong>Regulatory changes:</strong> Focus on utility tokens, compliance-first approach</li>
+              <li><strong>Competition:</strong> First-mover advantage, strong tech moat</li>
+              <li><strong>User adoption:</strong> Free tier, gradual blockchain introduction</li>
+              <li><strong>Technical:</strong> Proven MVP, experienced team</li>
+              <li><strong>Market timing:</strong> Art + blockchain adoption growing rapidly</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq-cta">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Still Have Questions?</h2>
+      <p>Schedule a private session with our team for detailed technical and business discussions.</p>
+      <div class="cta-buttons">
+        <a href="/contact/" class="btn-modern btn-primary">
+          <span class="btn-text">Schedule Meeting</span>
+          <span class="btn-icon">📅</span>
+        </a>
+        <a href="/demo/" class="btn-modern btn-secondary">
+          <span class="btn-text">Live Demo</span>
+          <span class="btn-icon">🚀</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.faq-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 8rem 0 4rem;
+  color: white;
+  text-align: center;
+}
+
+.faq-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.faq-tab {
+  background: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.faq-tab:hover,
+.faq-tab.active {
+  background: var(--gradient-primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.faq-category {
+  display: none;
+}
+
+.faq-category.active {
+  display: block;
+}
+
+.faq-item {
+  background: white;
+  border-radius: 15px;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.faq-question {
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.faq-question h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.faq-toggle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.faq-item.active .faq-toggle {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  padding: 0 2rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faq-item.active .faq-answer {
+  padding: 2rem;
+  max-height: 1000px;
+}
+
+.faq-answer ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.faq-answer li {
+  margin-bottom: 0.5rem;
+}
+
+.faq-answer strong {
+  color: var(--primary-color);
+}
+
+.faq-cta {
+  background: var(--gradient-secondary);
+  padding: 4rem 0;
+  text-align: center;
+  color: white;
+}
+
+.faq-cta h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.faq-cta p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .faq-navigation {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .faq-tab {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .faq-question {
+    padding: 1rem 1.5rem;
+  }
+  
+  .faq-answer {
+    padding: 0 1.5rem;
+  }
+  
+  .faq-item.active .faq-answer {
+    padding: 1.5rem;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // FAQ Tab switching
+  const faqTabs = document.querySelectorAll('.faq-tab');
+  const faqCategories = document.querySelectorAll('.faq-category');
+  
+  faqTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const category = tab.dataset.category;
+      
+      // Update tabs
+      faqTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Update categories
+      faqCategories.forEach(c => c.classList.remove('active'));
+      document.getElementById(category).classList.add('active');
+    });
+  });
+  
+  // FAQ accordion
+  const faqQuestions = document.querySelectorAll('.faq-question');
+  
+  faqQuestions.forEach(question => {
+    question.addEventListener('click', () => {
+      const faqItem = question.parentElement;
+      const isActive = faqItem.classList.contains('active');
+      
+      // Close all items in current category
+      const currentCategory = faqItem.closest('.faq-category');
+      currentCategory.querySelectorAll('.faq-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Open clicked item if it wasn't active
+      if (!isActive) {
+        faqItem.classList.add('active');
+      }
+    });
+  });
+});
+</script>
