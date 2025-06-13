@@ -3,12 +3,12 @@ import { Card, Alert, Spinner, Badge } from 'react-bootstrap';
 import { web3Service } from '../../services/api/web3Service';
 import { useAuth } from '../../contexts/AuthContext';
 
-const WalletBalanceDisplay = () => {
+const WalletBalanceDisplay = ({ balance = null, loading: externalLoading = false, isAdmin = false }) => {
   const { user } = useAuth();
   const [balances, setBalances] = useState({
-    teocoin: '0',
+    teocoin: balance || '0',
     matic: '0',
-    loading: true,
+    loading: externalLoading,
     error: null
   });
 
@@ -52,8 +52,18 @@ const WalletBalanceDisplay = () => {
   };
 
   useEffect(() => {
-    loadBalances();
-  }, [user?.wallet_address]);
+    if (balance !== null) {
+      // Se è fornito un balance esterno, usalo
+      setBalances(prev => ({
+        ...prev,
+        teocoin: balance,
+        loading: externalLoading
+      }));
+    } else {
+      // Altrimenti carica i saldi normalmente
+      loadBalances();
+    }
+  }, [user?.wallet_address, balance, externalLoading]);
 
   const formatAddress = (address) => {
     if (!address) return '';
@@ -80,7 +90,7 @@ const WalletBalanceDisplay = () => {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h6 className="mb-0">
             <i className="feather icon-wallet me-2"></i>
-            Saldi Wallet
+            {isAdmin ? 'Saldi Admin' : 'Saldi Wallet'}
           </h6>
           <Badge bg="success" className="px-2 py-1">
             <i className="feather icon-link me-1"></i>

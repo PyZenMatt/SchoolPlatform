@@ -126,6 +126,37 @@ class BlockchainAPIService {
       throw error;
     }
   }
+
+  /**
+   * Get all platform transactions (admin only)
+   */
+  async getAdminTransactions(limit = 50, status = null, type = null) {
+    try {
+      const params = new URLSearchParams();
+      params.append('limit', limit);
+      if (status) params.append('status', status);
+      if (type) params.append('type', type);
+      
+      const response = await api.get(`/rewards/admin/transactions/?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin transactions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get platform transaction statistics (admin only)
+   */
+  async getAdminTransactionStats() {
+    try {
+      const response = await api.get('/rewards/admin/transactions/stats/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin transaction stats:', error);
+      throw error;
+    }
+  }
 }
 
 export const blockchainAPI = new BlockchainAPIService();

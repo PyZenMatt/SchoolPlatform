@@ -4,10 +4,8 @@ import { Link } from 'react-router-dom';
 import PendingTeachersCard from '../../components/PendingTeachersCard';
 import PendingCoursesCard from '../../components/PendingCoursesCard';
 import ApprovalStats from '../../components/ApprovalStats';
-import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDisplay';
-import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
-import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
+import AdminTeoCoinDashboard from '../../components/blockchain/AdminTeoCoinDashboard';
 import { fetchAdminDashboard } from '../../services/api/admin';
 import { fetchUserProfile } from '../../services/api/dashboard';
 import { getRewardPoolInfo } from '../../services/api/blockchain';
@@ -109,10 +107,6 @@ const AdminDashboard = () => {
                   Amministratore
                 </h4>
                 <p className="text-white-50 mb-0">Accesso completo</p>
-                <div className="mt-2 d-flex gap-2 justify-content-end">
-                  <WalletBalanceDisplay />
-                  <ProfileWalletDisplay />
-                </div>
               </div>
             </Col>
           </Row>
@@ -264,7 +258,7 @@ const AdminDashboard = () => {
       {/* TeoCoin Dashboard */}
       <Row className="mt-4">
         <Col lg={12}>
-          <StudentTeoCoinDashboard />
+          <AdminTeoCoinDashboard />
         </Col>
       </Row>
     </div>

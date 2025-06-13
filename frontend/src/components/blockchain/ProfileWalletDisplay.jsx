@@ -5,16 +5,33 @@ import { useAuth } from '../../contexts/AuthContext';
 import { connectWallet, disconnectWallet } from '../../services/api/dashboard';
 import './WalletManager.scss';
 
-const ProfileWalletDisplay = ({ onWalletConnected }) => {
+const ProfileWalletDisplay = ({ 
+  onWalletConnected, 
+  walletAddress = null, 
+  teocoins = null, 
+  loading: externalLoading = false, 
+  isAdmin = false 
+}) => {
   const { user, refreshUser } = useAuth();
   const [walletState, setWalletState] = useState({
-    connected: false,
-    address: null,
-    isLoading: false,
+    connected: walletAddress ? true : false,
+    address: walletAddress || null,
+    isLoading: externalLoading,
     error: null
   });
 
   useEffect(() => {
+    // Se sono forniti parametri esterni (per admin), usali
+    if (walletAddress !== null) {
+      setWalletState({
+        connected: true,
+        address: walletAddress,
+        isLoading: externalLoading,
+        error: null
+      });
+      return;
+    }
+
     // Se l'utente ha già un wallet connesso nel database, ripristina lo stato bloccato
     if (user?.wallet_address) {
       setWalletState({
@@ -47,7 +64,7 @@ const ProfileWalletDisplay = ({ onWalletConnected }) => {
         web3Service.disconnectWallet();
       }
     }
-  }, [user?.wallet_address, onWalletConnected]);
+  }, [user?.wallet_address, onWalletConnected, walletAddress, externalLoading]);
 
   const connectWalletHandler = async () => {
     try {
@@ -140,7 +157,7 @@ const ProfileWalletDisplay = ({ onWalletConnected }) => {
       <Card.Body>
         <Card.Title>
           <i className="feather icon-wallet me-2"></i>
-          Wallet Connesso
+          {isAdmin ? 'Wallet Admin' : 'Wallet Connesso'}
         </Card.Title>
         
         {walletState.error && (
