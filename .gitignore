@@ -75,6 +75,7 @@ ipfs-config.json
 
 # === Template escludibili ===
 datta-able-free-react-admin-template/
+docs-site/
 
 # === Windows metadata ===
 *:Zone.Identifier
