@@ -1,0 +1,328 @@
+@charset "UTF-8";
+/* Technology Page Specific Styles */
+.technology-overview {
+  padding: 100px 0;
+}
+
+.tech-hero {
+  padding: 120px 0 80px;
+  background: var(--gradient-primary);
+  color: white;
+  text-align: center;
+}
+
+.tech-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.tech-subtitle {
+  font-size: 1.3rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.tech-stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  align-items: start;
+  margin: 80px 0;
+}
+
+.tech-category {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.tech-category:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.tech-category-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--gradient-accent);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 25px;
+  font-size: 2rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+}
+
+.tech-category h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--dark-color);
+}
+
+.tech-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tech-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 1rem;
+  color: var(--secondary-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tech-list li:last-child {
+  border-bottom: none;
+}
+
+.tech-list li::before {
+  content: "✓";
+  color: var(--success-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Architecture Diagram */
+.architecture-section {
+  padding: 80px 0;
+  background: #f8f9fa;
+}
+
+.architecture-diagram {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin: 40px 0;
+}
+
+.architecture-layers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.architecture-layer {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 25px;
+  border-radius: 15px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.architecture-layer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.architecture-layer:hover::before {
+  left: 100%;
+}
+
+.layer-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.layer-description {
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+/* Performance Metrics */
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  margin: 40px 0;
+}
+
+.metric-card {
+  background: white;
+  padding: 30px 25px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+.metric-label {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.metric-description {
+  color: var(--secondary-color);
+  font-size: 0.85rem;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* Security Features */
+.security-section {
+  padding: 80px 0;
+}
+
+.security-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin: 40px 0;
+}
+
+.security-feature {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  border-left: 4px solid var(--gradient-accent);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.security-feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.security-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--gradient-accent);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  color: white;
+}
+
+.security-feature h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--dark-color);
+}
+
+.security-feature p {
+  color: var(--secondary-color);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Blockchain Integration */
+.blockchain-section {
+  padding: 80px 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.blockchain-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin: 40px 0;
+}
+
+.blockchain-feature {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.blockchain-feature:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-5px);
+}
+
+.blockchain-icon {
+  width: 70px;
+  height: 70px;
+  background: var(--gradient-accent);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 1.8rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.blockchain-feature h4 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: white;
+}
+
+.blockchain-feature p {
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+/* Responsive Technology */
+@media (max-width: 768px) {
+  .tech-title {
+    font-size: 2.5rem;
+  }
+  .tech-stack {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .performance-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .security-features,
+  .blockchain-features {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .performance-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*# sourceMappingURL=technology.css.map */
