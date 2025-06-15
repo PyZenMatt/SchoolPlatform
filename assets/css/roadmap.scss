@@ -6,8 +6,20 @@
    Clean rewrite based on actual classes used in roadmap.md
    ================================================ */
 
-/* Import shared design system variables */
-@import "main";
+/* Roadmap CSS Variables */
+:root {
+  --roadmap-primary: #4facfe;
+  --roadmap-secondary: #8b949e;
+  --roadmap-success: #38ef7d;
+  --roadmap-warning: #ffc107;
+  --roadmap-danger: #f85149;
+  --roadmap-dark: #0f0f0f;
+  --roadmap-light: #ffffff;
+  --roadmap-text-light: #e6edf3;
+  --roadmap-text-muted: #7d8590;
+  --roadmap-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --roadmap-gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
 
 /* ================================================
    HERO SECTION
