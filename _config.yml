@@ -1,17 +1,17 @@
 # Site settings
 title: "SchoolPlatform - EdTech Blockchain MVP"
-email: "invest@schoolplatform.io"
+email: "info@matteoricci.net"
 description: >-
   MVP blockchain educational platform ready for scale. 18-month development complete. 
   Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.
 
-baseurl: "/SchoolPlatform" # o "/docs-site" - il nome del repository
+baseurl: "/gh-pages" # o "/docs-site" - il nome del repository
 url: "https://pyzenmatt.github.io" # sostituisci con il tuo username GitHub reale
 
 # Author
 author:
-  name: "Il Tuo Nome"
-  email: "tuaemail@example.com"
+  name: "Matteo Ricci"
+  email: "matteoricci12@.com"
 
 # Build settings
 markdown: kramdown
