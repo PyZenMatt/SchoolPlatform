@@ -9,10 +9,13 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: var(--gradient-primary);
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 90%, rgba(120, 119, 198, 0.2) 0%, transparent 50%),
+    linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #0f0f0f 100%);
   overflow: hidden;
   padding-bottom: 80px;
-  margin-bottom: 40px;
 }
 
 .hero-background {
@@ -80,6 +83,7 @@
   z-index: 2;
   max-width: 600px;
   color: white;
+  padding-top: 2rem; /* Extra space for badge visibility */
 }
 
 .hero-badge {
@@ -1088,7 +1092,8 @@
   }
   
   .process-timeline .timeline-line {
-    left: 20px;
+    left: 50%;
+    transform: translateX(-50%);
   }
   
   .process-step {
@@ -1112,7 +1117,12 @@
   /* Feature Cards Responsive */
   .feature-card {
     padding: 30px 20px;
-    margin-bottom: 20px;
+    margin-bottom: 2rem;
+  }
+  
+  /* Ensure proper spacing for bootstrap columns on mobile */
+  .col-md-4 {
+    margin-bottom: 1rem;
   }
   
   .feature-icon {

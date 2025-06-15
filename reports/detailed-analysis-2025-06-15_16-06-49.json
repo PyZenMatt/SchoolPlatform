@@ -1,0 +1,1005 @@
+{
+  "timestamp": "2025-06-15T16:06:49.652534",
+  "base_url": "http://localhost:4000",
+  "pages": {
+    "Homepage": {
+      "load_time_ms": 3.28,
+      "status_code": 200,
+      "content_size": 22658,
+      "html_size": 22581,
+      "compression_ratio": 0.34,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 38,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 32
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 4,
+        "images_with_alt": 4,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 4,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 38,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 1,
+          "h2": 6,
+          "h3": 15,
+          "h4": 3,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 4,
+        "images_with_alt": 4,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 34,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 6,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 408,
+        "character_count": 3441,
+        "estimated_sentences": 16,
+        "avg_words_per_sentence": 25.5,
+        "paragraphs": 20,
+        "avg_words_per_paragraph": 20.4,
+        "ordered_lists": 0,
+        "unordered_lists": 1,
+        "list_items": 4
+      }
+    },
+    "Features EN": {
+      "load_time_ms": 2.46,
+      "status_code": 200,
+      "content_size": 16907,
+      "html_size": 16843,
+      "compression_ratio": 0.38,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 60,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 28
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Innovative Features - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 60,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 1,
+          "h2": 1,
+          "h3": 11,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 30,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 2,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 279,
+        "character_count": 2293,
+        "estimated_sentences": 17,
+        "avg_words_per_sentence": 16.41,
+        "paragraphs": 9,
+        "avg_words_per_paragraph": 31.0,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    },
+    "Features IT": {
+      "load_time_ms": 2.36,
+      "status_code": 200,
+      "content_size": 17057,
+      "html_size": 16984,
+      "compression_ratio": 0.43,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "it",
+        "has_viewport": true,
+        "title_length": 64,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 28
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Funzionalit\u00e0 Innovative - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 64,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 1,
+          "h2": 1,
+          "h3": 11,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 30,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 2,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 287,
+        "character_count": 2362,
+        "estimated_sentences": 17,
+        "avg_words_per_sentence": 16.88,
+        "paragraphs": 9,
+        "avg_words_per_paragraph": 31.89,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    },
+    "Technology EN": {
+      "load_time_ms": 1.61,
+      "status_code": 200,
+      "content_size": 24568,
+      "html_size": 24527,
+      "compression_ratio": 0.17,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 68,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 28
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Enterprise Technology Stack - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 68,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 6,
+          "h4": 10,
+          "h5": 3,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 30,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 6,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 511,
+        "character_count": 4467,
+        "estimated_sentences": 23,
+        "avg_words_per_sentence": 22.22,
+        "paragraphs": 11,
+        "avg_words_per_paragraph": 46.45,
+        "ordered_lists": 0,
+        "unordered_lists": 1,
+        "list_items": 5
+      }
+    },
+    "Technology IT": {
+      "load_time_ms": 2.25,
+      "status_code": 200,
+      "content_size": 24784,
+      "html_size": 24735,
+      "compression_ratio": 0.2,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "it",
+        "has_viewport": true,
+        "title_length": 69,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 28
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Stack Tecnologico Enterprise - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 69,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 6,
+          "h4": 10,
+          "h5": 3,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 30,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 6,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 535,
+        "character_count": 4618,
+        "estimated_sentences": 23,
+        "avg_words_per_sentence": 23.26,
+        "paragraphs": 11,
+        "avg_words_per_paragraph": 48.64,
+        "ordered_lists": 0,
+        "unordered_lists": 1,
+        "list_items": 5
+      }
+    },
+    "Invest EN": {
+      "load_time_ms": 2.09,
+      "status_code": 200,
+      "content_size": 21807,
+      "html_size": 21690,
+      "compression_ratio": 0.54,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 63,
+        "meta_description": true,
+        "external_links": 3,
+        "internal_links": 29
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Investment Opportunity - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 63,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 0,
+          "h2": 6,
+          "h3": 16,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 34,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 6,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 479,
+        "character_count": 3813,
+        "estimated_sentences": 12,
+        "avg_words_per_sentence": 39.92,
+        "paragraphs": 25,
+        "avg_words_per_paragraph": 19.16,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    },
+    "Invest IT": {
+      "load_time_ms": 2.01,
+      "status_code": 200,
+      "content_size": 21995,
+      "html_size": 21863,
+      "compression_ratio": 0.6,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "it",
+        "has_viewport": true,
+        "title_length": 68,
+        "meta_description": true,
+        "external_links": 3,
+        "internal_links": 29
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Opportunit\u00e0 di Investimento - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 68,
+        "meta_description": "MVP blockchain educational platform ready for scale. 18-month development complete.  Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.",
+        "meta_desc_length": 176,
+        "headings": {
+          "h1": 0,
+          "h2": 6,
+          "h3": 16,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 34,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 6,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 480,
+        "character_count": 3919,
+        "estimated_sentences": 12,
+        "avg_words_per_sentence": 40.0,
+        "paragraphs": 25,
+        "avg_words_per_paragraph": 19.2,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    },
+    "Roadmap EN": {
+      "load_time_ms": 1.99,
+      "status_code": 200,
+      "content_size": 38939,
+      "html_size": 38544,
+      "compression_ratio": 1.01,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 67,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 28
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Roadmap & Scaling Strategy - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 67,
+        "meta_description": "Strategic roadmap from MVP to market leadership. Clear milestones, financial projections, and competitive advantages in the \u20ac400B+ EdTech market.",
+        "meta_desc_length": 145,
+        "headings": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 14,
+          "h4": 9,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 30,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 4,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 973,
+        "character_count": 7258,
+        "estimated_sentences": 43,
+        "avg_words_per_sentence": 22.63,
+        "paragraphs": 23,
+        "avg_words_per_paragraph": 42.3,
+        "ordered_lists": 0,
+        "unordered_lists": 4,
+        "list_items": 16
+      }
+    },
+    "Roadmap IT": {
+      "load_time_ms": 2.38,
+      "status_code": 200,
+      "content_size": 48091,
+      "html_size": 47622,
+      "compression_ratio": 0.98,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "it",
+        "has_viewport": true,
+        "title_length": 71,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 31
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Roadmap e Strategia di Scaling - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 71,
+        "meta_description": "Roadmap strategica da MVP alla leadership di mercato. Milestone chiari, proiezioni finanziarie e vantaggi competitivi nel mercato EdTech da \u20ac400B+.",
+        "meta_desc_length": 147,
+        "headings": {
+          "h1": 1,
+          "h2": 5,
+          "h3": 15,
+          "h4": 12,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 33,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 5,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 1166,
+        "character_count": 8715,
+        "estimated_sentences": 46,
+        "avg_words_per_sentence": 25.35,
+        "paragraphs": 28,
+        "avg_words_per_paragraph": 41.64,
+        "ordered_lists": 0,
+        "unordered_lists": 4,
+        "list_items": 16
+      }
+    },
+    "Tokenomics EN": {
+      "load_time_ms": 2.34,
+      "status_code": 200,
+      "content_size": 19285,
+      "html_size": 19241,
+      "compression_ratio": 0.23,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "en",
+        "has_viewport": true,
+        "title_length": 76,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 30
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "TeoCoin Tokenomics - SchoolPlatform - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 76,
+        "meta_description": "Discover the future of TeoCoin: from learning rewards to decentralized governance and cross-platform integration",
+        "meta_desc_length": 112,
+        "headings": {
+          "h1": 1,
+          "h2": 2,
+          "h3": 8,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 32,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 3,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 277,
+        "character_count": 2308,
+        "estimated_sentences": 6,
+        "avg_words_per_sentence": 46.17,
+        "paragraphs": 5,
+        "avg_words_per_paragraph": 55.4,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    },
+    "Tokenomics IT": {
+      "load_time_ms": 2.04,
+      "status_code": 200,
+      "content_size": 19555,
+      "html_size": 19501,
+      "compression_ratio": 0.28,
+      "html_structure": {
+        "has_doctype": true,
+        "html_lang": "it",
+        "has_viewport": true,
+        "title_length": 76,
+        "meta_description": true,
+        "external_links": 2,
+        "internal_links": 30
+      },
+      "performance": {
+        "css_files": 8,
+        "inline_css": 0,
+        "js_files": 3,
+        "inline_js": 1,
+        "total_images": 0,
+        "images_with_alt": 0,
+        "images_with_lazy": 0,
+        "images_without_dimensions": 0,
+        "preload_links": 0,
+        "prefetch_links": 0,
+        "dns_prefetch": 0,
+        "gzip_enabled": false,
+        "cache_control": "none",
+        "has_etag": false
+      },
+      "seo": {
+        "title": "Tokenomics TeoCoin - SchoolPlatform - SchoolPlatform - EdTech Blockchain MVP",
+        "title_length": 76,
+        "meta_description": "Scopri il futuro dei TeoCoin: dalle ricompense per l'apprendimento alla governance decentralizzata e integrazione cross-platform",
+        "meta_desc_length": 128,
+        "headings": {
+          "h1": 1,
+          "h2": 2,
+          "h3": 8,
+          "h4": 2,
+          "h5": 0,
+          "h6": 0
+        },
+        "json_ld": 1,
+        "microdata": 0,
+        "open_graph_tags": 11,
+        "twitter_cards": 4
+      },
+      "accessibility": {
+        "images_total": 0,
+        "images_with_alt": 0,
+        "images_missing_alt": 0,
+        "form_inputs": 0,
+        "inputs_with_labels": 0,
+        "total_links": 32,
+        "links_without_text": 1,
+        "aria_labels": 0,
+        "aria_describedby": 0,
+        "semantic_elements": {
+          "main": 1,
+          "header": 0,
+          "footer": 1,
+          "nav": 1,
+          "section": 3,
+          "article": 0,
+          "aside": 0
+        }
+      },
+      "content": {
+        "word_count": 290,
+        "character_count": 2420,
+        "estimated_sentences": 6,
+        "avg_words_per_sentence": 48.33,
+        "paragraphs": 5,
+        "avg_words_per_paragraph": 58.0,
+        "ordered_lists": 0,
+        "unordered_lists": 0,
+        "list_items": 0
+      }
+    }
+  },
+  "global_issues": [],
+  "recommendations": [
+    {
+      "page": "Homepage",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcd0 Add width/height to images to prevent layout shift",
+        "\u26a1 Implement lazy loading for images",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    },
+    {
+      "page": "Features EN",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\ud83d\udcdd Consider adding more content (current: <300 words)"
+      ]
+    },
+    {
+      "page": "Features IT",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\ud83d\udcdd Consider adding more content (current: <300 words)"
+      ]
+    },
+    {
+      "page": "Technology EN",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text"
+      ]
+    },
+    {
+      "page": "Technology IT",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text"
+      ]
+    },
+    {
+      "page": "Invest EN",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    },
+    {
+      "page": "Invest IT",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udcdd Meta description too long (>160 chars)",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    },
+    {
+      "page": "Roadmap EN",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udd17 1 links without descriptive text"
+      ]
+    },
+    {
+      "page": "Roadmap IT",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    },
+    {
+      "page": "Tokenomics EN",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\ud83d\udcdd Consider adding more content (current: <300 words)",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    },
+    {
+      "page": "Tokenomics IT",
+      "recommendations": [
+        "\ud83c\udfa8 Consider combining CSS files to reduce HTTP requests",
+        "\ud83d\udcdd Title tag too long (>60 chars) - may be truncated in search results",
+        "\ud83d\udd17 1 links without descriptive text",
+        "\ud83d\udcdd Consider adding more content (current: <300 words)",
+        "\u270f\ufe0f Consider shorter sentences for better readability"
+      ]
+    }
+  ]
+}

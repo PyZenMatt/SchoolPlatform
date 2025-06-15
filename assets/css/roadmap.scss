@@ -15,12 +15,7 @@
 
 .roadmap-hero {
   padding: 120px 0 80px;
-  background: linear-gradient(135deg, 
-    rgba(26, 35, 126, 0.95) 0%, 
-    rgba(40, 53, 147, 0.9) 50%, 
-    rgba(69, 90, 186, 0.85) 100%),
-    radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%);
+  background: var(--gradient-primary);
   color: white;
   text-align: center;
   position: relative;
@@ -348,8 +343,7 @@
 
 .investment-metrics {
   padding: 120px 0 80px;
-  background: 
-    linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.95) 100%);
+  background: var(--gradient-primary);
   color: white;
   position: relative;
   overflow: hidden;
@@ -374,6 +368,7 @@
   border-radius: 24px;
   padding: 2.5rem;
   position: relative;
+  overflow: hidden;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
   &.featured {
@@ -404,7 +399,7 @@
 
 .card-glow {
   position: absolute;
-  inset: -1px;
+  inset: 0;
   background: linear-gradient(135deg, 
     rgba(139, 92, 246, 0.3), 
     rgba(59, 130, 246, 0.3), 
@@ -616,14 +611,7 @@
 
 .risk-analysis {
   padding: 120px 0 80px;
-  background: 
-    linear-gradient(135deg, 
-      rgba(15, 23, 42, 0.97) 0%, 
-      rgba(30, 41, 59, 0.95) 25%,
-      rgba(51, 65, 85, 0.93) 75%, 
-      rgba(71, 85, 105, 0.90) 100%),
-    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.2) 0%, transparent 50%);
+  background: var(--gradient-primary);
   color: white;
   position: relative;
   overflow: hidden;
@@ -919,14 +907,7 @@
 
 .competitive-advantages {
   padding: 120px 0 80px;
-  background: 
-    linear-gradient(135deg, 
-      rgba(88, 28, 135, 0.97) 0%, 
-      rgba(107, 33, 168, 0.95) 25%,
-      rgba(124, 58, 237, 0.93) 75%, 
-      rgba(139, 92, 246, 0.90) 100%),
-    radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.3) 0%, transparent 50%);
+  background: var(--gradient-primary);
   color: white;
   position: relative;
   overflow: hidden;
@@ -1275,7 +1256,7 @@
 
 .mockup-title {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1f2937; /* Dark color for better contrast on light backgrounds */
 }
 
 .mockup-content {
@@ -1311,7 +1292,7 @@
 
 .fund-label {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1f2937; /* Dark color for better contrast on light backgrounds */
   min-width: 120px;
 }
 
@@ -1340,7 +1321,7 @@
 
 .milestone-text {
   font-weight: 600;
-  color: var(--text-primary);
+  color: #1f2937; /* Dark color for better contrast on light backgrounds */
 }
 
 .cta-buttons {
@@ -1451,12 +1432,13 @@
 }
 
 .urgency-text {
-  color: var(--text-secondary);
+  color: #374151; /* Dark gray for better readability on light backgrounds */
   line-height: 1.6;
   margin: 0;
 
   strong {
-    color: var(--text-primary);
+    color: var(--primary-color); /* Use same primary color as highlight for consistency */
+    font-weight: 700;
   }
 
   .highlight {

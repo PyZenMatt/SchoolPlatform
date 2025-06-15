@@ -1,0 +1,68 @@
+<!-- Modern Footer -->
+<footer class="modern-footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>🎓 SchoolPlatform</h3>
+                {% if page.lang == 'it' %}
+                    <p>Rivoluzionando l'educazione con blockchain e peer-to-peer learning.</p>
+                {% else %}
+                    <p>Revolutionizing education with blockchain and peer-to-peer learning.</p>
+                {% endif %}
+                <div class="social-links">
+                    {% if site.github_username %}
+                    <a href="https://github.com/{{ site.github_username }}" class="social-link">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    {% endif %}
+                    {% if site.linkedin_username %}
+                    <a href="https://linkedin.com/in/{{ site.linkedin_username }}" class="social-link">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="footer-links">
+                <div class="link-group">
+                    {% if page.lang == 'it' %}
+                        <h4>Piattaforma</h4>
+                        <a href="/ita/features/">Funzionalità</a>
+                        <a href="/ita/technology/">Tecnologie</a>
+                        <a href="/ita/roadmap/">Roadmap</a>
+                        <a href="/ita/tokenomics/">Tokenomics</a>
+                    {% else %}
+                        <h4>Platform</h4>
+                        <a href="/features/">Features</a>
+                        <a href="/technology/">Technology</a>
+                        <a href="/roadmap/">Roadmap</a>
+                        <a href="/tokenomics/">Tokenomics</a>
+                    {% endif %}
+                </div>
+                <div class="link-group">
+                    {% if page.lang == 'it' %}
+                        <h4>Risorse</h4>
+                        <a href="/ita/invest/">Invest</a>
+                        <a href="/ita/faq/">FAQ</a>
+                        <a href="/ita/contact/">Contatti</a>
+                        <a href="https://github.com/yourusername">GitHub</a>
+                    {% else %}
+                        <h4>Resources</h4>
+                        <a href="/invest/">Invest</a>
+                        <a href="/faq/">FAQ</a>
+                        <a href="/contact/">Contact</a>
+                        <a href="https://github.com/yourusername">GitHub</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            {% if page.lang == 'it' %}
+                <p>&copy; {{ 'now' | date: "%Y" }} SchoolPlatform. Fatto con ❤️ per l'educazione del futuro.</p>
+            {% else %}
+                <p>&copy; {{ 'now' | date: "%Y" }} SchoolPlatform. Made with ❤️ for the future of education.</p>
+            {% endif %}
+        </div>
+    </div>
+</footer>

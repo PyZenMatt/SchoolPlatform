@@ -1,6 +1,15 @@
 // Modern SchoolPlatform JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize AOS (Animate On Scroll)
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    }
+
     // Smooth scrolling for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -167,21 +176,31 @@ document.addEventListener('DOMContentLoaded', function() {
         
         faqItems.forEach(item => {
             const question = item.querySelector('.faq-question');
-            const toggle = item.querySelector('.faq-toggle');
+            const answer = item.querySelector('.faq-answer');
+            const icon = item.querySelector('.faq-icon');
             
-            question.addEventListener('click', () => {
-                const isActive = item.classList.contains('active');
-                
-                // Close all other FAQ items
-                faqItems.forEach(otherItem => {
-                    if (otherItem !== item) {
-                        otherItem.classList.remove('active');
-                    }
+            if (question && answer) {
+                question.addEventListener('click', () => {
+                    const isActive = item.classList.contains('active');
+                    
+                    // Close all other FAQ items
+                    faqItems.forEach(otherItem => {
+                        if (otherItem !== item) {
+                            otherItem.classList.remove('active');
+                            const otherQuestion = otherItem.querySelector('.faq-question');
+                            const otherAnswer = otherItem.querySelector('.faq-answer');
+                            if (otherQuestion) otherQuestion.classList.remove('active');
+                            if (otherAnswer) otherAnswer.classList.remove('open');
+                        }
+                    });
+                    
+                    // Toggle current item
+                    const newActiveState = !isActive;
+                    item.classList.toggle('active', newActiveState);
+                    question.classList.toggle('active', newActiveState);
+                    answer.classList.toggle('open', newActiveState);
                 });
-                
-                // Toggle current item
-                item.classList.toggle('active', !isActive);
-            });
+            }
         });
     }
 
@@ -419,4 +438,63 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // FAQ Tab Navigation Functionality
+    function initFAQTabs() {
+        const tabs = document.querySelectorAll('.faq-tab');
+        const sections = document.querySelectorAll('.faq-section-content');
+        
+        if (tabs.length === 0 || sections.length === 0) return;
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetSection = tab.getAttribute('data-section');
+                
+                // Remove active class from all tabs and sections
+                tabs.forEach(t => t.classList.remove('active'));
+                sections.forEach(s => s.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Show target section
+                const targetContent = document.getElementById(`${targetSection}-section`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                    
+                    // Re-trigger AOS animations for newly visible content
+                    setTimeout(() => {
+                        if (typeof AOS !== 'undefined') {
+                            AOS.refresh();
+                        }
+                    }, 100);
+                }
+                
+                // Add subtle scroll to section if needed
+                const comprehensiveSection = document.querySelector('.faq-comprehensive-section');
+                if (comprehensiveSection) {
+                    const headerOffset = 120;
+                    const elementPosition = comprehensiveSection.getBoundingClientRect().top;
+                    
+                    if (elementPosition < -200) {
+                        setTimeout(() => {
+                            const offsetPosition = comprehensiveSection.offsetTop - headerOffset;
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                        }, 150);
+                    }
+                }
+            });
+        });
+        
+        // Initialize with first tab active
+        if (tabs.length > 0 && !document.querySelector('.faq-tab.active')) {
+            tabs[0].click();
+        }
+    }
+
+    // Initialize FAQ Tabs
+    initFAQTabs();
 });

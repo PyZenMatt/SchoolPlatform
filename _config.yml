@@ -22,26 +22,62 @@ plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
 
-# Navigation
+# Main Navigation (English is default)
 navigation:
   - title: "Home"
     url: "/"
   - title: "Features"
-    url: "/features/"
+    url: "/eng/features/"
   - title: "Technology"
-    url: "/technology/"
+    url: "/eng/technology/"
+  - title: "Tokenomics"
+    url: "/eng/tokenomics/"
   - title: "Roadmap"
-    url: "/roadmap/"
-  - title: "Demo"
-    url: "/demo/"
+    url: "/eng/roadmap/"
   - title: "FAQ"
-    url: "/faq/"
+    url: "/eng/faq/"
   - title: "Invest"
-    url: "/contact/"
+    url: "/eng/invest/"
+  - title: "Contact"
+    url: "/eng/contact/"
+
+# Italian Navigation
+navigation_it:
+  - title: "Home"
+    url: "/ita/"
+  - title: "Features"
+    url: "/ita/features/"
+  - title: "Technology"
+    url: "/ita/technology/"
+  - title: "Tokenomics"
+    url: "/ita/tokenomics/"
+  - title: "Roadmap"
+    url: "/ita/roadmap/"
+  - title: "FAQ"
+    url: "/ita/faq/"
+  - title: "Contatti"
+    url: "/ita/invest/#founder"
+
+# English Navigation (for consistency)
+navigation_en:
+  - title: "Home"
+    url: "/"
+  - title: "Features"
+    url: "/eng/features/"
+  - title: "Technology"
+    url: "/eng/technology/"
+  - title: "Roadmap"
+    url: "/eng/roadmap/"
+  - title: "FAQ"
+    url: "/eng/faq/"
+  - title: "Invest"
+    url: "/eng/invest/"
+  - title: "Contact"
+    url: "/eng/invest/#founder"
 
 # Social links
 github_username: tuousername  # sostituisci con il tuo username GitHub
-linkedin_username: tuolinkedin # sostituisci con il tuo username LinkedIn
+# linkedin_username: tuolinkedin # sostituisci con il tuo username LinkedIn
 
 # Exclude from processing
 exclude:

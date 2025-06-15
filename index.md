@@ -1,5 +1,6 @@
 ---
-layout: modern
+layout: modern_en
+lang: en
 ---
 
 <div class="modern-hero">
@@ -16,7 +17,7 @@ layout: modern
     <div class="hero-content">
       <div class="hero-badge">
         <span class="badge-icon">🚀</span>
-        <span>Nuova Era dell'Educazione</span>
+        <span>New Era of Education</span>
       </div>
       
       <h1 class="modern-hero-title">
@@ -25,26 +26,26 @@ layout: modern
       </h1>
       
       <p class="modern-hero-subtitle">
-        <strong class="highlight">Impara, valuta, guadagna.</strong>
-        <br>Una piattaforma educativa peer-to-peer che unisce apprendimento creativo, 
-        valutazione tra pari e un sistema di ricompensa digitale basato su <span class="teocoin-highlight">TeoCoin</span>.
+        <strong class="highlight">Learn, evaluate, earn.</strong>
+        <br>A peer-to-peer educational platform that combines creative learning, 
+        peer assessment and a digital reward system based on <span class="teocoin-highlight">TeoCoin</span>.
       </p>
       
       <div class="mission-card">
         <div class="mission-icon">💡</div>
         <div class="mission-text">
-          <em>"Chi impara merita fiducia, chi insegna merita riconoscimento."</em>
+          <em>"Those who learn deserve trust, those who teach deserve recognition."</em>
         </div>
       </div>
       
       <div class="hero-stats">
         <div class="stat-item">
           <div class="stat-number">MVP</div>
-          <div class="stat-label">Completo</div>
+          <div class="stat-label">Complete</div>
         </div>
         <div class="stat-item">
           <div class="stat-number">3</div>
-          <div class="stat-label">Tecnologie Blockchain</div>
+          <div class="stat-label">Blockchain Technologies</div>
         </div>
         <div class="stat-item">
           <div class="stat-number">100%</div>
@@ -53,11 +54,11 @@ layout: modern
       </div>
       
       <div class="modern-hero-buttons">
-        <a href="/demo/" class="btn-modern btn-primary">
-          <span class="btn-text">Esplora Demo</span>
+        <a href="/eng/features/" class="btn-modern btn-primary">
+          <span class="btn-text">Explore Features</span>
           <span class="btn-icon">→</span>
         </a>
-        <a href="/roadmap/" class="btn-modern btn-secondary">
+        <a href="/eng/roadmap/" class="btn-modern btn-secondary">
           <span class="btn-text">TeoCoin Roadmap</span>
           <span class="btn-icon">🪙</span>
         </a>
@@ -84,19 +85,19 @@ layout: modern
           <div class="dashboard-grid">
             <div class="grid-item">
               <div class="icon">🎨</div>
-              <div class="label">Arte Digitale</div>
+              <div class="label">Digital Art</div>
             </div>
             <div class="grid-item">
               <div class="icon">📱</div>
-              <div class="label">Design UI/UX</div>
+              <div class="label">UI/UX Design</div>
             </div>
             <div class="grid-item">
               <div class="icon">🎭</div>
-              <div class="label">Teatro</div>
+              <div class="label">Theater</div>
             </div>
             <div class="grid-item">
               <div class="icon">🎵</div>
-              <div class="label">Musica</div>
+              <div class="label">Music</div>
             </div>
           </div>
         </div>
@@ -108,12 +109,12 @@ layout: modern
 <section class="modern-vision-section">
   <div class="container">
     <div class="section-header">
-      <span class="section-badge">🚀 Visione</span>
+      <span class="section-badge">🚀 Vision</span>
       <h2 class="modern-section-title">
-        Rivoluzionando l'<span class="gradient-text">Educazione</span>
+        Revolutionizing <span class="gradient-text">Education</span>
       </h2>
       <p class="section-description">
-        Crediamo che l'arte e il sapere non debbano essere filtrati da modelli elitari o centralizzati
+        We believe that art and knowledge should not be filtered by elitist or centralized models
       </p>
     </div>
     
@@ -123,8 +124,8 @@ layout: modern
         <div class="card-icon">
           <div class="icon-bg">🎓</div>
         </div>
-        <h3>Chi Impara</h3>
-        <p>Guadagna esperienza e ricompense reali (TeoCoin) per l'impegno e la crescita personale</p>
+        <h3>Learners</h3>
+        <p>Gain experience and real rewards (TeoCoin) for commitment and personal growth</p>
         <div class="card-accent"></div>
       </div>
       
@@ -133,8 +134,8 @@ layout: modern
         <div class="card-icon">
           <div class="icon-bg">👨‍🏫</div>
         </div>
-        <h3>Chi Insegna</h3>
-        <p>Monetizza la propria conoscenza e riceve riconoscimento per l'expertise condivisa</p>
+        <h3>Teachers</h3>
+        <p>Monetize their knowledge and receive recognition for shared expertise</p>
         <div class="card-accent"></div>
       </div>
       
@@ -143,8 +144,8 @@ layout: modern
         <div class="card-icon">
           <div class="icon-bg">🤝</div>
         </div>
-        <h3>Chi Partecipa</h3>
-        <p>Fa crescere la qualità dei contenuti grazie alla valutazione peer-to-peer collaborativa</p>
+        <h3>Participants</h3>
+        <p>Improve content quality through collaborative peer-to-peer evaluation</p>
         <div class="card-accent"></div>
       </div>
     </div>
@@ -154,9 +155,9 @@ layout: modern
 <section class="modern-how-it-works">
   <div class="container">
     <div class="section-header">
-      <span class="section-badge">💡 Processo</span>
+      <span class="section-badge">💡 Process</span>
       <h2 class="modern-section-title">
-        Come <span class="gradient-text">Funziona</span>
+        How It <span class="gradient-text">Works</span>
       </h2>
     </div>
     
@@ -170,8 +171,8 @@ layout: modern
         </div>
         <div class="step-content">
           <div class="step-icon">📚</div>
-          <h3>Corsi Creativi</h3>
-          <p>Maestri d'arte e creativi digitali creano contenuti educativi innovativi</p>
+          <h3>Creative Courses</h3>
+          <p>Art masters and digital creatives create innovative educational content</p>
         </div>
       </div>
       
@@ -182,8 +183,8 @@ layout: modern
         </div>
         <div class="step-content">
           <div class="step-icon">✏️</div>
-          <h3>Esercizi Pratici</h3>
-          <p>Lezioni interattive con progetti reali da completare e portfolio da costruire</p>
+          <h3>Practical Exercises</h3>
+          <p>Interactive lessons with real projects to complete and portfolios to build</p>
         </div>
       </div>
       
@@ -195,7 +196,7 @@ layout: modern
         <div class="step-content">
           <div class="step-icon">👥</div>
           <h3>Peer Review</h3>
-          <p>Sistema di valutazione collaborativa dove studenti si valutano reciprocamente</p>
+          <p>Collaborative evaluation system where students assess each other</p>
         </div>
       </div>
       
@@ -206,8 +207,8 @@ layout: modern
         </div>
         <div class="step-content">
           <div class="step-icon">🪙</div>
-          <h3>Ricompense TeoCoin</h3>
-          <p>Token distribuiti per studenti promossi, reviewer attivi e contributi di qualità</p>
+          <h3>TeoCoin Rewards</h3>
+          <p>Tokens distributed for promoted students, active reviewers and quality contributions</p>
         </div>
       </div>
     </div>
@@ -217,9 +218,9 @@ layout: modern
 <section class="modern-status-section">
   <div class="container">
     <div class="section-header">
-      <span class="section-badge">🧠 Stato Attuale</span>
+      <span class="section-badge">🧠 Current Status</span>
       <h2 class="modern-section-title">
-        Il Nostro <span class="gradient-text">Progresso</span>
+        Our <span class="gradient-text">Progress</span>
       </h2>
     </div>
     
@@ -230,8 +231,8 @@ layout: modern
             <i class="fas fa-check"></i>
           </div>
         </div>
-        <h3>MVP Completo</h3>
-        <p>Backend Django robusto + Frontend React moderno</p>
+        <h3>Complete MVP</h3>
+        <p>Robust Django backend + Modern React frontend</p>
         <div class="status-progress">
           <div class="progress-bar">
             <div class="progress-fill" style="width: 100%"></div>
@@ -246,8 +247,8 @@ layout: modern
             <i class="fas fa-users"></i>
           </div>
         </div>
-        <h3>Sistema Review</h3>
-        <p>Valutazione automatizzata peer-to-peer intelligente</p>
+        <h3>Review System</h3>
+        <p>Intelligent automated peer-to-peer evaluation</p>
         <div class="status-progress">
           <div class="progress-bar">
             <div class="progress-fill" style="width: 100%"></div>
@@ -263,7 +264,7 @@ layout: modern
           </div>
         </div>
         <h3>Blockchain</h3>
-        <p>Integrazione Polygon Amoy con TeoCoin ERC-20</p>
+        <p>Polygon Amoy integration with TeoCoin ERC-20</p>
         <div class="status-progress">
           <div class="progress-bar">
             <div class="progress-fill" style="width: 100%"></div>
@@ -280,10 +281,10 @@ layout: modern
     <div class="section-header">
       <span class="section-badge">✨ Features</span>
       <h2 class="modern-section-title">
-        Caratteristiche <span class="gradient-text">Principali</span>
+        Key <span class="gradient-text">Features</span>
       </h2>
       <p class="section-description">
-        Scopri le funzionalità innovative che rendono unica la nostra piattaforma educativa
+        Discover the innovative features that make our educational platform unique
       </p>
     </div>
     <div class="row">
@@ -292,8 +293,8 @@ layout: modern
           <div class="feature-icon">
             <i class="fas fa-graduation-cap"></i>
           </div>
-          <h3>Gestione Corsi</h3>
-          <p>Sistema completo per la creazione, gestione e fruizione di corsi d'arte con strumenti avanzati per studenti e insegnanti.</p>
+          <h3>Course Management</h3>
+          <p>Complete system for creating, managing and delivering art courses with advanced tools for students and teachers.</p>
         </div>
       </div>
       <div class="col-md-4">
@@ -302,7 +303,7 @@ layout: modern
             <i class="fas fa-link"></i>
           </div>
           <h3>Blockchain Integration</h3>
-          <p>Integrazione nativa con Polygon per transazioni sicure, gestione wallet e smart contracts per certificazioni.</p>
+          <p>Native integration with Polygon for secure transactions, wallet management and smart contracts for certifications.</p>
         </div>
       </div>
       <div class="col-md-4">
@@ -310,8 +311,8 @@ layout: modern
           <div class="feature-icon">
             <i class="fas fa-trophy"></i>
           </div>
-          <h3>Sistema Reward</h3>
-          <p>Guadagna TeoCoins completando esercizi, lasciando recensioni e raggiungendo obiettivi di apprendimento.</p>
+          <h3>Reward System</h3>
+          <p>Earn TeoCoins by completing exercises, leaving reviews and achieving learning objectives.</p>
         </div>
       </div>
     </div>
@@ -323,10 +324,10 @@ layout: modern
     <div class="section-header">
       <span class="section-badge">🔧 Tech Stack</span>
       <h2 class="modern-section-title">
-        Tecnologie <span class="gradient-text">All'Avanguardia</span>
+        Cutting-Edge <span class="gradient-text">Technologies</span>
       </h2>
       <p class="section-description">
-        La nostra piattaforma è costruita utilizzando le tecnologie più moderne e sicure
+        Our platform is built using the most modern and secure technologies
       </p>
     </div>
     
@@ -337,25 +338,25 @@ layout: modern
       <li><strong>Security:</strong> JWT Authentication, Encrypted Wallets</li>
     </ul>
     
-    <!-- Sezione Più Dettagli Centrata -->
+    <!-- Centered More Details Section -->
     <div class="more-details-centered">
-      <h3 class="details-title">Più Dettagli</h3>
+      <h3 class="details-title">More Details</h3>
       <div class="tech-stack-centered">
         <div class="tech-item">
-          <img src="/assets/images/react-logo.png" alt="React">
+          <img src="/assets/images/react-logo.png" alt="React" width="40" height="40" loading="lazy">
         </div>
         <div class="tech-item">
-          <img src="/assets/images/django-logo.png" alt="Django">
+          <img src="/assets/images/django-logo.png" alt="Django" width="40" height="40" loading="lazy">
         </div>
         <div class="tech-item">
-          <img src="/assets/images/polygon-logo.png" alt="Polygon">
+          <img src="/assets/images/polygon-logo.png" alt="Polygon" width="40" height="40" loading="lazy">
         </div>
         <div class="tech-item">
-          <img src="/assets/images/web3-logo.png" alt="Web3">
+          <img src="/assets/images/web3-logo.png" alt="Web3" width="40" height="40" loading="lazy">
         </div>
       </div>
       <div class="details-button-wrapper">
-        <a href="/technology/" class="btn btn-outline">Dettagli Tecnici</a>
+        <a href="/eng/technology/" class="btn btn-outline">Technical Details</a>
       </div>
     </div>
   </div>
@@ -364,9 +365,9 @@ layout: modern
 <section class="cta-section">
   <div class="container">
     <div class="cta-content">
-      <h2>Pronto a Iniziare?</h2>
-      <p>Unisciti alla rivoluzione dell'educazione artistica digitale</p>
-      <a href="/contact/" class="btn btn-primary btn-lg">Contattaci</a>
+      <h2>Ready to Start?</h2>
+      <p>Join the digital art education revolution</p>
+      <a href="/eng/contact/" class="btn btn-primary btn-lg">Contact Us</a>
     </div>
   </div>
 </section>

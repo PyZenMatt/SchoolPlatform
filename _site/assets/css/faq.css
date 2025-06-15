@@ -1,0 +1,1103 @@
+/* FAQ Page Styles - Specific to FAQ page only */
+/* FAQ-specific CSS Variables */
+:root {
+  --faq-primary: #6366f1;
+  --faq-secondary: #4f46e5;
+  --faq-accent: #10b981;
+  --faq-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --faq-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --faq-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --faq-gradient-4: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --faq-gradient-5: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --faq-gradient-6: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --faq-dark-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --faq-card-bg: rgba(255, 255, 255, 0.05);
+  --faq-text-primary: #ffffff;
+  --faq-text-secondary: rgba(255, 255, 255, 0.8);
+  --faq-text-muted: rgba(255, 255, 255, 0.6);
+}
+
+/* FAQ Page Wrapper */
+.faq-page,
+body.faq-page {
+  background: var(--faq-dark-bg);
+  min-height: 100vh;
+  color: var(--faq-text-primary);
+}
+
+/* FAQ-specific sections to avoid conflicts */
+.faq-hero {
+  background: var(--faq-dark-bg);
+  padding: 8rem 0 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.faq-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  z-index: 0;
+}
+.faq-hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Investment Opportunity Section - FAQ specific */
+.faq-investment-opportunity {
+  background: var(--faq-dark-bg);
+  padding: 6rem 0;
+  position: relative;
+}
+
+.faq-investment-content {
+  position: relative;
+  z-index: 1;
+}
+
+.opportunity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2.5rem;
+  margin-top: 4rem;
+}
+
+.opportunity-card {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.opportunity-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(79, 70, 229, 0.2), rgba(16, 185, 129, 0.2));
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.opportunity-card:hover {
+  transform: translateY(-10px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+.opportunity-card:hover::before {
+  opacity: 1;
+}
+.opportunity-card h3 {
+  color: var(--faq-text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem 0;
+}
+.opportunity-card p {
+  color: var(--faq-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.opportunity-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.metric {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+.metric strong {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--faq-accent);
+  margin-bottom: 0.5rem;
+}
+.metric + p, .metric span {
+  font-size: 0.9rem;
+  color: var(--faq-text-muted);
+}
+
+/* FAQ Accordion Section */
+.faq-accordion {
+  background: var(--faq-dark-bg);
+  padding: 6rem 0;
+}
+
+.faq-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* FAQ Category Styles */
+.faq-category {
+  margin-bottom: 3rem;
+}
+
+.faq-category-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--faq-text-primary);
+  margin-bottom: 2rem;
+  padding: 1rem 1.5rem;
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+}
+.faq-category-title:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.faq-item {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.faq-item:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+.faq-item.active {
+  border-color: var(--faq-primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.faq-question {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 2rem 2.5rem;
+  text-align: left;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--faq-text-primary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+.faq-question:hover {
+  color: var(--faq-primary);
+}
+.faq-question.active {
+  color: var(--faq-primary);
+}
+
+.faq-icon {
+  font-size: 1.5rem;
+  color: var(--faq-text-muted);
+  transition: all 0.3s ease;
+  transform: rotate(0deg);
+}
+
+.faq-question.active .faq-icon {
+  color: var(--faq-primary);
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 2.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+.faq-answer.open {
+  max-height: 1000px;
+  padding: 0 2.5rem 2rem 2.5rem;
+  opacity: 1;
+}
+.faq-answer p {
+  color: var(--faq-text-secondary);
+  font-size: 1rem;
+  line-height: 1.7;
+  margin: 0;
+}
+.faq-answer p strong {
+  color: var(--faq-text-primary);
+  font-weight: 600;
+}
+.faq-answer ul {
+  color: var(--faq-text-secondary);
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+.faq-answer ul li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+/* FAQ Specific Features Grid Section */
+.faq-features-grid-section {
+  padding: 8rem 0;
+  background: var(--faq-dark-bg);
+  position: relative;
+  color: var(--faq-text-primary);
+}
+.faq-features-grid-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+.faq-features-grid-section .container {
+  position: relative;
+  z-index: 1;
+}
+
+.faq-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 4rem;
+  position: relative;
+  z-index: 1;
+  /* Ensure 4 cards display properly */
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .faq-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1200px) {
+  .faq-features-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+@media (min-width: 1400px) {
+  .faq-features-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+}
+
+.faq-feature-card-modern {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 2rem 1.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  color: var(--faq-text-primary);
+}
+@media (min-width: 768px) {
+  .faq-feature-card-modern {
+    padding: 2.5rem 2rem;
+  }
+}
+@media (min-width: 1200px) {
+  .faq-feature-card-modern {
+    padding: 2rem 1.5rem;
+  }
+}
+@media (min-width: 1400px) {
+  .faq-feature-card-modern {
+    padding: 2.5rem 2rem;
+  }
+}
+.faq-feature-card-modern::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(79, 70, 229, 0.2), rgba(16, 185, 129, 0.2));
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.faq-feature-card-modern::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.faq-feature-card-modern:hover {
+  transform: translateY(-10px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+}
+.faq-feature-card-modern:hover::before {
+  opacity: 1;
+}
+.faq-feature-card-modern:hover::after {
+  opacity: 1;
+}
+.faq-feature-card-modern:hover .faq-feature-icon-modern .icon-bg {
+  transform: scale(1.1) rotate(5deg);
+}
+.faq-feature-card-modern h3 {
+  color: var(--faq-text-primary);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem 0;
+  line-height: 1.3;
+}
+@media (min-width: 768px) {
+  .faq-feature-card-modern h3 {
+    font-size: 1.4rem;
+  }
+}
+@media (min-width: 1200px) {
+  .faq-feature-card-modern h3 {
+    font-size: 1.2rem;
+  }
+}
+@media (min-width: 1400px) {
+  .faq-feature-card-modern h3 {
+    font-size: 1.4rem;
+  }
+}
+.faq-feature-card-modern p {
+  color: var(--faq-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+  .faq-feature-card-modern p {
+    font-size: 1rem;
+  }
+}
+@media (min-width: 1200px) {
+  .faq-feature-card-modern p {
+    font-size: 0.85rem;
+  }
+}
+@media (min-width: 1400px) {
+  .faq-feature-card-modern p {
+    font-size: 0.95rem;
+  }
+}
+
+.faq-feature-icon-modern {
+  margin-bottom: 1.5rem;
+}
+.faq-feature-icon-modern .icon-bg {
+  width: 70px;
+  height: 70px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+@media (min-width: 1200px) {
+  .faq-feature-icon-modern .icon-bg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+    border-radius: 16px;
+  }
+}
+@media (min-width: 1400px) {
+  .faq-feature-icon-modern .icon-bg {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+    border-radius: 18px;
+  }
+}
+.faq-feature-icon-modern .icon-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  opacity: 0.8;
+  transition: opacity 0.4s ease;
+}
+.faq-feature-icon-modern .icon-bg.gradient-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.faq-feature-icon-modern .icon-bg.gradient-2 {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.faq-feature-icon-modern .icon-bg.gradient-3 {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.faq-feature-icon-modern .icon-bg.gradient-4 {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+}
+.faq-feature-icon-modern .icon-bg.gradient-5 {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+.faq-feature-icon-modern .icon-bg.gradient-6 {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.faq-feature-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.faq-highlight-tag {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--faq-primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  transition: all 0.3s ease;
+}
+.faq-highlight-tag:hover {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.faq-feature-status {
+  margin-top: 1rem;
+}
+
+.faq-status-badge {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.faq-status-badge.revenue {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+.faq-status-badge.growth {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+.faq-status-badge.tech {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+}
+.faq-status-badge.market {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+.faq-status-badge.investment {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+/* CTA Section */
+.cta-section {
+  background: var(--faq-gradient-1);
+  padding: 6rem 0;
+  text-align: center;
+  color: white;
+}
+
+/* Investment CTA */
+.investment-cta {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 4rem 3rem;
+  text-align: center;
+  margin: 4rem 0;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.investment-cta::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(79, 70, 229, 0.3), rgba(16, 185, 129, 0.3));
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.investment-cta::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.investment-cta:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+}
+.investment-cta:hover::before {
+  opacity: 1;
+}
+.investment-cta:hover::after {
+  opacity: 1;
+}
+.investment-cta .cta-content h3 {
+  color: var(--faq-text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+.investment-cta .cta-content p {
+  color: var(--faq-text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* FAQ Comprehensive Section - Horizontal Layout */
+.faq-comprehensive-section {
+  padding: 8rem 0;
+  background: var(--faq-dark-bg);
+  position: relative;
+  color: var(--faq-text-primary);
+}
+.faq-comprehensive-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+.faq-comprehensive-section .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* FAQ Navigation Tabs */
+.faq-nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 4rem 0 3rem 0;
+  flex-wrap: wrap;
+}
+
+.faq-tab {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--faq-text-secondary);
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+.faq-tab::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(79, 70, 229, 0.3), rgba(16, 185, 129, 0.3));
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+.faq-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: var(--faq-text-primary);
+  transform: translateY(-2px);
+}
+.faq-tab:hover::before {
+  opacity: 1;
+}
+.faq-tab.active {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: var(--faq-primary);
+  color: var(--faq-primary);
+  transform: translateY(-2px);
+}
+.faq-tab.active::before {
+  opacity: 1;
+}
+.faq-tab .tab-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+.faq-tab .tab-text {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.faq-tab:hover .tab-icon, .faq-tab.active .tab-icon {
+  transform: scale(1.1);
+}
+
+/* FAQ Section Content */
+.faq-section-content {
+  display: none;
+  animation: fadeIn 0.5s ease-out;
+}
+.faq-section-content.active {
+  display: block;
+}
+
+/* FAQ Horizontal Grid */
+.faq-horizontal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+.faq-horizontal-grid:last-child {
+  margin-bottom: 0;
+}
+
+/* FAQ Card Horizontal */
+.faq-card-horizontal {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+.faq-card-horizontal::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(79, 70, 229, 0.2), rgba(16, 185, 129, 0.2));
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.faq-card-horizontal::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.05) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+.faq-card-horizontal:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+.faq-card-horizontal:hover::before {
+  opacity: 1;
+}
+.faq-card-horizontal:hover::after {
+  opacity: 1;
+}
+.faq-card-horizontal:hover .faq-card-icon .icon-bg {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* FAQ Card Icon */
+.faq-card-icon {
+  flex-shrink: 0;
+}
+.faq-card-icon .icon-bg {
+  width: 80px;
+  height: 80px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.faq-card-icon .icon-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  opacity: 0.8;
+  transition: opacity 0.4s ease;
+}
+.faq-card-icon .icon-bg.gradient-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.faq-card-icon .icon-bg.gradient-2 {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.faq-card-icon .icon-bg.gradient-3 {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.faq-card-icon .icon-bg.gradient-4 {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+}
+.faq-card-icon .icon-bg.gradient-5 {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+.faq-card-icon .icon-bg.gradient-6 {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+/* FAQ Card Content */
+.faq-card-content {
+  flex: 1;
+  min-width: 0;
+}
+.faq-card-content h3 {
+  color: var(--faq-text-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+}
+.faq-card-content p {
+  color: var(--faq-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+.faq-card-content p strong {
+  color: var(--faq-text-primary);
+  font-weight: 600;
+}
+
+/* FAQ Card Metrics */
+.faq-card-metrics {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.metric-item .metric-number {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--faq-accent);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+.metric-item .metric-label {
+  font-size: 0.8rem;
+  color: var(--faq-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .features-hero {
+    padding: 6rem 0 3rem 0;
+  }
+  .opportunity-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .opportunity-card {
+    padding: 2.5rem 2rem;
+  }
+  .faq-question {
+    padding: 1.5rem 2rem;
+    font-size: 1.1rem;
+  }
+  .faq-answer.open {
+    padding: 0 2rem 1.5rem 2rem;
+  }
+  .cta-content h2 {
+    font-size: 2rem;
+  }
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  .btn-primary-cta,
+  .btn-secondary-cta {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+@media (max-width: 480px) {
+  .opportunity-card {
+    padding: 2rem 1.5rem;
+  }
+  .faq-question {
+    padding: 1.25rem 1.5rem;
+    font-size: 1rem;
+  }
+  .faq-answer.open {
+    padding: 0 1.5rem 1.25rem 1.5rem;
+  }
+  .metric-value {
+    font-size: 2rem;
+  }
+}
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Loading Animation for Dynamic Content */
+.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--faq-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Responsive Design for Horizontal Layout */
+@media (max-width: 1024px) {
+  .faq-horizontal-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .faq-card-horizontal {
+    padding: 2rem;
+    gap: 1.5rem;
+  }
+  .faq-card-icon .icon-bg {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+  }
+}
+@media (max-width: 768px) {
+  .faq-comprehensive-section {
+    padding: 6rem 0;
+  }
+  .faq-nav-tabs {
+    margin: 3rem 0 2rem 0;
+    gap: 0.5rem;
+  }
+  .faq-tab {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  .faq-tab .tab-icon {
+    font-size: 1rem;
+  }
+  .faq-tab .tab-text {
+    font-size: 0.9rem;
+  }
+  .faq-card-horizontal {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+  }
+  .faq-card-horizontal .faq-card-content {
+    text-align: left;
+  }
+  .faq-card-metrics {
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .metric-item {
+    align-items: center;
+    text-align: center;
+  }
+}
+@media (max-width: 480px) {
+  .faq-nav-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  .faq-tab {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+  }
+  .faq-card-horizontal {
+    padding: 1.5rem;
+  }
+  .faq-card-icon .icon-bg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  .faq-card-content h3 {
+    font-size: 1.2rem;
+  }
+  .metric-item .metric-number {
+    font-size: 1.5rem;
+  }
+  .faq-card-metrics {
+    gap: 1rem;
+  }
+}
+/* ========================================
+   KRAMDOWN CLASS ATTRIBUTE SUPPORT
+   ======================================== */
+/* Support for {:.class} syntax in Markdown */
+.faq-hero .container,
+.faq-investment-opportunity .container,
+.faq-features-grid-section .container,
+.faq-comprehensive-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Support for data-aos attributes in Markdown */
+[data-aos] {
+  opacity: 0;
+  transition: all 0.6s ease-out;
+}
+[data-aos].aos-animate {
+  opacity: 1;
+}
+
+/* FAQ Questions and Answers styling for Markdown */
+.faq-accordion {
+  margin: 4rem 0;
+}
+.faq-accordion h4 {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px 16px 0 0;
+  padding: 1.5rem 2rem;
+  margin: 2rem 0 0 0;
+  color: var(--faq-text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.faq-accordion h4::after {
+  content: "+";
+  position: absolute;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+.faq-accordion h4:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+.faq-accordion h4.active::after {
+  transform: translateY(-50%) rotate(45deg);
+}
+.faq-accordion h4 + p {
+  background: var(--faq-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+  padding: 2rem;
+  margin: 0 0 0 0;
+  color: var(--faq-text-secondary);
+  line-height: 1.6;
+  display: none;
+}
+.faq-accordion h4 + p.open {
+  display: block;
+  animation: fadeInDown 0.3s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*# sourceMappingURL=faq.css.map */

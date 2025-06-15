@@ -1,0 +1,107 @@
+<!-- Modern Navigation -->
+<nav class="modern-navbar">
+    <div class="container">
+        <div class="navbar-content">
+            <a href="{{ '/' | relative_url }}" class="navbar-brand">
+                <span class="brand-icon">🎓</span>
+                <span class="brand-text">SchoolPlatform</span>
+            </a>
+            
+            <div class="navbar-menu">
+                {% if page.lang == 'it' %}
+                    {% for item in site.navigation_it %}
+                    <a href="{{ item.url | relative_url }}" class="nav-link">{{ item.title }}</a>
+                    {% endfor %}
+                {% else %}
+                    {% for item in site.navigation_en %}
+                    <a href="{{ item.url | relative_url }}" class="nav-link">{{ item.title }}</a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="navbar-actions">
+                <div class="language-switcher">
+                    {% comment %}
+                    Smart language switcher that maps current page to corresponding language version
+                    {% endcomment %}
+                    {% assign current_page = page.url | remove: '/index.html' | remove: '.html' %}
+                    {% assign page_name = current_page | split: '/' | last %}
+                    
+                    {% if page.lang == 'it' %}
+                        {% comment %} From Italian to English {% endcomment %}
+                        {% if current_page == '/ita/' or current_page == '/ita' %}
+                            <a href="/" class="lang-link" title="English">EN</a>
+                        {% elsif page_name == '' %}
+                            <a href="/" class="lang-link" title="English">EN</a>
+                        {% else %}
+                            <a href="/eng/{{ page_name }}/" class="lang-link" title="English">EN</a>
+                        {% endif %}
+                        <span class="lang-separator">|</span>
+                        <a href="{{ page.url }}" class="lang-link active" title="Italiano">IT</a>
+                    {% else %}
+                        {% comment %} From English to Italian {% endcomment %}
+                        <a href="{{ page.url }}" class="lang-link active" title="English">EN</a>
+                        <span class="lang-separator">|</span>
+                        {% if current_page == '/' or current_page == '' %}
+                            <a href="/ita/" class="lang-link" title="Italiano">IT</a>
+                        {% elsif page_name == '' %}
+                            <a href="/ita/" class="lang-link" title="Italiano">IT</a>
+                        {% else %}
+                            <a href="/ita/{{ page_name }}/" class="lang-link" title="Italiano">IT</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if page.lang == 'it' %}
+                    <a href="/ita/invest/" class="btn-nav">Invest</a>
+                {% else %}
+                    <a href="/invest/" class="btn-nav">Invest</a>
+                {% endif %}
+                <button class="mobile-menu-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu">
+            {% if page.lang == 'it' %}
+                {% for item in site.navigation_it %}
+                <a href="{{ item.url | relative_url }}" class="mobile-nav-link">{{ item.title }}</a>
+                {% endfor %}
+                <a href="/ita/invest/" class="mobile-nav-link">Invest</a>
+            {% else %}
+                {% for item in site.navigation_en %}
+                <a href="{{ item.url | relative_url }}" class="mobile-nav-link">{{ item.title }}</a>
+                {% endfor %}
+                <a href="/invest/" class="mobile-nav-link">Invest</a>
+            {% endif %}
+            <div class="mobile-language-switcher">
+                {% comment %} Smart mobile language switcher {% endcomment %}
+                {% assign current_page = page.url | remove: '/index.html' | remove: '.html' %}
+                {% assign page_name = current_page | split: '/' | last %}
+                
+                {% if page.lang == 'it' %}
+                    {% if current_page == '/ita/' or current_page == '/ita' %}
+                        <a href="/" class="mobile-lang-link">English</a>
+                    {% elsif page_name == '' %}
+                        <a href="/" class="mobile-lang-link">English</a>
+                    {% else %}
+                        <a href="/eng/{{ page_name }}/" class="mobile-lang-link">English</a>
+                    {% endif %}
+                    <a href="{{ page.url }}" class="mobile-lang-link active">Italiano</a>
+                {% else %}
+                    <a href="{{ page.url }}" class="mobile-lang-link active">English</a>
+                    {% if current_page == '/' or current_page == '' %}
+                        <a href="/ita/" class="mobile-lang-link">Italiano</a>
+                    {% elsif page_name == '' %}
+                        <a href="/ita/" class="mobile-lang-link">Italiano</a>
+                    {% else %}
+                        <a href="/ita/{{ page_name }}/" class="mobile-lang-link">Italiano</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

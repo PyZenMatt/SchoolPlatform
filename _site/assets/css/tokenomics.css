@@ -1,0 +1,373 @@
+/* Tokenomics Page Styles - Combining Status Cards + Timeline */
+.tokenomics-hero {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.95) 25%, rgba(26, 35, 126, 0.95) 75%, rgba(40, 53, 147, 0.93) 100%), radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 100px 0 80px;
+}
+.tokenomics-hero .section-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 2rem;
+  display: inline-block;
+}
+.tokenomics-hero .modern-section-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+.tokenomics-hero .section-description {
+  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tokenomics-roadmap {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.95) 25%, rgba(26, 35, 126, 0.95) 75%, rgba(40, 53, 147, 0.93) 100%), radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%);
+  padding: 100px 0;
+  position: relative;
+  overflow: hidden;
+}
+.tokenomics-roadmap::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="circuit" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10h5v5h5v-5h5v5h5v-5M10 0v5h5v5h-5v5h5v5" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23circuit)"/></svg>');
+  opacity: 0.4;
+  z-index: 0;
+}
+.tokenomics-roadmap .section-header {
+  margin-bottom: 4rem;
+}
+.tokenomics-roadmap .section-header .section-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+.tokenomics-roadmap .section-header .modern-section-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+.tokenomics-roadmap .section-header .section-description {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.tokenomics-timeline {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.tokenomics-timeline .timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--gradient-accent), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  transform: translateX(-50%);
+  z-index: 1;
+  border-radius: 2px;
+}
+.tokenomics-timeline .tokenomics-phase {
+  position: relative;
+  margin-bottom: 4rem;
+  z-index: 2;
+}
+.tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content {
+  margin-left: 0;
+  margin-right: 50%;
+  padding-right: 3rem;
+  text-align: right;
+}
+.tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content .phase-features .feature-item {
+  justify-content: flex-end;
+  text-align: right;
+}
+.tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content .phase-features .feature-item i {
+  order: 2;
+  margin-left: 12px;
+  margin-right: 0;
+}
+.tokenomics-timeline .tokenomics-phase:nth-child(odd) .phase-content {
+  margin-left: 50%;
+  margin-right: 0;
+  padding-left: 3rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-circle {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: all 0.4s ease;
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.tokenomics-timeline .tokenomics-phase .phase-circle .phase-icon {
+  font-size: 1.8rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-circle .phase-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+.tokenomics-timeline .tokenomics-phase.completed .phase-circle {
+  background: var(--gradient-success);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.tokenomics-timeline .tokenomics-phase.completed .phase-circle .phase-pulse {
+  border-color: rgba(34, 197, 94, 0.6);
+}
+.tokenomics-timeline .tokenomics-phase.active .phase-circle {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.tokenomics-timeline .tokenomics-phase.active .phase-circle .phase-pulse {
+  border-color: rgba(255, 154, 158, 0.6);
+}
+.tokenomics-timeline .tokenomics-phase .phase-content {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  color: white;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-medium);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-badge.completed {
+  background: rgba(34, 197, 94, 0.2);
+  color: rgb(34, 197, 94);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-badge.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: rgb(59, 130, 246);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.tokenomics-timeline .tokenomics-phase .phase-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-features {
+  margin-bottom: 1.5rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-features .feature-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-features .feature-item i {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-progress {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-progress .progress-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-progress .progress-bar .progress-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+.tokenomics-timeline .tokenomics-phase .phase-content .phase-progress .progress-text {
+  font-weight: 600;
+  color: #ffd700;
+  font-size: 0.9rem;
+}
+
+.tokenomics-cta {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.95) 25%, rgba(26, 35, 126, 0.95) 75%, rgba(40, 53, 147, 0.93) 100%), radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%);
+  padding: 80px 0;
+  text-align: center;
+}
+.tokenomics-cta .cta-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.tokenomics-cta .cta-content h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+}
+.tokenomics-cta .cta-content p {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tokenomics-hero {
+    min-height: 70vh;
+    padding: 60px 0;
+  }
+  .tokenomics-hero .modern-section-title {
+    font-size: 2.5rem;
+  }
+  .tokenomics-hero .section-description {
+    font-size: 1.1rem;
+  }
+  .tokenomics-roadmap {
+    padding: 60px 0;
+  }
+  .tokenomics-roadmap .section-header .modern-section-title {
+    font-size: 2.2rem;
+  }
+  .tokenomics-roadmap .section-header .section-description {
+    font-size: 1rem;
+  }
+  .tokenomics-timeline .timeline-line {
+    left: 30px;
+    transform: none;
+  }
+  .tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content, .tokenomics-timeline .tokenomics-phase:nth-child(odd) .phase-content {
+    margin-left: 80px;
+    margin-right: 0;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    text-align: left;
+  }
+  .tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content .phase-features .feature-item, .tokenomics-timeline .tokenomics-phase:nth-child(odd) .phase-content .phase-features .feature-item {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .tokenomics-timeline .tokenomics-phase:nth-child(even) .phase-content .phase-features .feature-item i, .tokenomics-timeline .tokenomics-phase:nth-child(odd) .phase-content .phase-features .feature-item i {
+    order: 0;
+    margin-left: 0;
+    margin-right: 12px;
+  }
+  .tokenomics-timeline .tokenomics-phase .phase-circle {
+    left: 30px;
+    width: 60px;
+    height: 60px;
+    transform: none;
+  }
+  .tokenomics-timeline .tokenomics-phase .phase-circle .phase-icon {
+    font-size: 1.4rem;
+  }
+  .tokenomics-cta {
+    padding: 60px 0;
+  }
+  .tokenomics-cta .cta-content h2 {
+    font-size: 2rem;
+  }
+  .tokenomics-cta .cta-content p {
+    font-size: 1rem;
+  }
+}
+@media (max-width: 480px) {
+  .tokenomics-hero {
+    min-height: 60vh;
+  }
+  .tokenomics-hero .modern-section-title {
+    font-size: 2rem;
+  }
+  .tokenomics-timeline .tokenomics-phase .phase-content {
+    padding: 1.5rem;
+  }
+  .tokenomics-timeline .tokenomics-phase .phase-content h3 {
+    font-size: 1.3rem;
+  }
+}
+
+/*# sourceMappingURL=tokenomics.css.map */
