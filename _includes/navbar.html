@@ -67,6 +67,34 @@
         
         <!-- Mobile Menu -->
         <div class="mobile-menu">
+            <!-- Language switcher at the top right -->
+            <div class="mobile-language-switcher">
+                {% assign current_page = page.url | remove: '/index.html' | remove: '.html' %}
+                {% assign page_segments = current_page | split: '/' %}
+                {% assign page_name = page_segments | last %}
+                
+                {% if page.lang == 'it' %}
+                    {% if current_page == '/ita/' or current_page == '/ita/index' %}
+                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">🇺🇸</a>
+                    {% elsif page_name == 'index' or page_name == '' %}
+                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">🇺🇸</a>
+                    {% else %}
+                        <a href="{{ '/eng/' | append: page_name | relative_url }}" class="mobile-lang-link">🇺🇸</a>
+                    {% endif %}
+                    <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">🇮🇹</a>
+                {% else %}
+                    <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">🇺🇸</a>
+                    {% if current_page == '/' or current_page == '/eng/' or current_page == '/eng/index' %}
+                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">🇮🇹</a>
+                    {% elsif page_name == 'index' or page_name == '' %}
+                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">🇮🇹</a>
+                    {% else %}
+                        <a href="{{ '/ita/' | append: page_name | relative_url }}" class="mobile-lang-link">🇮🇹</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Navigation links -->
             {% if page.lang == 'it' %}
                 {% for item in site.navigation_it %}
                 <a href="{{ item.url | relative_url }}" class="mobile-nav-link">{{ item.title }}</a>
@@ -78,32 +106,6 @@
                 {% endfor %}
                 <a href="{{ '/eng/invest' | relative_url }}" class="mobile-nav-link">Invest</a>
             {% endif %}
-            <div class="mobile-language-switcher">
-                {% comment %} Smart mobile language switcher {% endcomment %}
-                {% assign current_page = page.url | remove: '/index.html' | remove: '.html' %}
-                {% assign page_segments = current_page | split: '/' %}
-                {% assign page_name = page_segments | last %}
-                
-                {% if page.lang == 'it' %}
-                    {% if current_page == '/ita/' or current_page == '/ita/index' %}
-                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">English</a>
-                    {% elsif page_name == 'index' or page_name == '' %}
-                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">English</a>
-                    {% else %}
-                        <a href="{{ '/eng/' | append: page_name | relative_url }}" class="mobile-lang-link">English</a>
-                    {% endif %}
-                    <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">Italiano</a>
-                {% else %}
-                    <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">English</a>
-                    {% if current_page == '/' or current_page == '/eng/' or current_page == '/eng/index' %}
-                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">Italiano</a>
-                    {% elsif page_name == 'index' or page_name == '' %}
-                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">Italiano</a>
-                    {% else %}
-                        <a href="{{ '/ita/' | append: page_name | relative_url }}" class="mobile-lang-link">Italiano</a>
-                    {% endif %}
-                {% endif %}
-            </div>
         </div>
     </div>
 </nav>
