@@ -6,7 +6,7 @@ description: >-
   Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.
 
 baseurl: "/school" # o "/docs-site" - il nome del repository
-url: "https://teo.github.io" # sostituisci con il tuo username GitHub reale
+url: "https://pyzenmatt.github.io/SchoolPlatform/" # sostituisci con il tuo username GitHub reale
 
 # Author
 author:
@@ -16,7 +16,7 @@ author:
 # Build settings
 markdown: kramdown
 highlighter: rouge
-# theme: minima  # Rimosso per compatibilità GitHub Pages
+theme: minima
 plugins:
   - jekyll-feed
   - jekyll-sitemap

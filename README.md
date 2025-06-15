@@ -43,14 +43,34 @@ bundle exec jekyll serve
 # Il sito sarà disponibile su http://localhost:4000
 ```
 
-## Deploy su GitHub Pages
+## 🚀 **DEPLOY SU GITHUB PAGES - ISTRUZIONI AGGIORNATE**
 
-1. Crea un repository su GitHub
-2. Carica tutti i file in questo repository
-3. Vai nelle impostazioni del repository
-4. Nella sezione "Pages", seleziona "Deploy from a branch"
-5. Scegli il branch "main" e la cartella "/" (root)
-6. Il sito sarà disponibile su `https://username.github.io/repository-name`
+### ⚠️ **PROBLEMA RISOLTO**
+Se il sito mostra solo testo senza CSS e i link non funzionano:
+
+### 1. **Configurazione Corretta**
+Nel file `_config.yml`, aggiorna con i tuoi dati reali:
+```yaml
+baseurl: "/school"  # o il nome del tuo repository
+url: "https://PyZenMatt.github.io"  # il tuo username GitHub
+```
+
+### 2. **GitHub Actions (Raccomandato)**
+- Vai su GitHub → Settings → Pages
+- Source: **GitHub Actions** (non "Deploy from branch")
+- Il file `.github/workflows/jekyll.yml` è già configurato
+
+### 3. **Problemi Risolti**
+✅ Theme minima rimosso (causava conflitti)  
+✅ Import SCSS corretti  
+✅ Gemfile aggiornato per GitHub Pages  
+✅ Build testato localmente  
+
+### 4. **URL Finale**
+Il sito sarà disponibile su:
+```
+https://PyZenMatt.github.io/school/
+```
 
 ## Personalizzazione
 
