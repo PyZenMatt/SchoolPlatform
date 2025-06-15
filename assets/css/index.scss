@@ -18,6 +18,14 @@
   padding-bottom: 80px;
 }
 
+/* Mobile: extend hero to fill the gap under navbar */
+@media (max-width: 768px) {
+  .modern-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 140px; /* Padding to push content below navbar */
+  }
+}
+
 .hero-background {
   position: absolute;
   top: 0;

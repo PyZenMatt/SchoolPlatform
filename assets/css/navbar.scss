@@ -258,15 +258,44 @@ body {
 /* ========================================
    RESPONSIVE NAVBAR
    ======================================== */
-@media (max-width: 768px) {
-  /* Reduce body padding on mobile */
+
+/* Small mobile devices (iPhone, etc.) */
+@media (max-width: 480px) {
   body {
-    padding-top: 60px; /* Smaller space for mobile */
+    padding-top: 85px; /* More space for small devices */
+  }
+  
+  .navbar-content {
+    padding: 0.6rem 0; /* Even smaller navbar padding for small devices */
+  }
+}
+
+/* iPhone 11 and similar devices */
+@media (max-width: 375px) {
+  body {
+    padding-top: 90px; /* Extra space for iPhone 11 */
+  }
+}
+
+/* General mobile devices */
+@media (max-width: 768px) and (min-width: 481px) {
+  body {
+    padding-top: 60px; /* Standard mobile space */
   }
 
-  /* Reduce navbar padding on mobile */
   .navbar-content {
-    padding: 0.75rem 0; /* Smaller navbar padding */
+    padding: 0.75rem 0; /* Standard mobile navbar padding */
+  }
+}
+
+/* All mobile devices - shared rules */
+@media (max-width: 768px) {
+  /* Make navbar more transparent on mobile for seamless look */
+  .modern-navbar {
+    background: rgba(15, 15, 15, 0.6); /* Very transparent for seamless effect */
+    backdrop-filter: blur(10px); /* Light blur */
+    box-shadow: none;
+    border-bottom: none; /* Remove border completely */
   }
 
   .navbar-menu {
