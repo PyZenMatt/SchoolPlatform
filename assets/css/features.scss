@@ -20,6 +20,14 @@
   text-align: center;
 }
 
+/* Mobile: extend features-hero to fill the gap under navbar */
+@media (max-width: 1024px) {
+  .features-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 160px; /* Padding to push content below navbar */
+  }
+}
+
 .features-hero::before {
   content: '';
   position: absolute;
@@ -111,17 +119,23 @@
 }
 
 .feature-card-modern {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, 
+    rgba(15, 23, 42, 0.95) 0%, 
+    rgba(30, 41, 59, 0.9) 25%,
+    rgba(26, 35, 126, 0.9) 75%,
+    rgba(40, 53, 147, 0.85) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 40px 30px;
   border-radius: 20px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
   transition: all 0.4s ease;
-  border: 1px solid rgba(102, 126, 234, 0.1);
   position: relative;
   overflow: hidden;
   animation: slideInUp 0.6s ease-out;
+  color: white;
 }
 
 .feature-card-modern::before {
@@ -150,7 +164,11 @@
 
 .feature-card-modern:hover {
   transform: translateY(-10px);
-  box-shadow: var(--shadow-medium);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .feature-card-modern:hover::after {
@@ -205,12 +223,18 @@
   font-size: 1.6rem;
   font-weight: 700;
   margin-bottom: 20px;
-  color: white;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: slideInLeft 0.8s ease-out 0.4s both;
 }
 
 .feature-card-modern p {
-  color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1.7;
   margin-bottom: 25px;
   font-size: 1rem;
@@ -394,7 +418,11 @@
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, 
+    rgba(15, 23, 42, 0.95) 0%, 
+    rgba(30, 41, 59, 0.9) 25%,
+    rgba(26, 35, 126, 0.9) 75%,
+    rgba(40, 53, 147, 0.85) 100%);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 40px 30px;
@@ -403,7 +431,6 @@
   height: 100%;
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
-  border: none;
 }
 
 .feature-card:hover {
@@ -428,11 +455,17 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 15px;
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .feature-card p {
-  color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1.7;
 }
 

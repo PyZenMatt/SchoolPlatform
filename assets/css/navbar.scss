@@ -290,8 +290,19 @@ body {
   }
 }
 
-/* All mobile devices - shared rules */
-@media (max-width: 768px) {
+/* iPad and tablet devices */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body {
+    padding-top: 70px; /* iPad spacing */
+  }
+
+  .navbar-content {
+    padding: 0.8rem 0; /* iPad navbar padding */
+  }
+}
+
+/* All mobile devices and tablets (including iPad) - shared rules */
+@media (max-width: 1024px) {
   /* Make navbar more transparent on mobile for seamless look */
   .modern-navbar {
     background: rgba(15, 15, 15, 0.6); /* Very transparent for seamless effect */
@@ -328,8 +339,47 @@ body {
 }
 
 /* Desktop - Hide mobile menu */
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .mobile-menu {
     display: none !important;
+  }
+}
+
+/* ========================================
+   GLOBAL MOBILE FIX - ALL PAGES
+   ======================================== */
+
+/* Mobile: Fix navbar separation on all pages */
+@media (max-width: 1024px) {
+  /* Extend first section of any page under navbar to eliminate gap */
+  .features-hero,
+  .technology-hero, 
+  .roadmap-hero,
+  .faq-hero,
+  .invest-hero,
+  .tokenomics-hero,
+  .hero-section,
+  .page-header,
+  .main-content > section:first-child,
+  .container > section:first-child {
+    margin-top: -80px !important;
+    padding-top: 140px !important;
+  }
+  
+  /* For small mobile devices */
+  @media (max-width: 480px) {
+    .features-hero,
+    .technology-hero, 
+    .roadmap-hero,
+    .faq-hero,
+    .invest-hero,
+    .tokenomics-hero,
+    .hero-section,
+    .page-header,
+    .main-content > section:first-child,
+    .container > section:first-child {
+      margin-top: -85px !important;
+      padding-top: 145px !important;
+    }
   }
 }

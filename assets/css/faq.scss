@@ -35,6 +35,17 @@ body.faq-page {
   padding: 8rem 0 4rem 0;
   position: relative;
   overflow: hidden;
+}
+
+/* Mobile: extend faq-hero to fill the gap under navbar */
+@media (max-width: 1024px) {
+  .faq-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 10rem; /* Padding to push content below navbar */
+  }
+}
+
+.faq-hero {
 
   &::before {
     content: '';

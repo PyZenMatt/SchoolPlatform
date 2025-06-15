@@ -20,6 +20,14 @@
   text-align: center;
 }
 
+/* Mobile: extend tech-hero to fill the gap under navbar */
+@media (max-width: 1024px) {
+  .tech-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 160px; /* Padding to push content below navbar */
+  }
+}
+
 .tech-hero::before {
   content: '';
   position: absolute;
@@ -117,22 +125,33 @@
 }
 
 .tech-category-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, 
+    rgba(15, 23, 42, 0.95) 0%, 
+    rgba(30, 41, 59, 0.9) 25%,
+    rgba(26, 35, 126, 0.9) 75%,
+    rgba(40, 53, 147, 0.85) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
   transition: all 0.4s ease;
   margin-bottom: 40px;
   height: 100%;
   display: flex;
   flex-direction: column;
+  color: white;
 }
 
 .tech-category-card:hover {
   transform: translateY(-10px);
-  box-shadow: var(--shadow-medium);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .tech-category-header {
@@ -157,6 +176,10 @@
   font-weight: 700;
   margin-bottom: 10px;
   text-align: center;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .tech-category-body {
@@ -178,20 +201,24 @@
 }
 
 .tech-item-detail:hover {
-  background: #f8f9fa;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
   transform: translateX(5px);
+  border-left: 3px solid rgba(79, 172, 254, 0.8);
 }
 
 .tech-name {
   font-size: 1.2rem;
   font-weight: 600;
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 8px;
   text-align: left;
 }
 
 .tech-description {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
   line-height: 1.6;
   margin-bottom: 15px;

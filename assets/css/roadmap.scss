@@ -32,6 +32,17 @@
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+/* Mobile: extend roadmap-hero to fill the gap under navbar */
+@media (max-width: 1024px) {
+  .roadmap-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 180px; /* Padding to push content below navbar */
+  }
+}
+
+.roadmap-hero {
 
   &::before {
     content: '';

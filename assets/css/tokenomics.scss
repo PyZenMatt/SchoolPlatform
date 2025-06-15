@@ -17,8 +17,17 @@
   position: relative;
   overflow: hidden;
   padding: 100px 0 80px;
+}
 
-  .section-badge {
+/* Mobile: extend tokenomics-hero to fill the gap under navbar */
+@media (max-width: 1024px) {
+  .tokenomics-hero {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 160px; /* Padding to push content below navbar */
+  }
+}
+
+.tokenomics-hero .section-badge {
     background: rgba(255, 255, 255, 0.15);
     color: white;
     padding: 8px 16px;
@@ -29,17 +38,17 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
     margin-bottom: 2rem;
     display: inline-block;
-  }
+}
 
-  .modern-section-title {
+.tokenomics-hero .modern-section-title {
     font-size: 3.5rem;
     font-weight: 800;
     color: white;
     margin-bottom: 1.5rem;
     line-height: 1.2;
-  }
+}
 
-  .section-description {
+.tokenomics-hero .section-description {
     font-size: 1.3rem;
     color: rgba(255, 255, 255, 0.9);
     margin-bottom: 2rem;
@@ -47,7 +56,6 @@
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
-  }
 }
 
 .tokenomics-roadmap {

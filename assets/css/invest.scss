@@ -77,6 +77,12 @@
   position: relative;
   overflow: hidden;
 
+  /* Mobile: extend investment-hero to fill the gap under navbar */
+  @media (max-width: 1024px) {
+    margin-top: -80px; /* Negative margin to extend under navbar */
+    padding-top: 10rem; /* Padding to push content below navbar */
+  }
+
   &::before {
     content: '';
     position: absolute;
