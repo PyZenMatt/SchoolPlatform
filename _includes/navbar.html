@@ -31,11 +31,11 @@
                     {% if page.lang == 'it' %}
                         {% comment %} From Italian to English {% endcomment %}
                         {% if current_page == '/ita/' or current_page == '/ita/index' %}
-                            <a href="{{ site.baseurl }}/" class="lang-link" title="English">EN</a>
+                            <a href="{{ '/' | relative_url }}" class="lang-link" title="English">EN</a>
                         {% elsif page_name == 'index' or page_name == '' %}
-                            <a href="{{ site.baseurl }}/" class="lang-link" title="English">EN</a>
+                            <a href="{{ '/' | relative_url }}" class="lang-link" title="English">EN</a>
                         {% else %}
-                            <a href="{{ site.baseurl }}/eng/{{ page_name }}" class="lang-link" title="English">EN</a>
+                            <a href="{{ '/eng/' | append: page_name | relative_url }}" class="lang-link" title="English">EN</a>
                         {% endif %}
                         <span class="lang-separator">|</span>
                         <a href="{{ page.url | relative_url }}" class="lang-link active" title="Italiano">IT</a>
@@ -44,18 +44,18 @@
                         <a href="{{ page.url | relative_url }}" class="lang-link active" title="English">EN</a>
                         <span class="lang-separator">|</span>
                         {% if current_page == '/' or current_page == '/eng/' or current_page == '/eng/index' %}
-                            <a href="{{ site.baseurl }}/ita" class="lang-link" title="Italiano">IT</a>
+                            <a href="{{ '/ita' | relative_url }}" class="lang-link" title="Italiano">IT</a>
                         {% elsif page_name == 'index' or page_name == '' %}
-                            <a href="{{ site.baseurl }}/ita" class="lang-link" title="Italiano">IT</a>
+                            <a href="{{ '/ita' | relative_url }}" class="lang-link" title="Italiano">IT</a>
                         {% else %}
-                            <a href="{{ site.baseurl }}/ita/{{ page_name }}" class="lang-link" title="Italiano">IT</a>
+                            <a href="{{ '/ita/' | append: page_name | relative_url }}" class="lang-link" title="Italiano">IT</a>
                         {% endif %}
                     {% endif %}
                 </div>
                 {% if page.lang == 'it' %}
-                    <a href="{{ site.baseurl }}/ita/invest" class="btn-nav">Invest</a>
+                    <a href="{{ '/ita/invest' | relative_url }}" class="btn-nav">Invest</a>
                 {% else %}
-                    <a href="{{ site.baseurl }}/eng/invest" class="btn-nav">Invest</a>
+                    <a href="{{ '/eng/invest' | relative_url }}" class="btn-nav">Invest</a>
                 {% endif %}
                 <button class="mobile-menu-toggle">
                     <span></span>
@@ -71,12 +71,12 @@
                 {% for item in site.navigation_it %}
                 <a href="{{ item.url | relative_url }}" class="mobile-nav-link">{{ item.title }}</a>
                 {% endfor %}
-                <a href="{{ site.baseurl }}/ita/invest/" class="mobile-nav-link">Invest</a>
+                <a href="{{ '/ita/invest' | relative_url }}" class="mobile-nav-link">Invest</a>
             {% else %}
                 {% for item in site.navigation_en %}
                 <a href="{{ item.url | relative_url }}" class="mobile-nav-link">{{ item.title }}</a>
                 {% endfor %}
-                <a href="{{ site.baseurl }}/eng/invest/" class="mobile-nav-link">Invest</a>
+                <a href="{{ '/eng/invest' | relative_url }}" class="mobile-nav-link">Invest</a>
             {% endif %}
             <div class="mobile-language-switcher">
                 {% comment %} Smart mobile language switcher {% endcomment %}
@@ -86,21 +86,21 @@
                 
                 {% if page.lang == 'it' %}
                     {% if current_page == '/ita/' or current_page == '/ita/index' %}
-                        <a href="{{ site.baseurl }}/" class="mobile-lang-link">English</a>
+                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">English</a>
                     {% elsif page_name == 'index' or page_name == '' %}
-                        <a href="{{ site.baseurl }}/" class="mobile-lang-link">English</a>
+                        <a href="{{ '/' | relative_url }}" class="mobile-lang-link">English</a>
                     {% else %}
-                        <a href="{{ site.baseurl }}/eng/{{ page_name }}" class="mobile-lang-link">English</a>
+                        <a href="{{ '/eng/' | append: page_name | relative_url }}" class="mobile-lang-link">English</a>
                     {% endif %}
                     <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">Italiano</a>
                 {% else %}
                     <a href="{{ page.url | relative_url }}" class="mobile-lang-link active">English</a>
                     {% if current_page == '/' or current_page == '/eng/' or current_page == '/eng/index' %}
-                        <a href="{{ site.baseurl }}/ita" class="mobile-lang-link">Italiano</a>
+                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">Italiano</a>
                     {% elsif page_name == 'index' or page_name == '' %}
-                        <a href="{{ site.baseurl }}/ita" class="mobile-lang-link">Italiano</a>
+                        <a href="{{ '/ita' | relative_url }}" class="mobile-lang-link">Italiano</a>
                     {% else %}
-                        <a href="{{ site.baseurl }}/ita/{{ page_name }}" class="mobile-lang-link">Italiano</a>
+                        <a href="{{ '/ita/' | append: page_name | relative_url }}" class="mobile-lang-link">Italiano</a>
                     {% endif %}
                 {% endif %}
             </div>
