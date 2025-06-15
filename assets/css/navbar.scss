@@ -219,6 +219,8 @@ body {
   padding: 1rem;
   margin-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .mobile-lang-link {
@@ -260,6 +262,15 @@ body {
   
   .mobile-menu.active {
     display: flex;
+  }
+  
+  .mobile-language-switcher {
+    display: flex !important;
+    flex-direction: column;
+  }
+  
+  .mobile-lang-link {
+    display: inline-flex !important;
   }
 }
 
