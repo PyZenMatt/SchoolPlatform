@@ -5,8 +5,8 @@ description: >-
   MVP blockchain educational platform ready for scale. 18-month development complete. 
   Production-ready technology stack serving the $400B+ EdTech market. Investment opportunity.
 
-baseurl: "/school" # o "/docs-site" - il nome del repository
-url: "https://teo.github.io" # sostituisci con il tuo username GitHub reale
+baseurl: "/SchoolPlatform" # o "/docs-site" - il nome del repository
+url: "https://pyzenmatt.github.io" # sostituisci con il tuo username GitHub reale
 
 # Author
 author:
