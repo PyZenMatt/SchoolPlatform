@@ -259,6 +259,16 @@ body {
    RESPONSIVE NAVBAR
    ======================================== */
 @media (max-width: 768px) {
+  /* Reduce body padding on mobile */
+  body {
+    padding-top: 60px; /* Smaller space for mobile */
+  }
+
+  /* Reduce navbar padding on mobile */
+  .navbar-content {
+    padding: 0.75rem 0; /* Smaller navbar padding */
+  }
+
   .navbar-menu {
     display: none;
   }
