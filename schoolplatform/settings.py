@@ -64,7 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.AutoJWTFromSessionMiddleware',
-    'core.timing_middleware.APITimingMiddleware',  # Performance monitoring
+    'core.middleware.APITimingMiddleware',  # Performance monitoring
 ]
 
 # Debug toolbar middleware

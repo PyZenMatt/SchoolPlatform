@@ -1,25 +1,57 @@
+"""
+Core URL configuration for the TeoArt School Platform.
+
+This module defines URL patterns for core platform functionality including:
+- Health monitoring endpoints
+- Dashboard APIs for all user roles
+- Batch data APIs for performance optimization
+- Notification system integration
+
+URL Patterns:
+    /health/ - Platform health check endpoint
+    /dashboard/ - Dashboard APIs for student, teacher, and admin
+    /api/ - Batch data APIs for optimized frontend data loading
+"""
 from django.urls import path, include
 
-from .dashboard import TeacherDashboardAPI, StudentDashboardView, dashboard_transactions, UserRoleDashboardAPI, AdminDashboardAPI
+# Import views
+from .dashboard import (
+    TeacherDashboardAPI, 
+    StudentDashboardView, 
+    dashboard_transactions, 
+    UserRoleDashboardAPI, 
+    AdminDashboardAPI
+)
 from .api import dashboard_data
 from .batch_api import StudentBatchDataAPI, CourseBatchDataAPI, LessonBatchDataAPI
-from .health_check import HealthCheckView  # Health check for monitoring
+from .health_check import HealthCheckView
 
+# URL patterns organized by functionality
 urlpatterns = [
-    # Health check endpoint
+    # ============================================
+    # HEALTH MONITORING
+    # ============================================
     path('health/', HealthCheckView.as_view(), name='health-check'),
     
-    # Dashboard endpoints
+    # ============================================
+    # DASHBOARD APIS
+    # ============================================
     path('dashboard/student/', StudentDashboardView.as_view(), name='student-dashboard'),
-    path('dashboard/teacher/', TeacherDashboardAPI.as_view(), name='teacher_dashboard'),
-    path('dashboard/admin/', AdminDashboardAPI.as_view(), name='admin_dashboard'),
+    path('dashboard/teacher/', TeacherDashboardAPI.as_view(), name='teacher-dashboard'),
+    path('dashboard/admin/', AdminDashboardAPI.as_view(), name='admin-dashboard'),
+    path('dashboard/role/', UserRoleDashboardAPI.as_view(), name='user-role-dashboard'),
+    path('dashboard/transactions/', dashboard_transactions, name='dashboard-transactions'),
+    path('dashboard/data/', dashboard_data, name='dashboard-data'),
     
-    # ✅ OPTIMIZED - Batch API endpoints to reduce frontend calls
+    # ============================================
+    # BATCH DATA APIS (Performance Optimization)
+    # ============================================
     path('api/student/batch-data/', StudentBatchDataAPI.as_view(), name='student-batch-data'),
     path('api/course/<int:course_id>/batch-data/', CourseBatchDataAPI.as_view(), name='course-batch-data'),
     path('api/lesson/<int:lesson_id>/batch-data/', LessonBatchDataAPI.as_view(), name='lesson-batch-data'),
     
-    path('', include('notifications.urls')),  # <-- aggiungi questa riga
-    
-   
+    # ============================================
+    # INTEGRATED APPS
+    # ============================================
+    path('', include('notifications.urls')),  # Notification system
 ]
