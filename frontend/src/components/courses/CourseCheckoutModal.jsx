@@ -99,8 +99,8 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         throw new Error('Il docente non ha configurato un wallet per ricevere i pagamenti');
       }
 
-      // Execute the NEW direct payment process
-      console.log('🔄 Processing course payment with NEW DIRECT process...');
+      // Execute the NEW APPROVE+SPLIT course payment logic
+      console.log('🎓 Processing course payment with APPROVE+SPLIT PROCESS...');
       const result = await web3Service.processCoursePaymentDirect(
         walletAddress,                // student address
         course.teacher.wallet_address, // teacher address
@@ -108,7 +108,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         course.id                     // course id
       );
 
-      setTransactionHash(result.transactionHash || 'N/A');
+      setTransactionHash(result.teacherTxHash || 'N/A');
       
       // Update balances after successful payment
       const [newTeoBalance, newMaticBalance] = await Promise.all([
@@ -188,16 +188,8 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
             <div className="mb-3 text-success">
               <i className="feather icon-check-circle" style={{ fontSize: '48px' }}></i>
             </div>
-            <h5>✅ Acquisto completato con NUOVO PROCESSO!</h5>
+            <h5>Acquisto completato!</h5>
             <p>Hai acquistato con successo il corso "{course?.title}".</p>
-            <Alert variant="success" className="small">
-              <strong>Processo completato:</strong>
-              <ul className="mb-0 mt-1">
-                <li>💰 Hai pagato {course?.price} TEO + gas dal tuo wallet</li>
-                <li>👨‍🏫 L'insegnante ha ricevuto la sua parte direttamente</li>
-                <li>🏦 La commissione è andata alla reward pool (per esercizi)</li>
-              </ul>
-            </Alert>
             {transactionHash && (
               <div className="mb-3">
                 <small className="text-muted">Hash transazione:</small>
@@ -218,24 +210,18 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         return (
           <>
             <Modal.Header closeButton>
-              <Modal.Title>🔄 Acquista Corso - NUOVO PROCESSO</Modal.Title>
+              <Modal.Title>Acquista Corso</Modal.Title>
             </Modal.Header>
             
             <Modal.Body>
               {error && <Alert variant="danger">{error}</Alert>}
               
-              {/* Informazioni sul nuovo processo */}
-              <Alert variant="success" className="mb-4">
-                <div className="d-flex align-items-center mb-2">
-                  <i className="feather icon-info me-2"></i>
-                  <strong>Nuovo processo di pagamento</strong>
-                </div>
-                <ul className="mb-0 small">
-                  <li>💰 <strong>Tu paghi</strong>: TEO dal tuo wallet + gas MATIC</li>
-                  <li>👨‍🏫 <strong>Insegnante riceve</strong>: 85% dei TEO direttamente</li>
-                  <li>🏦 <strong>Commissione piattaforma</strong>: 15% va alla reward pool</li>
-                  <li>🎯 <strong>Reward pool</strong>: Usata solo per reward degli esercizi</li>
-                </ul>
+              {/* Info sul nuovo processo */}
+              <Alert variant="info" className="mb-3">
+                <i className="feather icon-info me-2"></i>
+                <strong>Sistema di pagamento semplificato:</strong> Dovrai firmare UNA SOLA volta su MetaMask 
+                per approvare i token. Il sistema distribuirà automaticamente i fondi al teacher (85%) 
+                e alla piattaforma (15%). Gas fees minimizzate!
               </Alert>
               
               <div className="d-flex align-items-center mb-4">
@@ -361,7 +347,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
                     'TeoCoin insufficienti' : 
                     maticBalance < 0.01 ?
                     'MATIC insufficienti' :
-                    `🔄 Paga Direttamente (${course?.price} TEO + gas)`
+                    `Conferma Acquisto (${course?.price} TEO)`
                   }
                 </Button>
               )}

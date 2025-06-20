@@ -26,7 +26,10 @@ from web3 import Web3
 import json
 import logging
 
-from .blockchain import teocoin_service
+from .blockchain import TeoCoinService
+
+# Initialize TeoCoin service
+teocoin_service = TeoCoinService()
 from rewards.models import BlockchainTransaction, TokenBalance
 from users.models import User
 from courses.models import Course, CourseEnrollment
@@ -1225,4 +1228,317 @@ def execute_course_payment(request):
         logger.error(f"Error in execute_course_payment: {e}")
         return Response({
             'error': f'Payment execution failed: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================
+# NEW DIRECT COURSE PAYMENT PROCESS
+# ============================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def process_course_payment_direct(request):
+    """
+    NEW APPROVE+SPLIT PROCESS: Process course payment with single approval
+    1. Verifies student has approved enough tokens to reward pool
+    2. Backend executes transferFrom to teacher (85%)
+    3. Backend executes transferFrom to commission (15%)
+    4. Creates enrollment record
+    """
+    try:
+        data = request.data
+        student_address = data.get('student_address')
+        teacher_address = data.get('teacher_address')
+        course_price = data.get('price_in_teo')  # Adjusted to match frontend
+        course_id = data.get('course_id')
+        
+        # Validate required fields
+        if not all([student_address, teacher_address, course_price, course_id]):
+            return Response({
+                'error': 'Missing required fields: student_address, teacher_address, price_in_teo, course_id'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert course_price to Decimal
+        try:
+            # Frontend sends in ether format
+            course_price_decimal = Decimal(str(course_price))
+            logger.info(f"Course price received: {course_price} TEO")
+            
+        except (ValueError, TypeError) as e:
+            logger.error(f"Price conversion error: {e}")
+            return Response({
+                'error': f'Invalid price_in_teo format: {course_price}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate user is student and wallet matches
+        if request.user.wallet_address != student_address:
+            return Response({
+                'error': 'Student address does not match authenticated user wallet'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Validate course exists and teacher wallet matches
+        try:
+            course = Course.objects.get(id=course_id)
+            if course.teacher.wallet_address != teacher_address:
+                return Response({
+                    'error': 'Teacher address does not match course teacher wallet'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Course.DoesNotExist:
+            return Response({
+                'error': 'Course not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if already enrolled
+        if CourseEnrollment.objects.filter(student=request.user, course=course).exists():
+            return Response({
+                'error': 'Student already enrolled in this course'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Process the payment using the new approve+split method
+        logger.info(f"APPROVE+SPLIT: Processing payment for course {course_id} - Student: {student_address}")
+        logger.info(f"Course price: {course_price_decimal} TEO")
+        logger.info(f"Teacher: {teacher_address}")
+        
+        # Debug: Test blockchain connection
+        try:
+            test_balance = teocoin_service.get_balance(student_address)
+            logger.info(f"DEBUG: Student balance check successful: {test_balance} TEO")
+        except Exception as e:
+            logger.error(f"DEBUG: Blockchain connection test failed: {e}")
+            return Response({
+                'error': f'Blockchain connection failed: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        payment_result = teocoin_service.process_course_payment_approve_split(
+            student_address=student_address,
+            teacher_address=teacher_address,
+            course_price=course_price_decimal
+        )
+        
+        if not payment_result or not payment_result.get('success'):
+            error_msg = payment_result.get('error', 'Payment processing failed') if payment_result else 'Payment processing failed'
+            logger.error(f"Payment failed: {error_msg}")
+            return Response({
+                'error': error_msg,
+                'details': payment_result.get('details') if payment_result else None
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create enrollment record
+        try:
+            enrollment = CourseEnrollment.objects.create(
+                student=request.user,
+                course=course
+            )
+            
+            logger.info(f"✅ Course enrollment created: {enrollment.pk}")
+            
+        except Exception as e:
+            logger.error(f"Failed to create enrollment: {e}")
+            return Response({
+                'error': 'Payment processed but enrollment creation failed',
+                'payment_result': payment_result
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Log the successful transaction
+        try:
+            BlockchainTransaction.objects.create(
+                user=request.user,
+                transaction_hash=payment_result['teacher_payment_tx'],
+                transaction_type='course_payment',
+                amount=course_price_decimal,
+                status='completed',
+                metadata={
+                    'course_id': course_id,
+                    'teacher_address': teacher_address,
+                    'teacher_amount': payment_result['teacher_amount'],
+                    'commission_amount': payment_result['commission_amount'],
+                    'commission_tx': payment_result.get('commission_tx'),
+                    'payment_method': 'approve_split'
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log transaction: {e}")
+        
+        logger.info(f"✅ APPROVE+SPLIT payment completed successfully for course {course_id}")
+        
+        return Response({
+            'success': True,
+            'message': 'Course payment processed successfully',
+            'transaction_hash': payment_result['teacher_payment_tx'],
+            'teacher_amount': payment_result['teacher_amount'],
+            'commission_amount': payment_result['commission_amount'],
+            'commission_tx_hash': payment_result.get('commission_tx'),
+            'enrollment_id': enrollment.pk
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in process_course_payment_direct (approve+split): {e}")
+        return Response({
+            'error': f'Failed to process course payment: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_course_payment(request):
+    """
+    NEW PROCESS: Confirm successful direct course payment
+    Called after frontend has executed both transactions (teacher + commission)
+    Records the enrollment and transaction history
+    """
+    try:
+        data = request.data
+        student_address = data.get('student_address')
+        teacher_address = data.get('teacher_address')
+        course_price = data.get('course_price')
+        course_id = data.get('course_id')
+        teacher_tx_hash = data.get('teacher_tx_hash')
+        commission_tx_hash = data.get('commission_tx_hash')
+        teacher_amount = data.get('teacher_amount')
+        commission_amount = data.get('commission_amount')
+        
+        # Validate required fields
+        required_fields = [
+            'student_address', 'teacher_address', 'course_price', 'course_id',
+            'teacher_tx_hash', 'commission_tx_hash', 'teacher_amount', 'commission_amount'
+        ]
+        if not all(data.get(field) for field in required_fields):
+            return Response({
+                'error': f'Missing required fields: {", ".join(required_fields)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate user is student and wallet matches
+        if request.user.wallet_address != student_address:
+            return Response({
+                'error': 'Student address does not match authenticated user wallet'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get course and validate
+        try:
+            course = Course.objects.get(id=course_id)
+            if course.teacher.wallet_address != teacher_address:
+                return Response({
+                    'error': 'Teacher address does not match course teacher wallet'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Course.DoesNotExist:
+            return Response({
+                'error': 'Course not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if student is already enrolled
+        existing_enrollment = CourseEnrollment.objects.filter(
+            student=request.user,
+            course=course
+        ).first()
+        
+        if existing_enrollment:
+            return Response({
+                'error': 'Student is already enrolled in this course'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create enrollment
+        enrollment = CourseEnrollment.objects.create(
+            student=request.user,
+            course=course
+        )
+        
+        # Record teacher payment transaction
+        BlockchainTransaction.objects.create(
+            user=request.user,
+            transaction_type='course_payment_teacher',
+            amount=Decimal(teacher_amount),
+            transaction_hash=teacher_tx_hash,
+            from_address=student_address,
+            to_address=teacher_address,
+            status='completed',
+            course_enrollment=enrollment
+        )
+        
+        # Record commission payment transaction
+        BlockchainTransaction.objects.create(
+            user=request.user,
+            transaction_type='course_payment_commission',
+            amount=Decimal(commission_amount),
+            transaction_hash=commission_tx_hash,
+            from_address=student_address,
+            to_address=teocoin_service.get_reward_pool_address(),
+            status='completed',
+            course_enrollment=enrollment
+        )
+        
+        logger.info(f"NEW PROCESS: Direct payment confirmed for course {course_id} - "
+                   f"Student: {student_address}, Teacher TX: {teacher_tx_hash}, Commission TX: {commission_tx_hash}")
+        
+        return Response({
+            'success': True,
+            'enrollment_id': enrollment.pk,
+            'teacher_tx_hash': teacher_tx_hash,
+            'commission_tx_hash': commission_tx_hash,
+            'message': 'Course payment confirmed and enrollment created'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in confirm_course_payment: {e}")
+        return Response({
+            'error': f'Failed to confirm payment: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_reward_pool_address(request):
+    """
+    Get the reward pool address for frontend approve transactions.
+    """
+    try:
+        reward_pool_address = teocoin_service.get_reward_pool_address()
+        
+        if not reward_pool_address:
+            return Response({
+                'error': 'Reward pool not configured'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({
+            'reward_pool_address': reward_pool_address
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error getting reward pool address: {e}")
+        return Response({
+            'error': f'Failed to get reward pool address: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def check_student_approval(request):
+    """
+    Check if student has approved enough tokens for course payment.
+    """
+    try:
+        data = request.data
+        student_address = data.get('student_address')
+        course_price = data.get('course_price')
+        
+        if not all([student_address, course_price]):
+            return Response({
+                'error': 'Missing required fields: student_address, course_price'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert course_price to Decimal
+        try:
+            course_price_decimal = Decimal(str(Web3.from_wei(int(course_price), 'ether')))
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Invalid course_price format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check approval
+        approval_info = teocoin_service.check_student_approval(student_address, course_price_decimal)
+        
+        return Response(approval_info, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error checking student approval: {e}")
+        return Response({
+            'error': f'Failed to check approval: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -30,7 +30,39 @@ This module implements:
 - **Audit Logging**: Complete transaction history
 - **Error Handling**: Comprehensive exception management
 
-## API Endpoints
+## Course Payment Process (NEW DIRECT SYSTEM)
+
+The course payment system has been completely refactored to implement a direct payment flow where **students pay both TEO tokens and gas fees directly from their wallet**.
+
+### Payment Flow
+
+1. **Student** pays **Teacher** directly (net amount after 15% commission)
+2. **Student** pays **Platform Commission** directly to reward pool (15% of course price)  
+3. **Student** pays **all gas fees** with MATIC from their wallet
+4. **No involvement** of reward pool as payer/intermediary
+
+### Example: 15 TEO Course Purchase
+
+```
+Course Price: 15 TEO
+├── Teacher receives: 12.75 TEO (85%)
+├── Platform commission: 2.25 TEO (15%)
+└── Gas fees: Paid by student with MATIC
+
+Transactions on blockchain:
+1. transfer(teacher_address, 12.75 TEO) - Student → Teacher
+2. transfer(reward_pool_address, 2.25 TEO) - Student → Commission
+```
+
+### Security & Transparency Benefits
+
+- **Full Control**: Student maintains complete control of their funds
+- **Transparency**: All payments visible on blockchain
+- **No Intermediary**: Direct wallet-to-wallet transfers
+- **Immediate Payment**: Teacher receives funds instantly
+- **No Pool Risk**: No dependency on reward pool balance for payments
+
+### API Endpoints
 
 ### Wallet Management
 
@@ -55,6 +87,47 @@ Link external wallet to user account.
 ```json
 {
   "wallet_address": "0x742d35Cc6634C0532925a3b8D..."
+}
+```
+
+### Course Payment System
+
+#### `POST /blockchain/process-course-payment-direct/`
+Initialize direct course payment process (NEW).
+
+**Request:**
+```json
+{
+  "student_address": "0x742d35Cc6634C0532925a3b8D...",
+  "teacher_address": "0xE2fA8AfbF1B795f5dEd1a33aa...",
+  "course_price": "15.0",
+  "course_id": 1
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "reward_pool_address": "0x3b72a4E942CF1467134510cA...",
+  "message": "Direct payment process initialized"
+}
+```
+
+#### `POST /blockchain/confirm-course-payment/`
+Confirm successful direct course payment (NEW).
+
+**Request:**
+```json
+{
+  "student_address": "0x742d35Cc6634C0532925a3b8D...",
+  "teacher_address": "0xE2fA8AfbF1B795f5dEd1a33aa...",
+  "course_price": "15.0",
+  "course_id": 1,
+  "teacher_tx_hash": "0xf601f2ef824002fca633d7a54...",
+  "commission_tx_hash": "0xb37205cbc73f151f9e1a42a49...",
+  "teacher_amount": "12.75",
+  "commission_amount": "2.25"
 }
 ```
 

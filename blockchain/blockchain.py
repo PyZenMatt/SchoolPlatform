@@ -628,18 +628,12 @@ class TeoCoinService:
     def process_course_payment(self, student_private_key: str, teacher_address: str, 
                               course_price: Decimal, commission_rate: Decimal = Decimal('0.15')) -> Optional[dict]:
         """
-        ⚠️  DEPRECATO: Processo vecchio dove la reward pool pagava le gas fees.
+        Processa il pagamento di un corso con la logica pulita:
+        1. Lo studente fa approve() con i suoi MATIC per gas fees
+        2. La reward pool fa transferFrom() studente->teacher (importo netto) con i suoi MATIC
+        3. La reward pool fa transferFrom() studente->reward_pool (commissione) con i suoi MATIC
         
-        Questo metodo usa la reward pool per pagare le gas fees degli acquisti corso,
-        che NON è più il processo corretto. 
-        
-        ✅ USARE INVECE: student_pays_course_directly()
-        
-        Il nuovo processo corretto:
-        - Lo studente paga TEO e gas dal proprio wallet
-        - L'insegnante riceve la sua parte direttamente
-        - La reward pool riceve solo la commissione
-        - La reward pool è usata SOLO per distribuire reward degli esercizi
+        PREREQUISITO: Lo studente DEVE avere abbastanza MATIC nel wallet per la transazione approve()
         
         Args:
             student_private_key: Chiave privata dello studente
@@ -650,11 +644,6 @@ class TeoCoinService:
         Returns:
             Dict con transaction hashes se successo, None se errore
         """
-        # ⚠️  WARNING: Metodo deprecato
-        logger.warning("⚠️  PROCESSO DEPRECATO: process_course_payment utilizza la reward pool per pagare gas")
-        logger.warning("⚠️  Dovrebbe essere usato student_pays_course_directly() invece")
-        logger.warning("⚠️  La reward pool dovrebbe essere usata solo per reward degli esercizi")
-        
         reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
         reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
         
@@ -763,128 +752,280 @@ class TeoCoinService:
             logger.error(f"Errore nel pagamento corso: {e}")
             return None
     
-    def transfer_from_student_via_reward_pool(self, student_address: str, to_address: str, amount: Decimal) -> Optional[str]:
+    def process_course_payment_approve_split(self, student_address: str, teacher_address: str, 
+                                            course_price: Decimal, commission_rate: Decimal = Decimal('0.15')) -> Optional[dict]:
         """
-        Trasferisce TeoCoins dal wallet dello studente a un destinatario,
-        con la reward pool che paga le gas fees usando transferFrom.
+        Processa il pagamento di un corso con il nuovo sistema "approve + backend split":
+        1. Verifica che lo studente abbia già approvato il reward pool per l'importo del corso
+        2. Il backend (reward pool) esegue transferFrom per il teacher (85%)
+        3. Il backend (reward pool) esegue transferFrom per la commissione (15%)
         
-        Prerequisito: Lo studente deve aver approvato la reward pool come spender.
+        PREREQUISITO: Lo studente DEVE aver già fatto approve() al reward pool per course_price
         
         Args:
-            student_address: Indirizzo studente (from)
-            to_address: Indirizzo destinatario
-            amount: Quantità di TEO da trasferire
+            student_address: Indirizzo wallet dello studente
+            teacher_address: Indirizzo wallet del teacher
+            course_price: Prezzo totale del corso (che lo studente ha approvato)
+            commission_rate: Percentuale di commissione (default 15%)
             
         Returns:
-            Transaction hash se successo, None se errore
+            Dict con transaction hashes e importi se successo, None se errore
         """
+        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
         reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
-        if not reward_pool_private_key:
-            logger.error("REWARD_POOL_PRIVATE_KEY non configurata")
+        
+        if not reward_pool_address or not reward_pool_private_key:
+            logger.error("REWARD_POOL_ADDRESS o REWARD_POOL_PRIVATE_KEY non configurati")
             return None
         
         try:
-            # Account reward pool (pagherà le gas fees)
+            # Calcola importi
+            commission_amount = course_price * commission_rate
+            teacher_amount = course_price - commission_amount
+            
+            logger.info(f"Elaborando pagamento corso (approve+split):")
+            logger.info(f"  Studente: {student_address} ha approvato {course_price} TEO")
+            logger.info(f"  Teacher: {teacher_address} riceverà {teacher_amount} TEO")
+            logger.info(f"  Commissione: {commission_amount} TEO alla reward pool")
+            
+            # Verifica che lo studente abbia approvato abbastanza fondi
+            try:
+                allowance = self.contract.functions.allowance(
+                    Web3.to_checksum_address(student_address),
+                    Web3.to_checksum_address(reward_pool_address)
+                ).call()
+                allowance_teo = Decimal(str(Web3.from_wei(allowance, 'ether')))
+                
+                if allowance_teo < course_price:
+                    logger.error(f"Allowance insufficiente: {allowance_teo} TEO < {course_price} TEO richiesti")
+                    return {
+                        'success': False,
+                        'error': 'INSUFFICIENT_ALLOWANCE',
+                        'allowance': str(allowance_teo),
+                        'required': str(course_price)
+                    }
+                    
+                logger.info(f"✅ Allowance verificata: {allowance_teo} TEO")
+                
+            except Exception as e:
+                logger.error(f"Errore verifica allowance: {e}")
+                return {
+                    'success': False,
+                    'error': 'ALLOWANCE_CHECK_FAILED',
+                    'details': str(e)
+                }
+            
+            # Verifica balance studente
+            student_balance = self.get_balance(student_address)
+            if student_balance < course_price:
+                logger.error(f"Studente ha fondi insufficienti: {student_balance} < {course_price}")
+                return {
+                    'success': False,
+                    'error': 'INSUFFICIENT_BALANCE',
+                    'balance': str(student_balance),
+                    'required': str(course_price)
+                }
+            
+            # Account reward pool
             reward_pool_account = self.w3.eth.account.from_key(reward_pool_private_key)
             
-            # Converti amount in wei
-            amount_wei = Web3.to_wei(amount, 'ether')
+            # Gestione nonce sequenziale per reward pool
+            current_nonce = self.w3.eth.get_transaction_count(reward_pool_account.address, 'pending')
+            logger.info(f"Nonce reward pool: {current_nonce}")
             
-            # Prepara indirizzi
-            checksum_from = Web3.to_checksum_address(student_address)
-            checksum_to = Web3.to_checksum_address(to_address)
+            # Step 1: Trasferimento studente -> teacher (importo netto)
+            logger.info("Step 1: Trasferimento studente -> teacher...")
+            teacher_tx = self.transfer_from_student_via_reward_pool_with_nonce(
+                student_address, teacher_address, teacher_amount, current_nonce
+            )
+            if not teacher_tx:
+                logger.error("Trasferimento a teacher fallito")
+                return {
+                    'success': False,
+                    'error': 'TEACHER_TRANSFER_FAILED'
+                }
             
-            # Ottieni gas price ottimizzato
-            try:
-                gas_price = self.w3.eth.gas_price
-                min_gas_price = self.w3.to_wei('25', 'gwei')
-                if gas_price < min_gas_price:
-                    gas_price = min_gas_price
-                max_gas_price = self.w3.to_wei('50', 'gwei')
-                if gas_price > max_gas_price:
-                    gas_price = max_gas_price
-            except:
-                gas_price = self.w3.to_wei('25', 'gwei')
+            # Step 2: Trasferimento commissione studente -> reward pool
+            logger.info("Step 2: Trasferimento commissione studente -> reward pool...")
+            commission_tx = self.transfer_from_student_via_reward_pool_with_nonce(
+                student_address, reward_pool_address, commission_amount, current_nonce + 1
+            )
+            if not commission_tx:
+                logger.error("Trasferimento commissione fallito")
+                return {
+                    'success': False,
+                    'error': 'COMMISSION_TRANSFER_FAILED',
+                    'teacher_tx': teacher_tx  # Include teacher_tx per eventuale rollback manuale
+                }
             
-            # Costruisci transazione transferFrom
-            transaction = self.contract.functions.transferFrom(
-                checksum_from,  # Da studente
-                checksum_to,    # A destinatario (teacher o reward pool)
-                amount_wei
-            ).build_transaction({
-                'from': reward_pool_account.address,  # Reward pool paga gas
-                'gas': 100000,
-                'gasPrice': gas_price,
-                'nonce': self.w3.eth.get_transaction_count(reward_pool_account.address),
-            })
+            logger.info("✅ Pagamento corso (approve+split) completato con successo!")
             
-            # Firma e invia transazione con chiave reward pool
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, reward_pool_private_key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-            
-            logger.info(f"TransferFrom: {amount} TEO da {student_address} a {to_address} (gas pagato da reward pool) - TX: {tx_hash.hex()}")
-            return tx_hash.hex()
+            result = {
+                'success': True,
+                'teacher_payment_tx': teacher_tx,
+                'commission_tx': commission_tx,
+                'student_address': student_address,
+                'teacher_address': teacher_address,
+                'teacher_amount': str(teacher_amount),
+                'commission_amount': str(commission_amount),
+                'total_paid': str(course_price),
+                'commission_rate': str(commission_rate)
+            }
+                
+            return result
             
         except Exception as e:
-            logger.error(f"Errore in transferFrom con reward pool gas: {e}")
-            return None
-    
-    def fund_student_for_approval_with_nonce(self, student_address: str, matic_amount: Decimal, nonce: int) -> Optional[str]:
+            logger.error(f"Errore nel pagamento corso (approve+split): {e}")
+            return {
+                'success': False,
+                'error': 'GENERAL_ERROR',
+                'details': str(e)
+            }
+
+    def check_student_approval(self, student_address: str, course_price: Decimal) -> Dict[str, Any]:
         """
-        Trasferisce MATIC alla reward pool per pagare le gas fees dell'approvazione.
-        Versione con nonce esplicito per gestire transazioni multiple.
+        Verifica se lo studente ha approvato abbastanza fondi al reward pool.
+        
+        Args:
+            student_address: Indirizzo wallet dello studente
+            course_price: Prezzo del corso richiesto
+            
+        Returns:
+            Dict con informazioni sull'approval
+        """
+        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
+        
+        if not reward_pool_address:
+            return {
+                'approved': False,
+                'error': 'REWARD_POOL_NOT_CONFIGURED'
+            }
+        
+        try:
+            # Controlla allowance
+            allowance = self.contract.functions.allowance(
+                Web3.to_checksum_address(student_address),
+                Web3.to_checksum_address(reward_pool_address)
+            ).call()
+            allowance_teo = Decimal(str(Web3.from_wei(allowance, 'ether')))
+            
+            # Controlla balance
+            student_balance = self.get_balance(student_address)
+            
+            result = {
+                'approved': allowance_teo >= course_price,
+                'allowance': str(allowance_teo),
+                'required': str(course_price),
+                'balance': str(student_balance),
+                'has_sufficient_balance': student_balance >= course_price,
+                'ready_for_payment': allowance_teo >= course_price and student_balance >= course_price
+            }
+            
+            logger.info(f"Approval check: {student_address} - Allowance: {allowance_teo}, Required: {course_price}, Ready: {result['ready_for_payment']}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Errore check approval: {e}")
+            return {
+                'approved': False,
+                'error': 'CHECK_FAILED',
+                'details': str(e)
+            }
+
+    def check_course_payment_prerequisites(self, student_address: str, course_price: Decimal) -> Dict[str, Any]:
+        """
+        Verifica i prerequisiti per il pagamento di un corso.
         
         Args:
             student_address: Indirizzo dello studente
-            matic_amount: Quantità di MATIC da trasferire
-            nonce: Nonce specifico da usare
+            course_price: Prezzo del corso
             
         Returns:
-            Transaction hash se successo, None se errore
+            Dict con informazioni sui prerequisiti
         """
-        reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
-        if not reward_pool_private_key:
-            logger.error("REWARD_POOL_PRIVATE_KEY non configurata")
-            return None
-        
         try:
-            from web3 import Web3
+            # Verifica balance studente
+            student_balance = self.get_balance(student_address)
+            has_sufficient_balance = student_balance >= course_price
             
-            # Converti in wei
-            gas_amount = Web3.to_wei(matic_amount, 'ether')
+            # Verifica allowance (per sistema approve+split)
+            reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
+            allowance_info = {}
             
-            # Prepara transazione MATIC
-            gas_tx = {
-                'to': Web3.to_checksum_address(student_address),
-                'value': gas_amount,
-                'gas': 21000,
-                'gasPrice': self.get_optimized_gas_price(),
-                'nonce': nonce,
-                'chainId': 80002  # Polygon Amoy chain ID
+            if reward_pool_address:
+                try:
+                    allowance = self.contract.functions.allowance(
+                        Web3.to_checksum_address(student_address),
+                        Web3.to_checksum_address(reward_pool_address)
+                    ).call()
+                    allowance_teo = Decimal(str(Web3.from_wei(allowance, 'ether')))
+                    
+                    allowance_info = {
+                        'has_approval': allowance_teo >= course_price,
+                        'allowance': str(allowance_teo),
+                        'required': str(course_price)
+                    }
+                except Exception as e:
+                    allowance_info = {
+                        'has_approval': False,
+                        'error': str(e)
+                    }
+            
+            result = {
+                'student_address': student_address,
+                'course_price': str(course_price),
+                'student_balance': str(student_balance),
+                'has_sufficient_balance': has_sufficient_balance,
+                'prerequisites_met': has_sufficient_balance,
+                'allowance_info': allowance_info
             }
             
-            # Firma e invia
-            signed_gas_tx = self.w3.eth.account.sign_transaction(gas_tx, reward_pool_private_key)
-            gas_tx_hash = self.w3.eth.send_raw_transaction(signed_gas_tx.raw_transaction)
-            
-            logger.info(f"Trasferiti {matic_amount} MATIC per gas allo studente {student_address} (nonce: {nonce}) - TX: {gas_tx_hash.hex()}")
-            return gas_tx_hash.hex()
+            return result
             
         except Exception as e:
-            logger.error(f"Errore nel trasferimento MATIC (nonce: {nonce}): {e}")
-            return None
-
-    def transfer_from_student_via_reward_pool_with_nonce(self, student_address: str, to_address: str, amount: Decimal, nonce: int) -> Optional[str]:
+            logger.error(f"Errore verifica prerequisiti: {e}")
+            return {
+                'student_address': student_address,
+                'error': str(e),
+                'prerequisites_met': False
+            }
+    
+    def get_optimized_gas_price(self) -> int:
         """
-        Trasferisce TeoCoins dal wallet dello studente a un destinatario,
-        con la reward pool che paga le gas fees usando transferFrom.
-        Versione con nonce esplicito per gestire transazioni multiple.
+        Ottiene un gas price ottimizzato per la rete.
+        
+        Returns:
+            int: Gas price in wei
+        """
+        try:
+            gas_price = self.w3.eth.gas_price
+            # Aggiungi 10% per sicurezza
+            gas_price = int(gas_price * 1.1)
+            
+            # Limiti min/max
+            min_gas_price = self.w3.to_wei('25', 'gwei')
+            max_gas_price = self.w3.to_wei('50', 'gwei')
+            
+            if gas_price < min_gas_price:
+                gas_price = min_gas_price
+            elif gas_price > max_gas_price:
+                gas_price = max_gas_price
+                
+            return gas_price
+        except:
+            return self.w3.to_wei('30', 'gwei')
+
+    def transfer_from_student_via_reward_pool_with_nonce(self, student_address: str, to_address: str, 
+                                                        amount: Decimal, nonce: int) -> Optional[str]:
+        """
+        Trasferisce TeoCoins dal wallet dello studente a un destinatario usando transferFrom,
+        con nonce esplicito per evitare conflitti.
         
         Args:
             student_address: Indirizzo studente (from)
             to_address: Indirizzo destinatario
             amount: Quantità di TEO da trasferire
-            nonce: Nonce specifico da usare
+            nonce: Nonce specifico da utilizzare
             
         Returns:
             Transaction hash se successo, None se errore
@@ -901,21 +1042,12 @@ class TeoCoinService:
             # Converti amount in wei
             amount_wei = Web3.to_wei(amount, 'ether')
             
-            # Prepara indirizzi
+            # Indirizzi checksum
             checksum_from = Web3.to_checksum_address(student_address)
             checksum_to = Web3.to_checksum_address(to_address)
             
-            # Ottieni gas price ottimizzato
-            try:
-                gas_price = self.w3.eth.gas_price
-                min_gas_price = self.w3.to_wei('25', 'gwei')
-                if gas_price < min_gas_price:
-                    gas_price = min_gas_price
-                max_gas_price = self.w3.to_wei('50', 'gwei')
-                if gas_price > max_gas_price:
-                    gas_price = max_gas_price
-            except:
-                gas_price = self.w3.to_wei('25', 'gwei')
+            # Gas price ottimizzato
+            gas_price = self.get_optimized_gas_price()
             
             # Costruisci transazione transferFrom con nonce esplicito
             transaction = self.contract.functions.transferFrom(
@@ -933,450 +1065,28 @@ class TeoCoinService:
             signed_txn = self.w3.eth.account.sign_transaction(transaction, reward_pool_private_key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
             
-            logger.info(f"TransferFrom: {amount} TEO da {student_address} a {to_address} (nonce: {nonce}, gas pagato da reward pool) - TX: {tx_hash.hex()}")
+            logger.info(f"TransferFrom: {amount} TEO da {student_address} a {to_address} (nonce: {nonce}) - TX: {tx_hash.hex()}")
             return tx_hash.hex()
             
         except Exception as e:
             logger.error(f"Errore in transferFrom con nonce {nonce}: {e}")
             return None
-    
-    def emergency_fund_reward_pool_matic(self, matic_amount: Decimal = Decimal('0.1')) -> Optional[str]:
-        """
-        Funzione di emergenza per trasferire MATIC alla reward pool.
-        Da usare solo in ambiente di test quando la reward pool ha esaurito i fondi per gas.
-        
-        Nota: In produzione, la reward pool dovrebbe essere ricaricata tramite altri mezzi.
-        
-        Args:
-            matic_amount: Quantità di MATIC da trasferire (default 0.1 MATIC)
-            
-        Returns:
-            Transaction hash se successo, None se errore
-        """
-        admin_private_key = getattr(settings, 'ADMIN_PRIVATE_KEY', None)
-        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
-        
-        if not admin_private_key or not reward_pool_address:
-            logger.error("ADMIN_PRIVATE_KEY o REWARD_POOL_ADDRESS non configurati")
-            return None
-        
-        try:
-            from web3 import Web3
-            
-            # Account admin
-            admin_account = self.w3.eth.account.from_key(admin_private_key)
-            
-            # Verifica balance admin
-            admin_balance = self.w3.from_wei(self.w3.eth.get_balance(admin_account.address), 'ether')
-            if admin_balance < matic_amount:
-                logger.error(f"Admin ha MATIC insufficienti: {admin_balance} < {matic_amount}")
-                return None
-            
-            # Converti in wei
-            matic_wei = Web3.to_wei(matic_amount, 'ether')
-            
-            # Prepara transazione MATIC
-            nonce = self.w3.eth.get_transaction_count(admin_account.address)
-            tx = {
-                'to': Web3.to_checksum_address(reward_pool_address),
-                'value': matic_wei,
-                'gas': 21000,
-                'gasPrice': self.w3.to_wei('25', 'gwei'),
-                'nonce': nonce,
-                'chainId': 80002  # Polygon Amoy chain ID
-            }
-            
-            # Firma e invia
-            signed_tx = self.w3.eth.account.sign_transaction(tx, admin_private_key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-            
-            logger.info(f"EMERGENZA: Trasferiti {matic_amount} MATIC alla reward pool - TX: {tx_hash.hex()}")
-            return tx_hash.hex()
-            
-        except Exception as e:
-            logger.error(f"Errore nel trasferimento MATIC di emergenza: {e}")
-            return None
 
-    def get_optimized_gas_price(self) -> int:
+    def get_reward_pool_address(self) -> Optional[str]:
         """
-        Ottiene un gas price ottimizzato per Polygon Amoy testnet.
-        
-        Strategia:
-        1. Ottiene il gas price corrente dalla rete
-        2. Aggiunge un buffer del 20% per evitare "underpriced"
-        3. Applica limiti min/max ragionevoli
+        Restituisce l'indirizzo della reward pool.
         
         Returns:
-            int: Gas price ottimizzato in wei
+            str: Indirizzo della reward pool o None se non configurato
         """
-        try:
-            # Ottieni gas price corrente dalla rete
-            current_gas_price = self.w3.eth.gas_price
-            
-            # Aggiungi buffer del 20% per evitare "underpriced"
-            buffered_gas_price = int(current_gas_price * 1.2)
-            
-            # Limiti ragionevoli per Polygon Amoy
-            min_gas_price = self.w3.to_wei('25', 'gwei')    # Minimo rete
-            max_gas_price = self.w3.to_wei('100', 'gwei')   # Massimo ragionevole per rewards
-            
-            # Applica i limiti
-            if buffered_gas_price < min_gas_price:
-                final_gas_price = min_gas_price
-            elif buffered_gas_price > max_gas_price:
-                final_gas_price = max_gas_price
-            else:
-                final_gas_price = buffered_gas_price
-            
-            logger.info(f"Gas price calculation: current={current_gas_price/1e9:.2f} gwei, "
-                       f"buffered={buffered_gas_price/1e9:.2f} gwei, "
-                       f"final={final_gas_price/1e9:.2f} gwei")
-            
-            return final_gas_price
-            
-        except Exception as e:
-            logger.warning(f"Errore nel calcolo gas price: {e}")
-            # Fallback: usa un gas price alto per sicurezza
-            return self.w3.to_wei('80', 'gwei')  # 80 gwei fallback
-    
-    def check_course_payment_prerequisites(self, student_address: str, course_price: Decimal) -> Dict[str, Any]:
-        """
-        Verifica i prerequisiti per il pagamento corso via MetaMask.
-        
-        Args:
-            student_address: Indirizzo wallet dello studente
-            course_price: Prezzo del corso in TEO
-            
-        Returns:
-            Dict con informazioni sui prerequisiti
-        """
-        try:
-            # Verifica balance studente
-            student_balance = self.get_balance(student_address)
-            if student_balance is None:
-                student_balance = Decimal('0')
-            
-            # Verifica allowance per reward pool
-            reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
-            allowance = Decimal('0')
-            if reward_pool_address:
-                try:
-                    checksum_student = Web3.to_checksum_address(student_address)
-                    checksum_reward_pool = Web3.to_checksum_address(reward_pool_address)
-                    allowance_wei = self.contract.functions.allowance(checksum_student, checksum_reward_pool).call()
-                    allowance = Web3.from_wei(allowance_wei, 'ether')
-                except Exception as e:
-                    logger.warning(f"Errore nel controllo allowance: {e}")
-            
-            # Verifica se ha abbastanza fondi
-            sufficient_balance = student_balance >= course_price
-            
-            # Verifica se ha approvato abbastanza alla reward pool
-            sufficient_allowance = allowance >= course_price
-            
-            return {
-                'student_balance': str(student_balance),
-                'required_amount': str(course_price),
-                'current_allowance': str(allowance),
-                'sufficient_balance': sufficient_balance,
-                'sufficient_allowance': sufficient_allowance,
-                'needs_approval': not sufficient_allowance,
-                'can_proceed': sufficient_balance and sufficient_allowance
-            }
-            
-        except Exception as e:
-            logger.error(f"Errore nel controllo prerequisiti: {e}")
-            return {
-                'error': str(e),
-                'can_proceed': False
-            }
-    
-    def transfer_from_student_to_teacher(self, student_address: str, teacher_address: str, amount: Decimal) -> Optional[str]:
-        """
-        Trasferisce TeoCoins dal wallet studente al wallet teacher usando transferFrom.
-        La reward pool paga le gas fees dopo che lo studente ha approvato via MetaMask.
-        
-        Args:
-            student_address: Indirizzo wallet studente (da cui prelevare)
-            teacher_address: Indirizzo wallet teacher (destinatario)
-            amount: Quantità di TEO da trasferire
-            
-        Returns:
-            Transaction hash se successo, None se errore
-        """
-        return self.transfer_from_student_via_reward_pool(student_address, teacher_address, amount)
-    
-    def transfer_from_student_to_reward_pool(self, student_address: str, amount: Decimal) -> Optional[str]:
-        """
-        Trasferisce TeoCoins dal wallet studente alla reward pool (commissione piattaforma).
-        La reward pool paga le gas fees dopo che lo studente ha approvato via MetaMask.
-        
-        Args:
-            student_address: Indirizzo wallet studente (da cui prelevare)
-            amount: Quantità di TEO da trasferire come commissione
-            
-        Returns:
-            Transaction hash se successo, None se errore
-        """
-        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
-        if not reward_pool_address:
-            logger.error("REWARD_POOL_ADDRESS non configurata")
-            return None
-            
-        return self.transfer_from_student_via_reward_pool(student_address, reward_pool_address, amount)
+        return getattr(settings, 'REWARD_POOL_ADDRESS', None)
 
-    def student_pays_course_directly(self, student_private_key: str, teacher_address: str, 
-                                   course_price: Decimal, commission_rate: Decimal = Decimal('0.15')) -> Optional[Dict[str, Any]]:
-        """
-        NUOVO PROCESSO: Lo studente paga direttamente il corso dal proprio wallet.
-        
-        Processo corretto:
-        1. Lo studente paga i TEO dal proprio wallet (transfer)
-        2. Lo studente paga le proprie gas fees MATIC
-        3. L'insegnante riceve la sua parte (85%)
-        4. La commissione (15%) va alla reward pool
-        5. La reward pool viene usata SOLO per distribuire reward degli esercizi
-        
-        Args:
-            student_private_key: Chiave privata dello studente
-            teacher_address: Indirizzo del teacher
-            course_price: Prezzo del corso in TEO
-            commission_rate: Percentuale commissione (default 15%)
-            
-        Returns:
-            Dict con dettagli transazioni se successo, None se errore
-        """
-        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
-        
-        if not reward_pool_address:
-            logger.error("REWARD_POOL_ADDRESS non configurato")
-            return None
-        
-        try:
-            # Calcola importi
-            commission_amount = course_price * commission_rate
-            teacher_amount = course_price - commission_amount
-            
-            # Account studente
-            student_account = self.w3.eth.account.from_key(student_private_key)
-            student_address = student_account.address
-            
-            # Verifica balance studente TEO
-            student_balance = self.get_balance(student_address)
-            if student_balance < course_price:
-                logger.error(f"Studente ha fondi TEO insufficienti: {student_balance} < {course_price}")
-                return None
-            
-            # Verifica balance MATIC per gas fees
-            student_matic_balance = self.w3.eth.get_balance(student_address)
-            student_matic_balance_eth = Web3.from_wei(student_matic_balance, 'ether')
-            required_gas = Decimal('0.01')  # Stima gas per 2 transazioni
-            
-            if student_matic_balance_eth < required_gas:
-                logger.error(f"Studente ha MATIC insufficienti per gas: {student_matic_balance_eth} < {required_gas}")
-                return None
-            
-            logger.info(f"🔄 NUOVO PROCESSO - Studente paga corso direttamente:")
-            logger.info(f"  👨‍🎓 Studente: {student_address} paga {course_price} TEO + gas MATIC")
-            logger.info(f"  👨‍🏫 Teacher: {teacher_address} riceve {teacher_amount} TEO") 
-            logger.info(f"  🏦 Reward Pool: {reward_pool_address} riceve {commission_amount} TEO (commissione)")
-            logger.info(f"  💡 Gas fees: Pagate dallo studente dal proprio wallet MATIC")
-            
-            # Gestione nonce sequenziale per studente (non reward pool!)
-            current_nonce = self.w3.eth.get_transaction_count(student_address)
-            logger.info(f"Nonce iniziale studente: {current_nonce}")
-            
-            # Step 1: Transfer diretto studente -> teacher (nessun intermediario)
-            logger.info("📤 Step 1: Transfer diretto studente -> teacher...")
-            teacher_tx = self._student_direct_transfer(
-                student_private_key, teacher_address, teacher_amount, current_nonce
-            )
-            if not teacher_tx:
-                logger.error("❌ Trasferimento a teacher fallito")
-                return None
-            current_nonce += 1
-            
-            # Aspetta conferma prima della prossima transazione
-            import time
-            time.sleep(5)
-            
-            # Step 2: Transfer diretto studente -> reward pool (commissione)
-            logger.info("📤 Step 2: Transfer commissione studente -> reward pool...")
-            commission_tx = self._student_direct_transfer(
-                student_private_key, reward_pool_address, commission_amount, current_nonce
-            )
-            if not commission_tx:
-                logger.error("❌ Trasferimento commissione fallito")
-                return None
-            
-            logger.info("✅ Pagamento corso completato con NUOVO PROCESSO!")
-            logger.info("💡 Lo studente ha pagato TEO e gas dal proprio wallet")
-            logger.info("💡 La reward pool è stata usata solo come destinatario della commissione")
-            
-            result = {
-                'teacher_payment_tx': teacher_tx,
-                'commission_tx': commission_tx,
-                'student_address': student_address,
-                'teacher_address': teacher_address,
-                'teacher_amount': teacher_amount,
-                'commission_amount': commission_amount,
-                'total_paid': course_price,
-                'process_type': 'student_direct_payment',
-                'gas_paid_by': 'student'
-            }
-                
-            return result
-            
-        except Exception as e:
-            logger.error(f"❌ Errore nel NUOVO processo pagamento corso: {e}")
-            return None
 
-    def _student_direct_transfer(self, student_private_key: str, to_address: str, 
-                               amount: Decimal, nonce: int) -> Optional[str]:
-        """
-        Transfer diretto dal wallet dello studente (studente paga TEO e gas).
-        
-        Args:
-            student_private_key: Chiave privata dello studente
-            to_address: Indirizzo destinatario
-            amount: Quantità di TEO da trasferire
-            nonce: Nonce specifico da usare
-            
-        Returns:
-            Transaction hash se successo, None se errore
-        """
-        try:
-            # Account studente
-            student_account = self.w3.eth.account.from_key(student_private_key)
-            student_address = student_account.address
-            
-            # Converti amount in wei
-            amount_wei = Web3.to_wei(amount, 'ether')
-            
-            # Prepara indirizzi
-            checksum_to = Web3.to_checksum_address(to_address)
-            
-            # Ottieni gas price ottimizzato
-            gas_price = self._get_optimized_gas_price()
-            
-            # Costruisci transazione transfer diretta
-            transaction = self.contract.functions.transfer(
-                checksum_to,    # Destinatario
-                amount_wei      # Quantità
-            ).build_transaction({
-                'from': student_address,  # Studente paga tutto
-                'gas': 100000,
-                'gasPrice': gas_price,
-                'nonce': nonce,
-            })
-            
-            # Firma e invia transazione con chiave studente
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, student_private_key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-            
-            # Attendi la conferma e verifica che sia riuscita
-            try:
-                receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-                if receipt["status"] != 1:
-                    logger.error(f"Transfer diretto fallito - Status: {receipt['status']}")
-                    raise Exception(f"Transfer fallito: transazione non riuscita (status: {receipt['status']})")
-            except Exception as e:
-                logger.error(f"Transfer diretto fallito durante attesa conferma: {e}")
-                raise Exception(f"Transfer fallito: {str(e)}")
-            
-            logger.info(f"✅ Transfer diretto: {amount} TEO da {student_address} a {to_address} (nonce: {nonce}, gas pagato da studente) - TX: {tx_hash.hex()}")
-            return tx_hash.hex()
-            
-        except Exception as e:
-            logger.error(f"❌ Errore in transfer diretto: {e}")
-            return None
-
-    def _get_optimized_gas_price(self) -> int:
-        """Helper per ottenere un gas price ottimizzato"""
-        try:
-            gas_price = self.w3.eth.gas_price
-            min_gas_price = self.w3.to_wei('25', 'gwei')
-            if gas_price < min_gas_price:
-                gas_price = min_gas_price
-            max_gas_price = self.w3.to_wei('50', 'gwei')
-            if gas_price > max_gas_price:
-                gas_price = max_gas_price
-            return gas_price
-        except:
-            return self.w3.to_wei('25', 'gwei')
-
-# Istanza globale del servizio
-teocoin_service = TeoCoinService()
-
-# Helper functions per la reward pool
-def get_reward_pool_balance():
-    """Helper per ottenere il balance della reward pool"""
-    return teocoin_service.get_reward_pool_balance()
-
-def transfer_from_reward_pool(to_address: str, amount: Decimal):
-    """Helper per trasferire dalla reward pool"""
-    return teocoin_service.transfer_from_reward_pool(to_address, amount)
-
-def check_reward_pool_health():
-    """Helper per controllare la salute della reward pool"""
-    return teocoin_service.check_reward_pool_health()
-
-def transfer_to_reward_pool(from_private_key: str, amount: Decimal):
-    """Transfer TeoCoin to the reward pool"""
-    reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', '0x3b72a4E942CF1467134510cA3952F01b63005044')
-    return teocoin_service.transfer_tokens(from_private_key, reward_pool_address, amount)
-
-def process_pending_commissions():
-    """
-    Process all pending commission transactions
-    This should be called periodically or manually to collect commissions
-    Note: This would require teacher private keys, which is not secure.
-    For production, this should be handled differently (e.g., teacher-initiated or automatic deduction system)
-    """
-    from rewards.models import BlockchainTransaction
-    
-    pending_commissions = BlockchainTransaction.objects.filter(
-        transaction_type='platform_commission',
-        status='pending'
-    )
-    
-    results = []
-    for commission in pending_commissions:
-        # This would need the teacher's private key, which we don't have
-        # For now, just log what needs to be done
-        results.append({
-            'teacher': commission.user.username,
-            'amount': commission.amount,
-            'course_id': commission.related_object_id,
-            'status': 'needs_manual_processing'
-        })
-    
-    return results
-
-# Backward compatibility per funzioni esistenti
-def mint_tokens(to_address: str, amount: Decimal):
-    """
-    Funzione per minting (mantenuta per compatibilità)
-    DEPRECATA: Usare transfer_from_reward_pool per i nuovi reward
-    """
-    return teocoin_service.mint_tokens(to_address, amount)
-
-def transfer_tokens(from_private_key: str, to_address: str, amount: Decimal):
-    """Helper per trasferimenti generici"""
-    return teocoin_service.transfer_tokens(from_private_key, to_address, amount)
-
-def transfer_from_student_to_teacher(student_address: str, teacher_address: str, amount: Decimal):
-    """Helper per trasferimenti studente -> teacher"""
-    return teocoin_service.transfer_from_student_to_teacher(student_address, teacher_address, amount)
-
-def transfer_from_student_to_reward_pool(student_address: str, amount: Decimal):
-    """Helper per commissioni studente -> reward pool"""
-    return teocoin_service.transfer_from_student_to_reward_pool(student_address, amount)
-
+# Funzione di convenienza globale per BlockchainService compatibility
 def check_course_payment_prerequisites(student_address: str, course_price: Decimal):
-    """Helper per controllo prerequisiti pagamento corso"""
-    return teocoin_service.check_course_payment_prerequisites(student_address, course_price)
-
-def get_balance(wallet_address: str):
-    """Helper per ottenere il balance"""
-    return teocoin_service.get_balance(wallet_address)
+    """
+    Funzione globale per verificare i prerequisiti di pagamento corso.
+    Mantiene compatibilità con il codice esistente.
+    """
+    service = TeoCoinService()
+    return service.check_course_payment_prerequisites(student_address, course_price)

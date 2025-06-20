@@ -79,14 +79,7 @@ class PurchaseCourseView(APIView):
                     "teacher_address": course.teacher.wallet_address,
                     "student_address": wallet_address,
                     "course_id": course.pk,
-                    "message": "🔄 NUOVO PROCESSO: Lo studente paga TEO e gas dal proprio wallet",
-                    "process_details": {
-                        "student_pays": "TEO tokens + MATIC gas fees from your wallet",
-                        "teacher_receives": f"{teacher_amount} TEO directly to their wallet",
-                        "platform_commission": f"{commission_amount} TEO goes to reward pool",
-                        "reward_pool_purpose": "Used only for exercise/review rewards",
-                        "gas_fees": "Paid by you (student) from your MATIC balance"
-                    }
+                    "message": "Acquisto corso: Lo studente paga in TeoCoins, le gas fees sono pagate dalla reward pool"
                 }, status=status.HTTP_402_PAYMENT_REQUIRED)
 
             # Verifica la transazione sulla blockchain
@@ -116,7 +109,7 @@ class PurchaseCourseView(APIView):
                 # Add student to course
                 course.students.add(student)
                 
-                # Record purchase transaction (studente paga il prezzo totale dal proprio wallet)
+                # Record purchase transaction (studente paga il prezzo totale)
                 purchase_transaction = BlockchainTransaction.objects.create(
                     user=student,
                     amount=-course.price,  # Negativo = uscita dallo studente per il prezzo totale
@@ -126,14 +119,14 @@ class PurchaseCourseView(APIView):
                     from_address=wallet_address,
                     to_address=course.teacher.wallet_address if course.teacher.wallet_address else "unknown",
                     related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"NUOVO PROCESSO: Course purchase {course.title} - Student paid TEO+gas from own wallet"
+                    notes=f"Course purchase: {course.title} - Total price paid by student"
                 )
                 
                 # Calcola commissione e importo netto teacher
                 commission_amount = course.price * Decimal('0.15')  # 15% di commissione
                 teacher_net_amount = course.price - commission_amount  # 85% rimane al teacher
                 
-                # Record teacher earnings transaction (teacher riceve direttamente)
+                # Record teacher earnings transaction (teacher riceve)
                 teacher_earning_transaction = BlockchainTransaction.objects.create(
                     user=course.teacher,
                     amount=teacher_net_amount,  # Positivo = entrata per il teacher
@@ -143,11 +136,11 @@ class PurchaseCourseView(APIView):
                     from_address=wallet_address,
                     to_address=course.teacher.wallet_address,
                     related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"NUOVO PROCESSO: Earnings from {course.title} - Direct payment from student wallet"
+                    notes=f"Earnings from course sale: {course.title}"
                 )
                 
-                # Record commission transaction (commissione alla reward pool - solo per esercizi)
-                # La commissione viene pagata dallo studente direttamente alla reward pool
+                # Record commission transaction (commissione alla reward pool)
+                # La commissione viene pagata dallo studente come parte del prezzo del corso
                 commission_transaction = BlockchainTransaction.objects.create(
                     user=student,  # Lo studente paga la commissione
                     amount=-commission_amount,  # Negativo = uscita dallo studente
@@ -157,7 +150,7 @@ class PurchaseCourseView(APIView):
                     from_address=wallet_address,  # Dal wallet studente
                     to_address=getattr(settings, 'REWARD_POOL_ADDRESS', 'reward_pool'),
                     related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"NUOVO PROCESSO: Platform commission (15%) from {course.title} - For exercise rewards only"
+                    notes=f"Platform commission (15%) from course purchase: {course.title}"
                 )
                 
                 logger.info(f"Commission registered: {commission_amount} TEO paid by student {student.wallet_address} to reward pool")
@@ -169,9 +162,8 @@ class PurchaseCourseView(APIView):
                 logger.info(f"Course purchase completed: {student.username} -> {course.title} (TX: {transaction_hash})")
 
                 return Response({
-                    "message": "✅ Corso acquistato con successo con il NUOVO PROCESSO!",
+                    "message": "Corso acquistato con successo!",
                     "course_title": course.title,
-                    "process_type": "student_direct_payment",
                     "total_paid": str(course.price),
                     "teacher_net_amount": str(teacher_net_amount),
                     "commission_amount": str(commission_amount),
@@ -179,20 +171,12 @@ class PurchaseCourseView(APIView):
                     "wallet_address": wallet_address,
                     "blockchain_verified": True,
                     "payment_breakdown": {
-                        "student_paid_teo": str(course.price),
-                        "student_paid_gas": "MATIC from your wallet",
+                        "student_paid": str(course.price),
                         "teacher_received": str(teacher_net_amount),
                         "platform_commission": str(commission_amount),
-                        "commission_rate": "15%",
-                        "gas_fees_paid_by": "student"
+                        "commission_rate": "15%"
                     },
-                    "process_details": {
-                        "teo_paid_by": "student (from student wallet)",
-                        "gas_paid_by": "student (from student MATIC)",
-                        "reward_pool_role": "recipient of commission only",
-                        "reward_pool_purpose": "exercise/review rewards only"
-                    },
-                    "commission_status": "completed"
+                    "commission_status": "completed"  # Ora le commissioni sono gestite automaticamente
                 }, status=status.HTTP_200_OK)
 
         except Exception as e:

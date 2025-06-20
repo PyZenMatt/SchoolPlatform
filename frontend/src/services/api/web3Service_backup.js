@@ -1,7 +1,6 @@
 /**
  * Web3 Service for TeoCoin2 integration
  * Handles Metamask connection and smart contract interactions
- * REFACTORED: Only contains the new direct payment flow
  */
 
 import { ethers } from 'ethers';
@@ -33,8 +32,8 @@ class Web3Service {
     this.signer = null;
     this.contract = null;
     this.userAddress = null;
-    this.isWalletLocked = false; // Flag to prevent automatic account changes
-    this.lockedWalletAddress = null; // The originally connected wallet address
+    this.isWalletLocked = false; // New: flag to prevent automatic account changes
+    this.lockedWalletAddress = null; // New: the originally connected wallet address
     this._hasStableConnectionSetup = false; // Internal flag to prevent multiple setups
     
     // Restore locked state from localStorage if it exists
@@ -505,6 +504,68 @@ class Web3Service {
   }
 
   /**
+   * Transfer tokens using reward pool for gas fees (for testing)
+   */
+  async transferTokensWithPoolGas(fromAddress, toAddress, amount) {
+    try {
+      const response = await fetch('/api/blockchain/transfer-with-pool-gas/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          from_address: fromAddress,
+          to_address: toAddress,
+          amount: amount.toString()
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Transfer failed');
+      }
+
+      return data.transaction_hash;
+    } catch (error) {
+      console.error('Error in transferTokensWithPoolGas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Simulate user payment via reward pool (for testing without gas fees)
+   */
+  async simulatePaymentViaPool(fromAddress, toAddress, amount) {
+    try {
+      const response = await fetch('/api/v1/blockchain/simulate-payment/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          from_user_address: fromAddress,
+          to_address: toAddress,
+          amount: amount.toString()
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Payment simulation failed');
+      }
+
+      return data.transaction_hash;
+    } catch (error) {
+      console.error('Error in simulatePaymentViaPool:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Wait for transaction confirmation
    */
   async waitForTransactionConfirmation(txHash, confirmations = 1) {
@@ -531,23 +592,13 @@ class Web3Service {
   }
 
   /**
-   * Process course payment with direct payment from student wallet
-   * NEW PROCESS: Student pays both TEO and gas directly from their wallet
-   * - Student pays TEO tokens to teacher (net amount after commission)
-   * - Student pays commission to reward pool
-   * - Student pays all gas fees with MATIC
-   * - No reward pool involvement as payer/intermediary
+   * Process course payment using MetaMask for transaction signing:
+   * - Frontend handles all transactions via MetaMask
+   * - Student signs approve() transaction
+   * - Backend coordinates transferFrom() via reward pool
+   * - All transaction hashes sent to backend for recording
    */
-  async processCoursePaymentDirect(studentAddress, teacherAddress, coursePrice, courseId) {
-    // NEW FLOW: Use the approve+split method
-    return await this.processCoursePaymentApproveAndSplit(studentAddress, teacherAddress, coursePrice, courseId);
-  }
-
-  /**
-   * LEGACY: Direct course payment where student pays everything directly
-   * @deprecated Use processCoursePaymentApproveAndSplit instead
-   */
-  async processCoursePaymentDirectLegacy(studentAddress, teacherAddress, coursePrice, courseId) {
+  async processCoursePayment(studentAddress, teacherAddress, coursePrice, courseId) {
     // Always use locked wallet address if available, otherwise use provided studentAddress
     const effectiveAddress = this.getLockedWalletAddress() || studentAddress;
     
@@ -556,14 +607,14 @@ class Web3Service {
     }
 
     try {
-      console.log('🎓 NEW PROCESS: Processing course payment directly from student wallet...');
+      console.log('🎓 Processing course payment via MetaMask...');
       console.log(`Student: ${effectiveAddress}`);
       console.log(`Teacher: ${teacherAddress}`);
       console.log(`Price: ${coursePrice} TEO`);
 
       // Step 1: Check if student has enough MATIC for gas fees
       console.log('🔍 Checking MATIC balance for gas fees...');
-      const maticCheck = await this.checkMaticForGas(effectiveAddress, '0.01');
+      const maticCheck = await this.checkMaticForGas(effectiveAddress, '0.01'); // Require minimum 0.01 MATIC
       
       if (!maticCheck.hasEnough) {
         throw new Error(
@@ -585,50 +636,223 @@ class Web3Service {
       }
       console.log(`✅ TEO check passed: ${teoBalance} TEO available`);
 
-      // Step 3: Setup MetaMask connection
+      // Step 3: Setup MetaMask connection and ensure correct account
       console.log('🔗 Setting up MetaMask connection...');
       
       if (!this.isMetamaskInstalled()) {
         throw new Error('MetaMask non è installato. Installa MetaMask per continuare.');
       }
 
+      // Request access to accounts and switch to the correct one
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       
+      // Setup provider and signer
       const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
       await this.switchToPolygonAmoy();
       const signer = await metamaskProvider.getSigner();
       
-      // Verify correct account
+      // Check if MetaMask is on the correct account
       const currentMetaMaskAddress = await signer.getAddress();
+      console.log('� Current MetaMask address:', currentMetaMaskAddress);
+      console.log('🎯 Required address:', effectiveAddress);
+      
       if (currentMetaMaskAddress.toLowerCase() !== effectiveAddress.toLowerCase()) {
-        throw new Error(
-          `MetaMask è connesso all'account ${currentMetaMaskAddress} ma è richiesto l'account ${effectiveAddress}. ` +
-          `Cambia account in MetaMask e riprova.`
-        );
+        // Try multiple methods to switch to the correct account
+        console.log('🔄 Attempting to switch MetaMask to correct account...');
+        
+        let switchSuccessful = false;
+        let lastError = null;
+        
+        // Method 1: Try experimental wallet_switchEthereumAccount (if available)
+        try {
+          console.log('📱 Trying wallet_switchEthereumAccount...');
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumAccount',
+            params: [effectiveAddress]
+          });
+          
+          // Check if switch was successful
+          const newSigner = await metamaskProvider.getSigner();
+          const newAddress = await newSigner.getAddress();
+          
+          if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+            console.log('✅ Successfully switched via wallet_switchEthereumAccount');
+            this.signer = newSigner;
+            switchSuccessful = true;
+          }
+        } catch (error) {
+          console.log('❌ wallet_switchEthereumAccount failed or not supported:', error.message);
+          lastError = error;
+        }
+        
+        // Method 2: Try wallet_requestPermissions with account hint
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying wallet_requestPermissions with account hint...');
+            await window.ethereum.request({
+              method: 'wallet_requestPermissions',
+              params: [{ 
+                eth_accounts: {},
+                // Try to hint the desired account
+                ...(effectiveAddress && { preferredAccount: effectiveAddress })
+              }]
+            });
+            
+            // Wait a bit for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via wallet_requestPermissions');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ wallet_requestPermissions failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // Method 3: Try force re-requesting accounts
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying force eth_requestAccounts...');
+            
+            // First disconnect any existing permissions
+            try {
+              await window.ethereum.request({
+                method: 'wallet_revokePermissions',
+                params: [{ eth_accounts: {} }]
+              });
+            } catch (revokeError) {
+              console.log('Revoke permissions not supported or failed');
+            }
+            
+            // Then request accounts again
+            const accounts = await window.ethereum.request({
+              method: 'eth_requestAccounts',
+              params: []
+            });
+            
+            console.log('Available accounts after request:', accounts);
+            
+            // Wait a bit for the UI to update
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via force eth_requestAccounts');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ force eth_requestAccounts failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // Method 4: As last resort, try to trigger MetaMask popup with specific error
+        if (!switchSuccessful) {
+          try {
+            console.log('📱 Trying to trigger MetaMask account selection...');
+            
+            // Send a dummy transaction request that will fail but should trigger account selection
+            const dummyTx = {
+              from: effectiveAddress, // This should trigger MetaMask to ask for account switch
+              to: effectiveAddress,
+              value: '0x0',
+              data: '0x'
+            };
+            
+            try {
+              await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [dummyTx]
+              });
+            } catch (txError) {
+              // We expect this to fail, but it might trigger account selection
+              console.log('Dummy transaction triggered account selection popup');
+            }
+            
+            // Wait for user interaction
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Check if switch was successful
+            const newSigner = await metamaskProvider.getSigner();
+            const newAddress = await newSigner.getAddress();
+            
+            if (newAddress.toLowerCase() === effectiveAddress.toLowerCase()) {
+              console.log('✅ Successfully switched via dummy transaction trigger');
+              this.signer = newSigner;
+              switchSuccessful = true;
+            }
+          } catch (error) {
+            console.log('❌ dummy transaction trigger failed:', error.message);
+            lastError = error;
+          }
+        }
+        
+        // If all automatic methods failed, provide enhanced user instructions
+        if (!switchSuccessful) {
+          const availableAccounts = await window.ethereum.request({ method: 'eth_accounts' });
+          const isAccountAvailable = availableAccounts.some(account => 
+            account.toLowerCase() === effectiveAddress.toLowerCase()
+          );
+          
+          if (!isAccountAvailable) {
+            throw new Error(
+              `❌ L'account richiesto non è disponibile in MetaMask.\n\n` +
+              `Account richiesto: ${effectiveAddress}\n` +
+              `Account disponibili in MetaMask: ${availableAccounts.join(', ')}\n\n` +
+              `📥 Prima importa l'account in MetaMask:\n` +
+              `1. 🦊 Apri MetaMask\n` +
+              `2. ➕ Clicca "Aggiungi account o hardware wallet"\n` +
+              `3. 📋 Scegli "Importa account"\n` +
+              `4. 🔑 Inserisci la chiave privata per ${effectiveAddress}\n` +
+              `5. 🔄 Riprova l'acquisto`
+            );
+          }
+          
+          throw new Error(
+            `🔄 MetaMask ha aperto la pagina di gestione connessioni.\n\n` +
+            `Account attuale connesso: ${currentMetaMaskAddress}\n` +
+            `Account richiesto: ${effectiveAddress}\n\n` +
+            `📋 Nella pagina MetaMask che si è aperta:\n` +
+            `1. ✅ Collega l'account che termina con: ...${effectiveAddress.slice(-6)}\n` +
+            `2. ❌ Scollega altri account se necessario\n` +
+            `3. 🔄 Torna qui e riprova l'acquisto\n\n` +
+            `💡 Account disponibili: ${availableAccounts.map(acc => `...${acc.slice(-6)}`).join(', ')}\n` +
+            `🔍 Dettaglio tecnico: ${lastError?.message || 'Switch automatico completato, verifica le connessioni'}`
+          );
+        }
+      } else {
+        console.log('✅ MetaMask is already on the correct account');
+        this.signer = signer;
       }
       
-      console.log('✅ MetaMask connected to correct account');
-      this.signer = signer;
-      
-      // Create contract instance
+      // Create contract instance with the correct signer
       this.contract = new ethers.Contract(
         TEOCOIN_CONTRACT_ADDRESS,
         TEOCOIN_ABI,
         this.signer
       );
 
-      // Step 4: Calculate amounts
+      // Calculate amounts
       const coursePriceWei = ethers.parseEther(coursePrice.toString());
       const commissionRate = 0.15; // 15%
       const commissionAmount = parseFloat(coursePrice) * commissionRate;
       const teacherAmount = parseFloat(coursePrice) - commissionAmount;
-      const teacherAmountWei = ethers.parseEther(teacherAmount.toString());
-      const commissionAmountWei = ethers.parseEther(commissionAmount.toString());
 
-      console.log(`💰 Payment breakdown: Total=${coursePrice} TEO, Teacher=${teacherAmount} TEO, Commission=${commissionAmount} TEO`);
+      console.log(`💰 Amounts: Course=${coursePrice} TEO, Teacher=${teacherAmount} TEO, Commission=${commissionAmount} TEO`);
 
-      // Step 5: Get reward pool address from backend
-      const response = await fetch('/api/v1/blockchain/process-course-payment-direct/', {
+      // Step 4: Get reward pool address from backend
+      const prerequisitesResponse = await fetch('/api/v1/blockchain/check-course-payment-prerequisites/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -636,19 +860,16 @@ class Web3Service {
         },
         body: JSON.stringify({
           student_address: effectiveAddress,
-          teacher_address: teacherAddress,
-          course_price: coursePrice.toString(),
-          course_id: courseId
+          course_price: coursePrice.toString()
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to initialize payment');
+      if (!prerequisitesResponse.ok) {
+        throw new Error('Failed to get payment prerequisites');
       }
 
-      const result = await response.json();
-      const rewardPoolAddress = result.reward_pool_address;
+      const prerequisites = await prerequisitesResponse.json();
+      const rewardPoolAddress = prerequisites.reward_pool_address;
 
       if (!rewardPoolAddress) {
         throw new Error('Reward pool address not configured');
@@ -656,40 +877,46 @@ class Web3Service {
 
       console.log(`🏦 Reward pool address: ${rewardPoolAddress}`);
 
-      // Step 6: Execute payments directly from student wallet
-      console.log('💳 Step 1: Paying teacher directly...');
+      // Step 5: Student approves reward pool to spend their TEO (MetaMask signature)
+      console.log('✍️ Requesting student approval via MetaMask...');
       
-      // Payment to teacher
-      const teacherTx = await this.contract.connect(this.signer).transfer(
-        teacherAddress,
-        teacherAmountWei,
-        {
-          gasLimit: 60000n // Set explicit gas limit
-        }
-      );
-
-      console.log('⏳ Waiting for teacher payment confirmation...');
-      const teacherReceipt = await teacherTx.wait();
-      console.log(`✅ Teacher payment confirmed: ${teacherReceipt.hash}`);
-
-      console.log('💳 Step 2: Paying commission to reward pool...');
+      // First verify we're on the correct network
+      const network = await this.signer.provider.getNetwork();
+      console.log('🌐 Current network:', network.chainId, network.name);
+      if (network.chainId !== 80002n) { // Polygon Amoy chainId as BigInt
+        console.log('⚠️ Wrong network detected, switching...');
+        await this.switchToPolygonAmoy();
+      }
       
-      // Commission to reward pool
-      const commissionTx = await this.contract.connect(this.signer).transfer(
+      // Estimate gas before sending transaction
+      let gasEstimate;
+      try {
+        gasEstimate = await this.contract.connect(this.signer).approve.estimateGas(
+          rewardPoolAddress,
+          coursePriceWei
+        );
+        console.log('⛽ Gas estimate for approval:', gasEstimate.toString());
+      } catch (gasError) {
+        console.warn('⚠️ Gas estimation failed:', gasError.message);
+        gasEstimate = 50000n; // Fallback gas limit
+      }
+      
+      // Send approval transaction with explicit gas limit
+      const approvalTx = await this.contract.connect(this.signer).approve(
         rewardPoolAddress,
-        commissionAmountWei,
+        coursePriceWei,
         {
-          gasLimit: 60000n // Set explicit gas limit
+          gasLimit: gasEstimate * 110n / 100n // Add 10% buffer
         }
       );
 
-      console.log('⏳ Waiting for commission payment confirmation...');
-      const commissionReceipt = await commissionTx.wait();
-      console.log(`✅ Commission payment confirmed: ${commissionReceipt.hash}`);
+      console.log('⏳ Waiting for approval confirmation...');
+      const approvalReceipt = await approvalTx.wait();
+      console.log(`✅ Approval confirmed: ${approvalReceipt.hash}`);
 
-      // Step 7: Notify backend of successful payment
-      console.log('📤 Notifying backend of successful payment...');
-      const confirmResponse = await fetch('/api/v1/blockchain/confirm-course-payment/', {
+      // Step 6: Send transaction details to backend for transferFrom execution
+      console.log('📤 Sending transaction details to backend...');
+      const response = await fetch('/api/v1/blockchain/execute-course-payment/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -700,37 +927,35 @@ class Web3Service {
           teacher_address: teacherAddress,
           course_price: coursePrice.toString(),
           course_id: courseId,
-          teacher_tx_hash: teacherReceipt.hash,
-          commission_tx_hash: commissionReceipt.hash,
+          approval_tx_hash: approvalReceipt.hash,
           teacher_amount: teacherAmount.toString(),
           commission_amount: commissionAmount.toString()
         })
       });
 
-      if (!confirmResponse.ok) {
-        const errorData = await confirmResponse.json();
-        console.warn('⚠️ Payment executed but backend confirmation failed:', errorData.error);
-        // Payment was successful on-chain, just log the warning
-        // Don't throw error since the blockchain payment succeeded
-      } else {
-        const confirmResult = await confirmResponse.json();
-        console.log('✅ Course payment completed successfully');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Payment execution failed');
       }
 
+      const result = await response.json();
+      console.log('✅ Course payment executed successfully:', result);
+      console.log('🔍 Debug - teacher_payment_tx value:', result.teacher_payment_tx);
+      console.log('🔍 Debug - commission_tx value:', result.commission_tx);
+
       return {
-        success: true,
+        transactionHash: result.teacher_payment_tx,
         studentAddress: effectiveAddress,
-        teacherAddress: teacherAddress,
+        teacherAddress: result.teacher_address,
+        teacherAmount: result.teacher_amount,
+        commissionAmount: result.commission_amount,
         totalPaid: coursePrice.toString(),
-        teacherAmount: teacherAmount.toString(),
-        commissionAmount: commissionAmount.toString(),
-        teacherTxHash: teacherReceipt.hash,
-        commissionTxHash: commissionReceipt.hash,
-        message: 'Pagamento completato direttamente dal wallet studente'
+        approvalTx: approvalReceipt.hash,
+        commissionTx: result.commission_tx
       };
 
     } catch (error) {
-      console.error('❌ Direct course payment failed:', error);
+      console.error('❌ Course payment failed:', error);
       
       // Handle specific MetaMask errors
       if (error.code === 4001) {
@@ -739,192 +964,6 @@ class Web3Service {
         throw new Error('Errore interno della rete blockchain. Verifica di essere connesso a Polygon Amoy e riprova.');
       } else if (error.message.includes('insufficient funds')) {
         throw new Error('Fondi insufficienti per le gas fee. Aggiungi MATIC al tuo wallet.');
-      } else if (error.message.includes('gas')) {
-        throw new Error('Errore nelle gas fee. Prova ad aumentare il gas limit in MetaMask.');
-      } else if (error.message.includes('network')) {
-        throw new Error('Errore di rete. Verifica la connessione e riprova.');
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
-   * NEW APPROVE+SPLIT PROCESS: Process course payment with single approval
-   * Student approves tokens to reward pool, backend handles the split
-   */
-  async processCoursePaymentApproveAndSplit(studentAddress, teacherAddress, coursePrice, courseId) {
-    // Always use locked wallet address if available, otherwise use provided studentAddress
-    const effectiveAddress = this.getLockedWalletAddress() || studentAddress;
-    
-    if (!effectiveAddress) {
-      throw new Error('Wallet non connesso');
-    }
-
-    try {
-      console.log('🎓 APPROVE+SPLIT: Processing course payment with single approval...');
-      console.log(`Student: ${effectiveAddress}`);
-      console.log(`Teacher: ${teacherAddress}`);
-      console.log(`Price: ${coursePrice} TEO`);
-
-      // Step 1: Check if student has enough MATIC for gas fees (much less needed now)
-      console.log('🔍 Checking MATIC balance for gas fees...');
-      const maticCheck = await this.checkMaticForGas(effectiveAddress, '0.005'); // Reduced from 0.01
-      
-      if (!maticCheck.hasEnough) {
-        throw new Error(
-          `MATIC insufficienti per gas fees. ` +
-          `Hai ${maticCheck.balance} MATIC, servono almeno ${maticCheck.required} MATIC. ` +
-          `Ottieni MATIC da: https://faucet.polygon.technology/`
-        );
-      }
-      
-      console.log(`✅ MATIC check passed: ${maticCheck.balance} MATIC available`);
-
-      // Step 2: Check student's TEO balance
-      console.log('🔍 Checking TEO balance...');
-      const teoBalance = await this.getBalance(effectiveAddress);
-      if (parseFloat(teoBalance) < parseFloat(coursePrice)) {
-        throw new Error(
-          `TEO insufficienti. Hai ${teoBalance} TEO, servono ${coursePrice} TEO`
-        );
-      }
-      console.log(`✅ TEO check passed: ${teoBalance} TEO available`);
-
-      // Step 3: Setup MetaMask connection
-      console.log('🔗 Setting up MetaMask connection...');
-      
-      if (!this.isMetamaskInstalled()) {
-        throw new Error('MetaMask non è installato. Installa MetaMask per continuare.');
-      }
-
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
-      await this.switchToPolygonAmoy();
-      const signer = await metamaskProvider.getSigner();
-      
-      // Verify correct account
-      const currentMetaMaskAddress = await signer.getAddress();
-      if (currentMetaMaskAddress.toLowerCase() !== effectiveAddress.toLowerCase()) {
-        throw new Error(
-          `MetaMask è connesso all'account ${currentMetaMaskAddress} ma è richiesto l'account ${effectiveAddress}. ` +
-          `Cambia account in MetaMask e riprova.`
-        );
-      }
-      
-      console.log('✅ MetaMask connected to correct account');
-      this.signer = signer;
-      
-      // Create contract instance
-      this.contract = new ethers.Contract(
-        TEOCOIN_CONTRACT_ADDRESS,
-        TEOCOIN_ABI,
-        this.signer
-      );
-
-      // Step 4: Get reward pool address from backend
-      console.log('🏦 Getting reward pool address...');
-      const poolResponse = await fetch('/api/v1/blockchain/reward-pool-address/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('access')}`
-        }
-      });
-
-      if (!poolResponse.ok) {
-        const errorData = await poolResponse.json();
-        throw new Error(errorData.error || 'Failed to get reward pool address');
-      }
-
-      const poolResult = await poolResponse.json();
-      const rewardPoolAddress = poolResult.reward_pool_address;
-
-      if (!rewardPoolAddress) {
-        throw new Error('Reward pool address not configured');
-      }
-
-      console.log(`🏦 Reward pool address: ${rewardPoolAddress}`);
-
-      // Step 5: Check current allowance
-      console.log('🔍 Checking current allowance...');
-      const coursePriceWei = ethers.parseEther(coursePrice.toString());
-      const currentAllowance = await this.contract.allowance(effectiveAddress, rewardPoolAddress);
-      
-      console.log(`Current allowance: ${ethers.formatEther(currentAllowance)} TEO`);
-      console.log(`Required: ${coursePrice} TEO`);
-
-      // Step 6: Approve tokens if needed
-      if (currentAllowance < coursePriceWei) {
-        console.log('💳 SINGLE SIGNATURE: Approving tokens to reward pool...');
-        
-        const approveTx = await this.contract.connect(this.signer).approve(
-          rewardPoolAddress,
-          coursePriceWei,
-          {
-            gasLimit: 60000n // Set explicit gas limit
-          }
-        );
-
-        console.log('⏳ Waiting for approval confirmation...');
-        const approveReceipt = await approveTx.wait();
-        console.log(`✅ Approval confirmed: ${approveReceipt.hash}`);
-      } else {
-        console.log('✅ Sufficient allowance already exists');
-      }
-
-      // Step 7: Backend processes the payment split
-      console.log('🚀 Backend processing payment split...');
-      const paymentResponse = await fetch('/api/v1/blockchain/process-course-payment-direct/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('access')}`
-        },
-        body: JSON.stringify({
-          student_address: effectiveAddress,
-          teacher_address: teacherAddress,
-          price_in_teo: coursePrice.toString(), // Send in ether format for clarity
-          course_id: courseId
-        })
-      });
-
-      if (!paymentResponse.ok) {
-        const errorData = await paymentResponse.json();
-        throw new Error(errorData.error || 'Payment processing failed');
-      }
-
-      const paymentResult = await paymentResponse.json();
-      console.log('✅ Payment processed successfully by backend');
-
-      return {
-        success: true,
-        studentAddress: effectiveAddress,
-        teacherAddress: teacherAddress,
-        totalPaid: coursePrice.toString(),
-        teacherAmount: paymentResult.teacher_amount,
-        commissionAmount: paymentResult.commission_amount,
-        teacherTxHash: paymentResult.transaction_hash,
-        commissionTxHash: paymentResult.commission_tx_hash,
-        enrollmentId: paymentResult.enrollment_id,
-        message: 'Pagamento completato con una sola firma - Backend ha gestito la distribuzione automaticamente'
-      };
-
-    } catch (error) {
-      console.error('❌ Approve+Split course payment failed:', error);
-      
-      // Handle specific MetaMask errors
-      if (error.code === 4001) {
-        throw new Error('Transazione rifiutata dall\'utente');
-      } else if (error.code === -32603) {
-        throw new Error('Errore interno della rete blockchain. Verifica di essere connesso a Polygon Amoy e riprova.');
-      } else if (error.message.includes('insufficient funds')) {
-        throw new Error('Fondi insufficienti per le gas fee. Aggiungi MATIC al tuo wallet.');
-      } else if (error.message.includes('INSUFFICIENT_ALLOWANCE')) {
-        throw new Error('Approvazione token non riuscita. Riprova la transazione.');
-      } else if (error.message.includes('INSUFFICIENT_BALANCE')) {
-        throw new Error('TEO insufficienti nel wallet. Aggiungi più TEO e riprova.');
       } else if (error.message.includes('gas')) {
         throw new Error('Errore nelle gas fee. Prova ad aumentare il gas limit in MetaMask.');
       } else if (error.message.includes('network')) {
