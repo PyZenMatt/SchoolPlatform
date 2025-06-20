@@ -77,8 +77,8 @@ class UserService(TransactionalService):
                 'id': enrollment.course.id,
                 'title': enrollment.course.title,
                 'completed': enrollment.completed,
-                'progress': enrollment.progress_percentage,
-                'enrolled_at': enrollment.enrolled_at.isoformat(),
+                'progress': 100 if enrollment.completed else 0,  # Simple progress: 0% or 100%
+                'enrolled_at': enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else None,
             }
             for enrollment in enrollments
         ]
