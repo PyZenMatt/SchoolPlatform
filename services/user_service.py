@@ -28,7 +28,7 @@ class UserService(TransactionalService):
     and user-related business logic.
     """
     
-    def get_user_profile_data(self, user: User) -> Dict[str, Any]:
+    def get_user_profile_data(self, user) -> Dict[str, Any]:
         """
         Get complete user profile data including courses.
         
@@ -57,9 +57,14 @@ class UserService(TransactionalService):
                 'role': user.role,
                 'courses': courses,
                 'teo_coins': getattr(user, 'teo_coins', 0),
-                'is_approved': user.is_approved,
-                'bio': user.bio,
-                'avatar': user.avatar.url if user.avatar else None,
+                'is_approved': getattr(user, 'is_approved', False),
+                'bio': getattr(user, 'bio', ''),
+                'avatar': user.avatar.url if hasattr(user, 'avatar') and user.avatar else None,
+                'wallet_address': getattr(user, 'wallet_address', None),  # Add wallet_address for frontend compatibility
+                'profession': getattr(user, 'profession', ''),
+                'artistic_aspirations': getattr(user, 'artistic_aspirations', ''),
+                'first_name': getattr(user, 'first_name', ''),
+                'last_name': getattr(user, 'last_name', ''),
             }
             
             self.log_info(f"Successfully retrieved profile data for user {user.id}")
@@ -69,13 +74,17 @@ class UserService(TransactionalService):
             self.log_error(f"Error retrieving profile data for user {user.id}: {str(e)}")
             raise TeoArtServiceException(f"Error retrieving user profile: {str(e)}")
     
-    def _get_student_courses(self, user: User) -> List[Dict]:
+    def _get_student_courses(self, user) -> List[Dict]:
         """Get courses for a student user."""
         enrollments = CourseEnrollment.objects.filter(student=user).select_related('course')
         return [
             {
                 'id': enrollment.course.id,
                 'title': enrollment.course.title,
+                'description': getattr(enrollment.course, 'description', ''),
+                'price': getattr(enrollment.course, 'price', 0),
+                'category': getattr(enrollment.course, 'category', 'other'),
+                'cover_image': enrollment.course.cover_image.url if hasattr(enrollment.course, 'cover_image') and enrollment.course.cover_image else None,
                 'completed': enrollment.completed,
                 'progress': 100 if enrollment.completed else 0,  # Simple progress: 0% or 100%
                 'enrolled_at': enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else None,
@@ -83,15 +92,19 @@ class UserService(TransactionalService):
             for enrollment in enrollments
         ]
     
-    def _get_teacher_courses(self, user: User) -> List[Dict]:
+    def _get_teacher_courses(self, user) -> List[Dict]:
         """Get courses for a teacher user."""
         courses = user.created_courses.all()
         return [
             {
                 'id': course.id,
                 'title': course.title,
-                'student_count': course.enrolled_students.count(),
-                'created_at': course.created_at.isoformat(),
+                'description': getattr(course, 'description', ''),
+                'price': getattr(course, 'price', 0),
+                'category': getattr(course, 'category', 'other'),
+                'cover_image': course.cover_image.url if hasattr(course, 'cover_image') and course.cover_image else None,
+                'student_count': course.enrollments.count() if hasattr(course, 'enrollments') else 0,
+                'created_at': course.created_at.isoformat() if hasattr(course, 'created_at') else None,
             }
             for course in courses
         ]
