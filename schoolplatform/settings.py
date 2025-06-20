@@ -51,7 +51,8 @@ INSTALLED_APPS = [
 
 # Debug toolbar (solo in development)
 if DEBUG:
-    INSTALLED_APPS += ['debug_toolbar']
+    INSTALLED_APPS += ['debug_toolbar',
+                       'django_extensions']
 
 # Middleware
 MIDDLEWARE = [
