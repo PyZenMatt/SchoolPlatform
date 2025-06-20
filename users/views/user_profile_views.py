@@ -27,27 +27,40 @@ def user_profile(request):
     """Get user profile with course information"""
     user = request.user
     
+    # NEW: Using UserService for business logic
     try:
-        if user.role == 'student':
-            courses = CourseEnrollment.objects.filter(student=user).values(
-                'course__id', 'course__title', 'completed'
-            )
-        elif user.role == 'teacher':
-            courses = user.created_courses.values('id', 'title', 'enrolled_students')
-        else:
-            courses = []
+        from services import user_service
+        profile_data = user_service.get_user_profile_data(user)
+        return Response(profile_data)
     except Exception as e:
+        # Fallback to old logic if service fails
         return Response(
-            {"error": f"Error retrieving courses: {e}"}, 
+            {"error": f"Error retrieving profile: {str(e)}"}, 
             status=500
         )
-
-    return Response({
-        'username': user.username,
-        'role': user.role,
-        'courses': courses,
-        'teo_coins': user.teo_coins
-    })
+    
+    # OLD CODE (kept as backup) - Remove after testing
+    # try:
+    #     if user.role == 'student':
+    #         courses = CourseEnrollment.objects.filter(student=user).values(
+    #             'course__id', 'course__title', 'completed'
+    #         )
+    #     elif user.role == 'teacher':
+    #         courses = user.created_courses.values('id', 'title', 'enrolled_students')
+    #     else:
+    #         courses = []
+    # except Exception as e:
+    #     return Response(
+    #         {"error": f"Error retrieving courses: {e}"}, 
+    #         status=500
+    #     )
+    # 
+    # return Response({
+    #     'username': user.username,
+    #     'role': user.role,
+    #     'courses': courses,
+    #     'teo_coins': user.teo_coins
+    # })
 
 
 class UserProfileView(APIView):
@@ -57,8 +70,21 @@ class UserProfileView(APIView):
 
     def get(self, request):
         """Get user profile details"""
-        serializer = UserProfileSerializer(request.user)
-        return Response(serializer.data)
+        # NEW: Using UserService for business logic
+        try:
+            from services import user_service
+            profile_data = user_service.get_user_profile_data(request.user)
+            return Response(profile_data)
+        except Exception as e:
+            # Fallback to old logic if service fails
+            return Response(
+                {"error": f"Error retrieving profile: {str(e)}"}, 
+                status=500
+            )
+        
+        # OLD CODE (kept as backup) - Remove after testing
+        # serializer = UserProfileSerializer(request.user)
+        # return Response(serializer.data)
 
     def put(self, request):
         """Update user profile"""
