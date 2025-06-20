@@ -74,3 +74,103 @@ class UserServiceIntegrationTest(TestCase):
         self.assertEqual(data['is_approved'], False)
         
         print("✅ Teacher profile endpoint works with UserService!")
+    
+    def test_pending_teachers_endpoint(self):
+        """Test pending teachers endpoint using UserService"""
+        # Create admin user
+        admin_user = User.objects.create_user(
+            username='admin_user',
+            email='admin@test.com',
+            password='testpass123',
+            role='admin',
+            is_staff=True,
+            is_superuser=True
+        )
+        
+        self.client.force_authenticate(user=admin_user)
+        
+        # Call the endpoint
+        response = self.client.get('/api/v1/pending-teachers/')
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        self.assertIn('data', data)
+        self.assertIsInstance(data['data'], list)
+        
+        # Should contain our pending teacher
+        self.assertEqual(len(data['data']), 1)
+        self.assertEqual(data['data'][0]['email'], 'integration_teacher@test.com')
+        
+        print("✅ Pending teachers endpoint works with UserService!")
+    
+    def test_approve_teacher_endpoint(self):
+        """Test approve teacher endpoint using UserService"""
+        # Create admin user
+        admin_user = User.objects.create_user(
+            username='admin_user2',
+            email='admin2@test.com',
+            password='testpass123',
+            role='admin',
+            is_staff=True,
+            is_superuser=True
+        )
+        
+        self.client.force_authenticate(user=admin_user)
+        
+        # Call the approve endpoint
+        response = self.client.post(f'/api/v1/approve-teacher/{self.teacher.id}/')
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        self.assertIn('data', data)
+        self.assertEqual(data['data']['teacher_email'], 'integration_teacher@test.com')
+        
+        # Verify teacher is approved in database
+        self.teacher.refresh_from_db()
+        self.assertTrue(self.teacher.is_approved)
+        
+        print("✅ Approve teacher endpoint works with UserService!")
+    
+    def test_reject_teacher_endpoint(self):
+        """Test reject teacher endpoint using UserService"""
+        # Create admin user
+        admin_user = User.objects.create_user(
+            username='admin_user3',
+            email='admin3@test.com',
+            password='testpass123',
+            role='admin',
+            is_staff=True,
+            is_superuser=True
+        )
+        
+        # Create another teacher for rejection test
+        teacher_to_reject = User.objects.create_user(
+            username='reject_teacher',
+            email='reject@test.com',
+            password='testpass123',
+            role='teacher',
+            is_approved=False
+        )
+        
+        self.client.force_authenticate(user=admin_user)
+        
+        # Call the reject endpoint with reason
+        response = self.client.post(
+            f'/api/v1/reject-teacher/{teacher_to_reject.id}/',
+            data={'reason': 'Test rejection reason'},
+            format='json'
+        )
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        data = response.json()
+        self.assertIn('data', data)
+        self.assertEqual(data['data']['teacher_email'], 'reject@test.com')
+        self.assertEqual(data['data']['rejection_reason'], 'Test rejection reason')
+        
+        print("✅ Reject teacher endpoint works with UserService!")
