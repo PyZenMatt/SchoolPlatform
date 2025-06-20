@@ -975,6 +975,165 @@ class Web3Service {
   }
 
   /**
+   * NUOVO PROCESSO: Lo studente paga il corso direttamente dal proprio wallet
+   * 
+   * Processo corretto:
+   * 1. Lo studente paga i TEO dal proprio wallet (transfer diretto)
+   * 2. Lo studente paga le proprie gas fees MATIC
+   * 3. Teacher riceve la sua parte (85%)
+   * 4. Reward pool riceve commissione (15%) - solo per esercizi
+   * 
+   * @param {string} studentAddress - Indirizzo studente
+   * @param {string} teacherAddress - Indirizzo teacher  
+   * @param {number} coursePrice - Prezzo corso in TEO
+   * @param {string} courseId - ID del corso
+   * @returns {object} Risultato con transaction hashes
+   */
+  async processCoursePaymentDirect(studentAddress, teacherAddress, coursePrice, courseId) {
+    const effectiveAddress = this.getLockedWalletAddress() || studentAddress;
+    
+    if (!effectiveAddress) {
+      throw new Error('Wallet non connesso');
+    }
+
+    try {
+      console.log('🔄 NUOVO PROCESSO: Student pays course directly');
+      console.log(`👨‍🎓 Student: ${effectiveAddress}`);
+      console.log(`👨‍🏫 Teacher: ${teacherAddress}`);
+      console.log(`💰 Price: ${coursePrice} TEO`);
+      console.log('💡 Student pays TEO + gas from own wallet');
+
+      // Step 1: Verifica balance TEO e MATIC
+      console.log('🔍 Verifica balance...');
+      const [teoBalance, maticBalance] = await Promise.all([
+        this.getBalance(effectiveAddress),
+        this.getMaticBalance(effectiveAddress)
+      ]);
+      
+      if (parseFloat(teoBalance) < parseFloat(coursePrice)) {
+        throw new Error(`TEO insufficienti. Hai ${teoBalance} TEO, servono ${coursePrice} TEO`);
+      }
+      
+      if (parseFloat(maticBalance) < 0.02) { // Più gas necessario per 2 transazioni
+        throw new Error(
+          `MATIC insufficienti per gas fees. Hai ${maticBalance} MATIC, servono almeno 0.02 MATIC per 2 transazioni. ` +
+          `Ottieni MATIC da: https://faucet.polygon.technology/`
+        );
+      }
+      
+      console.log(`✅ Balance verificati - TEO: ${teoBalance}, MATIC: ${maticBalance}`);
+
+      // Step 2: Setup MetaMask
+      console.log('🔗 Setup MetaMask...');
+      if (!this.isMetamaskInstalled()) {
+        throw new Error('MetaMask non installato');
+      }
+      
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const metamaskProvider = new ethers.BrowserProvider(window.ethereum);
+      await this.switchToPolygonAmoy();
+      const signer = await metamaskProvider.getSigner();
+      
+      // Verifica indirizzo MetaMask
+      const currentAddress = await signer.getAddress();
+      if (currentAddress.toLowerCase() !== effectiveAddress.toLowerCase()) {
+        throw new Error(
+          `MetaMask è connesso a ${currentAddress} ma serve ${effectiveAddress}. ` +
+          `Cambia account in MetaMask e riprova.`
+        );
+      }
+      
+      console.log('✅ MetaMask setup completato');
+
+      // Step 3: Calcola importi
+      const commissionRate = 0.15; // 15%
+      const commissionAmount = coursePrice * commissionRate;
+      const teacherAmount = coursePrice - commissionAmount;
+      
+      console.log(`💰 Teacher riceverà: ${teacherAmount} TEO`);
+      console.log(`🏦 Reward Pool riceverà: ${commissionAmount} TEO (per esercizi)`);
+
+      // Step 4: Contract setup
+      const contract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, TEOCOIN_ABI, signer);
+
+      // Step 5: Esegui transfer diretto studente -> teacher
+      console.log('📤 Transfer 1/2: Studente -> Teacher...');
+      const teacherAmountWei = ethers.parseEther(teacherAmount.toString());
+      
+      const teacherTx = await contract.transfer(teacherAddress, teacherAmountWei);
+      console.log(`⏳ Teacher transaction submitted: ${teacherTx.hash}`);
+      
+      const teacherReceipt = await teacherTx.wait();
+      if (teacherReceipt.status !== 1) {
+        throw new Error('Transfer al teacher fallito');
+      }
+      console.log(`✅ Teacher payment completed: ${teacherTx.hash}`);
+
+      // Step 6: Esegui transfer diretto studente -> reward pool (commissione)
+      console.log('📤 Transfer 2/2: Studente -> Reward Pool (commissione)...');
+      const rewardPoolAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // TODO: Get from config
+      const commissionAmountWei = ethers.parseEther(commissionAmount.toString());
+      
+      const commissionTx = await contract.transfer(rewardPoolAddress, commissionAmountWei);
+      console.log(`⏳ Commission transaction submitted: ${commissionTx.hash}`);
+      
+      const commissionReceipt = await commissionTx.wait();
+      if (commissionReceipt.status !== 1) {
+        throw new Error('Transfer commissione fallito');
+      }
+      console.log(`✅ Commission payment completed: ${commissionTx.hash}`);
+
+      // Step 7: Notifica backend del pagamento completato
+      console.log('📡 Notifica backend...');
+      
+      // Usa il primo hash come principale per il backend
+      const response = await fetch('/api/courses/purchase/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          course_id: courseId,
+          wallet_address: effectiveAddress,
+          transaction_hash: teacherTx.hash, // Hash transazione principale
+          payment_confirmed: true,
+          process_type: 'student_direct_payment',
+          teacher_tx_hash: teacherTx.hash,
+          commission_tx_hash: commissionTx.hash,
+          teacher_amount: teacherAmount,
+          commission_amount: commissionAmount
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore notifica backend');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Backend notificato:', result);
+
+      return {
+        success: true,
+        transactionHash: teacherTx.hash,
+        teacherTxHash: teacherTx.hash,
+        commissionTxHash: commissionTx.hash,
+        teacherAmount,
+        commissionAmount,
+        totalPaid: coursePrice,
+        processType: 'student_direct_payment',
+        gasPaidBy: 'student',
+        message: 'Corso acquistato con NUOVO PROCESSO: studente ha pagato TEO e gas dal proprio wallet'
+      };
+      
+    } catch (error) {
+      console.error('❌ Errore nel NUOVO processo di pagamento:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get MATIC balance for wallet address
    */
   async getMaticBalance(address) {

@@ -954,15 +954,15 @@ def process_course_payment(request):
                     logger.info(f"Enrollment already exists for student {request.user.username} in course {course.title}")
                 
                 BlockchainTransaction.objects.create(
-                    user=course.teacher,
+                    user=request.user,  # Lo studente paga la commissione
                     transaction_type='platform_commission',
-                    amount=-commission_amount_decimal,  # Negative = outgoing
+                    amount=-commission_amount_decimal,  # Negative = outgoing from student
                     from_address=result['student_address'],
                     to_address=settings.REWARD_POOL_ADDRESS,
                     transaction_hash=result['commission_tx'],
                     status='completed',
                     related_object_id=str(course_id),
-                    notes=f'Platform commission (15%) from course: {course.title}'
+                    notes=f'Platform commission (15%) from course purchase: {course.title}'
                 )
                 
                 # Teacher earnings transaction
@@ -1187,15 +1187,15 @@ def execute_course_payment(request):
                 
                 # Platform commission transaction
                 BlockchainTransaction.objects.create(
-                    user=course.teacher,
+                    user=request.user,  # Lo studente paga la commissione
                     transaction_type='platform_commission',
-                    amount=-commission_amount_decimal,  # Negative = outgoing
+                    amount=-commission_amount_decimal,  # Negative = outgoing from student
                     from_address=student_address,
                     to_address=reward_pool_address,
                     transaction_hash=commission_tx,
                     status='completed',
                     related_object_id=str(course_id),
-                    notes=f'Platform commission (15%) from course: {course.title}'
+                    notes=f'Platform commission (15%) from course purchase: {course.title}'
                 )
                 
                 # Teacher earnings transaction

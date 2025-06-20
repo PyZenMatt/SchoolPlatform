@@ -628,12 +628,18 @@ class TeoCoinService:
     def process_course_payment(self, student_private_key: str, teacher_address: str, 
                               course_price: Decimal, commission_rate: Decimal = Decimal('0.15')) -> Optional[dict]:
         """
-        Processa il pagamento di un corso con la logica pulita:
-        1. Lo studente fa approve() con i suoi MATIC per gas fees
-        2. La reward pool fa transferFrom() studente->teacher (importo netto) con i suoi MATIC
-        3. La reward pool fa transferFrom() studente->reward_pool (commissione) con i suoi MATIC
+        ⚠️  DEPRECATO: Processo vecchio dove la reward pool pagava le gas fees.
         
-        PREREQUISITO: Lo studente DEVE avere abbastanza MATIC nel wallet per la transazione approve()
+        Questo metodo usa la reward pool per pagare le gas fees degli acquisti corso,
+        che NON è più il processo corretto. 
+        
+        ✅ USARE INVECE: student_pays_course_directly()
+        
+        Il nuovo processo corretto:
+        - Lo studente paga TEO e gas dal proprio wallet
+        - L'insegnante riceve la sua parte direttamente
+        - La reward pool riceve solo la commissione
+        - La reward pool è usata SOLO per distribuire reward degli esercizi
         
         Args:
             student_private_key: Chiave privata dello studente
@@ -644,6 +650,11 @@ class TeoCoinService:
         Returns:
             Dict con transaction hashes se successo, None se errore
         """
+        # ⚠️  WARNING: Metodo deprecato
+        logger.warning("⚠️  PROCESSO DEPRECATO: process_course_payment utilizza la reward pool per pagare gas")
+        logger.warning("⚠️  Dovrebbe essere usato student_pays_course_directly() invece")
+        logger.warning("⚠️  La reward pool dovrebbe essere usata solo per reward degli esercizi")
+        
         reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
         reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
         
@@ -857,7 +868,7 @@ class TeoCoinService:
             gas_tx_hash = self.w3.eth.send_raw_transaction(signed_gas_tx.raw_transaction)
             
             logger.info(f"Trasferiti {matic_amount} MATIC per gas allo studente {student_address} (nonce: {nonce}) - TX: {gas_tx_hash.hex()}")
-            return tx_hash.hex()
+            return gas_tx_hash.hex()
             
         except Exception as e:
             logger.error(f"Errore nel trasferimento MATIC (nonce: {nonce}): {e}")
@@ -1113,6 +1124,186 @@ class TeoCoinService:
             return None
             
         return self.transfer_from_student_via_reward_pool(student_address, reward_pool_address, amount)
+
+    def student_pays_course_directly(self, student_private_key: str, teacher_address: str, 
+                                   course_price: Decimal, commission_rate: Decimal = Decimal('0.15')) -> Optional[Dict[str, Any]]:
+        """
+        NUOVO PROCESSO: Lo studente paga direttamente il corso dal proprio wallet.
+        
+        Processo corretto:
+        1. Lo studente paga i TEO dal proprio wallet (transfer)
+        2. Lo studente paga le proprie gas fees MATIC
+        3. L'insegnante riceve la sua parte (85%)
+        4. La commissione (15%) va alla reward pool
+        5. La reward pool viene usata SOLO per distribuire reward degli esercizi
+        
+        Args:
+            student_private_key: Chiave privata dello studente
+            teacher_address: Indirizzo del teacher
+            course_price: Prezzo del corso in TEO
+            commission_rate: Percentuale commissione (default 15%)
+            
+        Returns:
+            Dict con dettagli transazioni se successo, None se errore
+        """
+        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
+        
+        if not reward_pool_address:
+            logger.error("REWARD_POOL_ADDRESS non configurato")
+            return None
+        
+        try:
+            # Calcola importi
+            commission_amount = course_price * commission_rate
+            teacher_amount = course_price - commission_amount
+            
+            # Account studente
+            student_account = self.w3.eth.account.from_key(student_private_key)
+            student_address = student_account.address
+            
+            # Verifica balance studente TEO
+            student_balance = self.get_balance(student_address)
+            if student_balance < course_price:
+                logger.error(f"Studente ha fondi TEO insufficienti: {student_balance} < {course_price}")
+                return None
+            
+            # Verifica balance MATIC per gas fees
+            student_matic_balance = self.w3.eth.get_balance(student_address)
+            student_matic_balance_eth = Web3.from_wei(student_matic_balance, 'ether')
+            required_gas = Decimal('0.01')  # Stima gas per 2 transazioni
+            
+            if student_matic_balance_eth < required_gas:
+                logger.error(f"Studente ha MATIC insufficienti per gas: {student_matic_balance_eth} < {required_gas}")
+                return None
+            
+            logger.info(f"🔄 NUOVO PROCESSO - Studente paga corso direttamente:")
+            logger.info(f"  👨‍🎓 Studente: {student_address} paga {course_price} TEO + gas MATIC")
+            logger.info(f"  👨‍🏫 Teacher: {teacher_address} riceve {teacher_amount} TEO") 
+            logger.info(f"  🏦 Reward Pool: {reward_pool_address} riceve {commission_amount} TEO (commissione)")
+            logger.info(f"  💡 Gas fees: Pagate dallo studente dal proprio wallet MATIC")
+            
+            # Gestione nonce sequenziale per studente (non reward pool!)
+            current_nonce = self.w3.eth.get_transaction_count(student_address)
+            logger.info(f"Nonce iniziale studente: {current_nonce}")
+            
+            # Step 1: Transfer diretto studente -> teacher (nessun intermediario)
+            logger.info("📤 Step 1: Transfer diretto studente -> teacher...")
+            teacher_tx = self._student_direct_transfer(
+                student_private_key, teacher_address, teacher_amount, current_nonce
+            )
+            if not teacher_tx:
+                logger.error("❌ Trasferimento a teacher fallito")
+                return None
+            current_nonce += 1
+            
+            # Aspetta conferma prima della prossima transazione
+            import time
+            time.sleep(5)
+            
+            # Step 2: Transfer diretto studente -> reward pool (commissione)
+            logger.info("📤 Step 2: Transfer commissione studente -> reward pool...")
+            commission_tx = self._student_direct_transfer(
+                student_private_key, reward_pool_address, commission_amount, current_nonce
+            )
+            if not commission_tx:
+                logger.error("❌ Trasferimento commissione fallito")
+                return None
+            
+            logger.info("✅ Pagamento corso completato con NUOVO PROCESSO!")
+            logger.info("💡 Lo studente ha pagato TEO e gas dal proprio wallet")
+            logger.info("💡 La reward pool è stata usata solo come destinatario della commissione")
+            
+            result = {
+                'teacher_payment_tx': teacher_tx,
+                'commission_tx': commission_tx,
+                'student_address': student_address,
+                'teacher_address': teacher_address,
+                'teacher_amount': teacher_amount,
+                'commission_amount': commission_amount,
+                'total_paid': course_price,
+                'process_type': 'student_direct_payment',
+                'gas_paid_by': 'student'
+            }
+                
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Errore nel NUOVO processo pagamento corso: {e}")
+            return None
+
+    def _student_direct_transfer(self, student_private_key: str, to_address: str, 
+                               amount: Decimal, nonce: int) -> Optional[str]:
+        """
+        Transfer diretto dal wallet dello studente (studente paga TEO e gas).
+        
+        Args:
+            student_private_key: Chiave privata dello studente
+            to_address: Indirizzo destinatario
+            amount: Quantità di TEO da trasferire
+            nonce: Nonce specifico da usare
+            
+        Returns:
+            Transaction hash se successo, None se errore
+        """
+        try:
+            # Account studente
+            student_account = self.w3.eth.account.from_key(student_private_key)
+            student_address = student_account.address
+            
+            # Converti amount in wei
+            amount_wei = Web3.to_wei(amount, 'ether')
+            
+            # Prepara indirizzi
+            checksum_to = Web3.to_checksum_address(to_address)
+            
+            # Ottieni gas price ottimizzato
+            gas_price = self._get_optimized_gas_price()
+            
+            # Costruisci transazione transfer diretta
+            transaction = self.contract.functions.transfer(
+                checksum_to,    # Destinatario
+                amount_wei      # Quantità
+            ).build_transaction({
+                'from': student_address,  # Studente paga tutto
+                'gas': 100000,
+                'gasPrice': gas_price,
+                'nonce': nonce,
+            })
+            
+            # Firma e invia transazione con chiave studente
+            signed_txn = self.w3.eth.account.sign_transaction(transaction, student_private_key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            
+            # Attendi la conferma e verifica che sia riuscita
+            try:
+                receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                if receipt["status"] != 1:
+                    logger.error(f"Transfer diretto fallito - Status: {receipt['status']}")
+                    raise Exception(f"Transfer fallito: transazione non riuscita (status: {receipt['status']})")
+            except Exception as e:
+                logger.error(f"Transfer diretto fallito durante attesa conferma: {e}")
+                raise Exception(f"Transfer fallito: {str(e)}")
+            
+            logger.info(f"✅ Transfer diretto: {amount} TEO da {student_address} a {to_address} (nonce: {nonce}, gas pagato da studente) - TX: {tx_hash.hex()}")
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"❌ Errore in transfer diretto: {e}")
+            return None
+
+    def _get_optimized_gas_price(self) -> int:
+        """Helper per ottenere un gas price ottimizzato"""
+        try:
+            gas_price = self.w3.eth.gas_price
+            min_gas_price = self.w3.to_wei('25', 'gwei')
+            if gas_price < min_gas_price:
+                gas_price = min_gas_price
+            max_gas_price = self.w3.to_wei('50', 'gwei')
+            if gas_price > max_gas_price:
+                gas_price = max_gas_price
+            return gas_price
+        except:
+            return self.w3.to_wei('25', 'gwei')
 
 # Istanza globale del servizio
 teocoin_service = TeoCoinService()
