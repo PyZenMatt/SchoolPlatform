@@ -12,7 +12,6 @@ const CoursesTable = ({
   expandedCourse,
   onExpandCourse,
   courseLessons = {},
-  loadingLessons = {},
   onCreateExercise,
   lessonExercises = {},
   loadingExercises = {},
@@ -25,253 +24,252 @@ const CoursesTable = ({
   onEditExercise
 }) => {
   const [expandedLessons, setExpandedLessons] = useState({});
+  
+  // Debug logs
+  console.log('🎯 CoursesTable Props:', {
+    courses: courses,
+    coursesLength: courses?.length,
+    courseLessons,
+    expandedCourse,
+    showActions,
+    firstCourse: courses?.[0]
+  });
+  
+  // Debug each course structure
+  if (courses && courses.length > 0) {
+    courses.forEach((course, index) => {
+      console.log(`📚 Course ${index + 1}:`, {
+        id: course.id,
+        title: course.title,
+        lessons: course.lessons,
+        lessonsCount: course.lessons?.length || 0
+      });
+    });
+  }
 
-  const handleExpandLesson = (lessonId) => {
-    const isExpanding = !expandedLessons[lessonId];
+  const handleToggleLesson = (lessonId) => {
     setExpandedLessons(prev => ({
       ...prev,
-      [lessonId]: isExpanding
+      [lessonId]: !prev[lessonId]
     }));
-    
-    // Load exercises when expanding a lesson for the first time
-    if (isExpanding && !lessonExercises[lessonId] && onLoadExercises) {
-      onLoadExercises(lessonId);
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return '0';
+    return parseFloat(price).toFixed(2);
+  };
+
+  const getBadgeVariant = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'published':
+      case 'active':
+        return 'success';
+      case 'draft':
+        return 'warning';
+      case 'archived':
+        return 'secondary';
+      default:
+        return 'primary';
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('it-IT', {
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric'
-    });
-  };
-
-  if (courses.length === 0) {
+  if (!courses || courses.length === 0) {
     return (
       <div className="text-center py-5">
-        <div className="empty-state">
-          <i className="feather icon-book-open" style={{ fontSize: '4rem', color: '#ddd', marginBottom: '1rem' }}></i>
-          <h4 className="mb-3 text-muted">Nessun corso creato</h4>
-          <p className="text-muted mb-4">Inizia creando il tuo primo corso e costruisci la tua biblioteca educativa</p>
-          {showCreateCourse && (
-            <Button 
-              variant="primary"
-              size="lg"
-              onClick={onCreateCourse}
-              className="px-4"
-            >
-              <i className="feather icon-plus me-2"></i>
-              Crea il tuo primo corso
-            </Button>
-          )}
+        <div className="mb-4">
+          <i className="feather icon-book-open" style={{ fontSize: '3rem', color: '#6c757d' }}></i>
         </div>
+        <h5 className="text-muted">Nessun corso trovato</h5>
+        <p className="text-muted">Non ci sono corsi disponibili al momento.</p>
+        {showCreateCourse && (
+          <Button variant="primary" onClick={onCreateCourse}>
+            <i className="feather icon-plus me-2"></i>
+            Crea il tuo primo corso
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="courses-table-modern">
-      {courses.map((course) => (
-        <Card key={course.id} className="course-card mb-3 shadow-sm">
-          <Card.Body className="p-0">
-            {/* Course Header */}
-            <div 
-              className="course-header p-4 cursor-pointer"
-              onClick={() => onExpandCourse && onExpandCourse(course.id)}
-            >
-              <Row className="align-items-center">
-                <Col md={8}>
-                  <div className="d-flex align-items-center">
-                    <div className="course-icon me-3">
-                      <i className={`feather ${expandedCourse === course.id ? 'icon-chevron-down' : 'icon-chevron-right'} text-primary`}></i>
-                    </div>
-                    <div>
-                      <div className="d-flex align-items-center mb-2">
-                        <Badge bg="primary" className="me-2 course-badge">
-                          <i className="feather icon-book me-1"></i>
-                          Corso
-                        </Badge>
-                        <h5 className="mb-0 course-title">{course.title}</h5>
-                      </div>
-                      <p className="text-muted mb-0 course-description">
-                        {course.description || 'Nessuna descrizione disponibile'}
-                      </p>
-                    </div>
-                  </div>
-                </Col>
-                <Col md={4} className="text-end">
-                  <div className="course-meta">
-                    <div className="price-tag mb-2">
-                      <span className="h4 text-success mb-0">{course.price} TEO</span>
-                    </div>
-                    <div className="course-stats">
-                      <Badge bg="info" className="me-2">
-                        {course.lessons_count || 0} lezioni
-                      </Badge>
-                      <small className="text-muted">
-                        Creato: {formatDate(course.created_at)}
-                      </small>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
+    <div className="courses-grid">
+      {showCreateCourse && (
+        <Card className="create-course-card mb-4">
+          <Card.Body className="text-center py-4">
+            <div className="mb-3">
+              <i className="feather icon-plus-circle" style={{ fontSize: '2.5rem', color: '#28a745' }}></i>
             </div>
+            <h5>Crea Nuovo Corso</h5>
+            <p className="text-muted mb-3">Aggiungi un nuovo corso alla tua piattaforma</p>
+            <Button variant="success" onClick={onCreateCourse}>
+              <i className="feather icon-plus me-2"></i>
+              Crea Corso
+            </Button>
+          </Card.Body>
+        </Card>
+      )}
 
-            {/* Course Content - Expandable */}
-            <Collapse in={expandedCourse === course.id}>
-              <div className="course-content">
-                <div className="border-top bg-light p-4">
-                  {/* Actions Row */}
-                  {showActions && (
-                    <Row className="mb-4">
-                      <Col>
-                        <div className="d-flex gap-2 flex-wrap">
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => onCreateLesson && onCreateLesson(course.id)}
-                          >
-                            <i className="feather icon-plus me-1"></i>
-                            Nuova Lezione
-                          </Button>
-                          <Button 
-                            variant="outline-primary" 
-                            size="sm"
-                            onClick={() => onViewCourse && onViewCourse(course.id)}
-                          >
-                            <i className="feather icon-eye me-1"></i>
-                            Visualizza
-                          </Button>
-                          <Button 
-                            variant="outline-secondary" 
-                            size="sm"
-                            onClick={() => onEditCourse && onEditCourse(course.id)}
-                          >
-                            <i className="feather icon-edit me-1"></i>
-                            Modifica
-                          </Button>
-                        </div>
-                      </Col>
-                    </Row>
-                  )}
-
-                  {/* Lessons Section */}
-                  <div className="lessons-section">
-                    <h6 className="section-title mb-3">
-                      <i className="feather icon-play-circle me-2 text-success"></i>
-                      Lezioni del corso
-                    </h6>
-                    
-                    {/* Loading state */}
-                    {loadingLessons[course.id] ? (
-                      <div className="text-center py-4">
-                        <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                        <span className="text-muted">Caricamento lezioni...</span>
+      <Row>
+        {courses.map(course => (
+          <Col lg={6} xl={4} key={course.id} className="mb-4">
+            <Card className="course-card h-100">
+              <Card.Header className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 className="mb-1">{course.title}</h6>
+                  <Badge variant={getBadgeVariant(course.status)} className="me-2">
+                    {course.status || 'Draft'}
+                  </Badge>
+                  <small className="text-muted">{course.lessons?.length || 0} lezioni</small>
+                </div>
+                <div className="course-price">
+                  <strong>{formatPrice(course.price)} TEO</strong>
+                </div>
+              </Card.Header>
+              
+              <Card.Body>
+                {course.description && (
+                  <p className="text-muted small mb-3">{course.description}</p>
+                )}
+                
+                <div className="course-stats mb-3">
+                  <Row className="text-center">
+                    <Col>
+                      <div className="stat-item">
+                        <strong>{course.lessons?.length || 0}</strong>
+                        <small className="d-block text-muted">Lezioni</small>
                       </div>
-                    ) : courseLessons[course.id] && courseLessons[course.id].length > 0 ? (
+                    </Col>
+                    <Col>
+                      <div className="stat-item">
+                        <strong>{course.total_exercises || 0}</strong>
+                        <small className="d-block text-muted">Esercizi</small>
+                      </div>
+                    </Col>
+                    <Col>
+                      <div className="stat-item">
+                        <strong>{course.students_count || 0}</strong>
+                        <small className="d-block text-muted">Studenti</small>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+
+                {/* Lessons Accordion */}
+                {course.lessons && course.lessons.length > 0 && (
+                  <div className="lessons-section">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h6 className="mb-0">Lezioni</h6>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => onExpandCourse && onExpandCourse(
+                          expandedCourse === course.id ? null : course.id
+                        )}
+                      >
+                        <i className={`feather icon-chevron-${expandedCourse === course.id ? 'up' : 'down'}`}></i>
+                      </Button>
+                    </div>
+                    
+                    <Collapse in={expandedCourse === course.id}>
                       <div className="lessons-list">
-                        {courseLessons[course.id].map((lesson, index) => (
-                          <div key={lesson.id} className="lesson-item mb-3">
-                            <div className="d-flex align-items-center justify-content-between p-3 bg-white rounded border">
-                              <div className="d-flex align-items-center">
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={() => handleExpandLesson(lesson.id)}
-                                  className="p-0 me-2 text-muted"
-                                  title={`${expandedLessons[lesson.id] ? 'Nascondi' : 'Mostra'} esercizi (${lessonExercises[lesson.id]?.length || 0})`}
-                                >
-                                  <i className={`feather ${expandedLessons[lesson.id] ? 'icon-chevron-down' : 'icon-chevron-right'}`}></i>
-                                </Button>
-                                <div className="lesson-number me-3">
-                                  <span className="badge bg-success rounded-circle">{index + 1}</span>
-                                </div>
-                                <div>
-                                  <div className="d-flex align-items-center mb-1">
-                                    <Badge bg="success" className="me-2 lesson-badge">
-                                      <i className="feather icon-play me-1"></i>
-                                      Lezione
-                                    </Badge>
-                                    <h6 className="mb-0">{lesson.title}</h6>
-                                  </div>
-                                  <p className="text-muted small mb-0">
-                                    {lesson.description || 'Nessuna descrizione'}
-                                  </p>
-                                </div>
+                        {course.lessons.map((lesson, lessonIndex) => (
+                          <div key={lesson.id} className="lesson-item mb-2">
+                            <div 
+                              className="lesson-header d-flex justify-content-between align-items-center p-2 bg-light rounded cursor-pointer"
+                              onClick={() => handleToggleLesson(lesson.id)}
+                            >
+                              <div>
+                                <strong className="d-block">{lesson.title}</strong>
+                                <small className="text-muted">
+                                  {lesson.exercises?.length || 0} esercizi
+                                </small>
                               </div>
-                              <div className="lesson-actions">
-                                <Button 
-                                  variant="outline-primary" 
-                                  size="sm"
-                                  onClick={() => onViewLesson && onViewLesson(lesson.id)}
-                                  title="Visualizza lezione"
-                                >
-                                  <i className="feather icon-eye"></i>
-                                </Button>
+                              <div className="d-flex align-items-center">
+                                {showActions && (
+                                  <>
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      className="me-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onViewLesson && onViewLesson(lesson);
+                                      }}
+                                    >
+                                      <i className="feather icon-eye"></i>
+                                    </Button>
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      className="me-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEditLesson && onEditLesson(lesson);
+                                      }}
+                                    >
+                                      <i className="feather icon-edit"></i>
+                                    </Button>
+                                  </>
+                                )}
+                                <i className={`feather icon-chevron-${expandedLessons[lesson.id] ? 'up' : 'down'}`}></i>
                               </div>
                             </div>
-
-                            {/* Exercises - Expandable */}
+                            
                             <Collapse in={expandedLessons[lesson.id]}>
-                              <div className="exercises-section mt-2 ms-4">
-                                {loadingExercises[lesson.id] ? (
-                                  <div className="text-center py-3">
-                                    <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                      <span className="visually-hidden">Caricamento...</span>
-                                    </div>
-                                    <p className="text-muted small mt-2 mb-0">Caricamento esercizi...</p>
-                                  </div>
-                                ) : lessonExercises[lesson.id] && lessonExercises[lesson.id].length > 0 ? (
+                              <div className="exercises-section p-2 bg-white border rounded mt-1">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <small className="text-muted font-weight-bold">Esercizi</small>
+                                  {onCreateExercise && (
+                                    <Button
+                                      variant="warning"
+                                      size="sm"
+                                      onClick={() => onCreateExercise({
+                                        ...lesson,
+                                        course_id: course.id,
+                                        course: course.id
+                                      })}
+                                    >
+                                      <i className="feather icon-plus me-1"></i>
+                                      {lesson.exercises?.length === 0 ? 'Crea Primo Esercizio' : 'Aggiungi Esercizio'}
+                                    </Button>
+                                  )}
+                                </div>
+                                
+                                {lesson.exercises && lesson.exercises.length > 0 ? (
                                   <div className="exercises-list">
-                                    {lessonExercises[lesson.id].map((exercise, exerciseIndex) => (
-                                      <div key={exercise.id} className="exercise-item mb-2 p-3 bg-light rounded border-start border-warning border-3">
-                                        <div className="d-flex align-items-center justify-content-between">
-                                          <div className="d-flex align-items-center">
-                                            <div className="exercise-number me-3">
-                                              <span className="badge bg-warning text-dark rounded-circle">{exerciseIndex + 1}</span>
-                                            </div>
-                                            <div>
-                                              <div className="d-flex align-items-center mb-1">
-                                                <Badge bg="warning" text="dark" className="me-2 exercise-badge">
-                                                  <i className="feather icon-check-square me-1"></i>
-                                                  Esercizio
-                                                </Badge>
-                                                <h6 className="mb-0">{exercise.title}</h6>
-                                              </div>
-                                              <p className="text-muted small mb-0">
-                                                {exercise.description || 'Nessuna descrizione'}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          <div className="exercise-actions">
-                                            <Button 
-                                              variant="outline-primary" 
+                                    {lesson.exercises.map((exercise, exerciseIndex) => (
+                                      <div key={exercise.id} className="exercise-item d-flex justify-content-between align-items-center p-2 mb-1 bg-light rounded">
+                                        <div>
+                                          <strong className="d-block">{exercise.title}</strong>
+                                          <small className="text-muted">
+                                            Tipo: {exercise.type || 'Non specificato'}
+                                          </small>
+                                        </div>
+                                        {showActions && (
+                                          <div>
+                                            <Button
+                                              variant="outline-secondary"
                                               size="sm"
-                                              onClick={() => onViewExercise && onViewExercise(exercise.id)}
+                                              className="me-1"
+                                              onClick={() => onViewExercise && onViewExercise(exercise)}
                                             >
                                               <i className="feather icon-eye"></i>
                                             </Button>
+                                            <Button
+                                              variant="outline-primary"
+                                              size="sm"
+                                              onClick={() => onEditExercise && onEditExercise(exercise)}
+                                            >
+                                              <i className="feather icon-edit"></i>
+                                            </Button>
                                           </div>
-                                        </div>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
                                   <div className="text-center py-3">
-                                    <i className="feather icon-check-square text-muted me-2"></i>
-                                    <span className="text-muted">Nessun esercizio per questa lezione</span>
-                                    {onCreateExercise && (
-                                      <Button 
-                                        variant="outline-warning" 
-                                        size="sm" 
-                                        className="ms-2"
-                                        onClick={() => onCreateExercise(lesson.id)}
-                                      >
-                                        <i className="feather icon-plus me-1"></i>
-                                        Aggiungi Esercizio
-                                      </Button>
-                                    )}
+                                    <small className="text-muted">Nessun esercizio presente</small>
                                   </div>
                                 )}
                               </div>
@@ -279,29 +277,50 @@ const CoursesTable = ({
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <div className="text-center py-4 bg-white rounded border">
-                        <i className="feather icon-play-circle text-muted" style={{ fontSize: '2rem' }}></i>
-                        <p className="text-muted mt-2 mb-3">Nessuna lezione creata per questo corso</p>
-                        {onCreateLesson && (
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => onCreateLesson(course.id)}
-                          >
-                            <i className="feather icon-plus me-1"></i>
-                            Crea Prima Lezione
-                          </Button>
-                        )}
-                      </div>
+                    </Collapse>
+                  </div>
+                )}
+              </Card.Body>
+              
+              {showActions && (
+                <Card.Footer className="d-flex justify-content-between">
+                  <div>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => onViewCourse && onViewCourse(course)}
+                    >
+                      <i className="feather icon-eye me-1"></i>
+                      Visualizza
+                    </Button>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => onEditCourse && onEditCourse(course)}
+                    >
+                      <i className="feather icon-edit me-1"></i>
+                      Modifica
+                    </Button>
+                  </div>
+                  <div>
+                    {onCreateLesson && (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => onCreateLesson(course)}
+                      >
+                        <i className="feather icon-plus me-1"></i>
+                        Lezione
+                      </Button>
                     )}
                   </div>
-                </div>
-              </div>
-            </Collapse>
-          </Card.Body>
-        </Card>
-      ))}
+                </Card.Footer>
+              )}
+            </Card>
+          </Col>
+        ))}
+      </Row>
     </div>
   );
 };

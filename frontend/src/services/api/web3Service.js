@@ -879,9 +879,35 @@ class Web3Service {
 
       // Step 5: Student approves reward pool to spend their TEO (MetaMask signature)
       console.log('✍️ Requesting student approval via MetaMask...');
+      
+      // First verify we're on the correct network
+      const network = await this.signer.provider.getNetwork();
+      console.log('🌐 Current network:', network.chainId, network.name);
+      if (network.chainId !== 80002n) { // Polygon Amoy chainId as BigInt
+        console.log('⚠️ Wrong network detected, switching...');
+        await this.switchToPolygonAmoy();
+      }
+      
+      // Estimate gas before sending transaction
+      let gasEstimate;
+      try {
+        gasEstimate = await this.contract.connect(this.signer).approve.estimateGas(
+          rewardPoolAddress,
+          coursePriceWei
+        );
+        console.log('⛽ Gas estimate for approval:', gasEstimate.toString());
+      } catch (gasError) {
+        console.warn('⚠️ Gas estimation failed:', gasError.message);
+        gasEstimate = 50000n; // Fallback gas limit
+      }
+      
+      // Send approval transaction with explicit gas limit
       const approvalTx = await this.contract.connect(this.signer).approve(
         rewardPoolAddress,
-        coursePriceWei
+        coursePriceWei,
+        {
+          gasLimit: gasEstimate * 110n / 100n // Add 10% buffer
+        }
       );
 
       console.log('⏳ Waiting for approval confirmation...');
@@ -930,6 +956,20 @@ class Web3Service {
 
     } catch (error) {
       console.error('❌ Course payment failed:', error);
+      
+      // Handle specific MetaMask errors
+      if (error.code === 4001) {
+        throw new Error('Transazione rifiutata dall\'utente');
+      } else if (error.code === -32603) {
+        throw new Error('Errore interno della rete blockchain. Verifica di essere connesso a Polygon Amoy e riprova.');
+      } else if (error.message.includes('insufficient funds')) {
+        throw new Error('Fondi insufficienti per le gas fee. Aggiungi MATIC al tuo wallet.');
+      } else if (error.message.includes('gas')) {
+        throw new Error('Errore nelle gas fee. Prova ad aumentare il gas limit in MetaMask.');
+      } else if (error.message.includes('network')) {
+        throw new Error('Errore di rete. Verifica la connessione e riprova.');
+      }
+      
       throw error;
     }
   }

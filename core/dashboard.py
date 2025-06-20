@@ -94,7 +94,9 @@ class TeacherDashboardAPI(APIView):
             return Response(cached_data)
         
         # ✅ OTTIMIZZATO - Single query with annotations instead of N+1
-        courses = user.courses_created.prefetch_related('students').annotate(
+        courses = user.courses_created.prefetch_related(
+            'students', 'lessons', 'lessons__exercises'
+        ).annotate(
             student_count=Count('students'),
             total_revenue=Count('students') * F('price')
         )

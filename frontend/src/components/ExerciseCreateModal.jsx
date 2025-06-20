@@ -156,12 +156,21 @@ const ExerciseCreateModal = ({ show, onHide, onCreated, lessonId, courseId }) =>
       formData.append('time_estimate', timeEstimate);
       formData.append('materials', materials);
       formData.append('instructions', instructions);
+      formData.append('lesson', lessonId); // Il campo si chiama 'lesson' nel serializer
       formData.append('lesson_id', lessonId);
       formData.append('course_id', courseId);
       
       if (referenceImage) {
         formData.append('reference_image', referenceImage);
       }
+
+      console.log('📤 Creating exercise with data:', {
+        title,
+        lessonId,
+        courseId,
+        exercise_type: exerciseType,
+        difficulty
+      });
 
       await createExercise(formData);
       

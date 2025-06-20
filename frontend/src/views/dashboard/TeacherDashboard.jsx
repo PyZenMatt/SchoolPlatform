@@ -50,9 +50,22 @@ const TeacherDashboard = () => {
         setUserProfile(profileRes.data);
         
         const res = await fetchTeacherDashboard();
+        console.log('🔍 TeacherDashboard API Response:', res);
         setCourses(res.data.courses);
         setSales(res.data.sales);
         setTransactions(res.data.transactions || []);
+        console.log('📚 Courses set in state:', res.data.courses);
+        
+        // Popola le lezioni da subito con i dati che arrivano dall'API
+        const lessonsData = {};
+        res.data.courses.forEach(course => {
+          if (course.lessons && course.lessons.length > 0) {
+            lessonsData[course.id] = course.lessons;
+          }
+        });
+        setCourseLessons(lessonsData);
+        console.log('📖 Lessons populated from API:', lessonsData);
+        
       } catch (err) {
         console.error('Errore API dashboard:', err, err.response?.data);
         setError('Errore nel caricamento della dashboard');
@@ -71,11 +84,19 @@ const TeacherDashboard = () => {
     }
     
     setExpandedCourse(courseId);
+    
+    // Se le lezioni sono già presenti, non fare chiamata API
+    if (courseLessons[courseId]) {
+      console.log('📖 Lessons already loaded for course:', courseId);
+      return;
+    }
+    
     setLoadingLessons(prev => ({ ...prev, [courseId]: true }));
     
     try {
       const res = await fetchLessonsForCourse(courseId);
       setCourseLessons(prev => ({ ...prev, [courseId]: res.data }));
+      console.log('📖 Lessons loaded from API for course:', courseId, res.data);
     } catch (err) {
       console.error('Errore caricamento lezioni:', err);
       setCourseLessons(prev => ({ ...prev, [courseId]: [] }));
@@ -124,6 +145,7 @@ const TeacherDashboard = () => {
 
   // Exercise management functions
   const handleShowExerciseModal = (lesson) => {
+    console.log('🎯 Selected lesson for exercise creation:', lesson);
     setSelectedLesson(lesson);
     setShowExerciseModal(prev => ({ ...prev, [lesson.id]: true }));
   };
@@ -360,8 +382,10 @@ const TeacherDashboard = () => {
           key={`exercise-${lessonId}`}
           show={showExerciseModal[lessonId]}
           onHide={() => handleHideExerciseModal(lessonId)}
+          lessonId={selectedLesson?.id}
+          courseId={selectedLesson?.course_id || selectedLesson?.course}
           lesson={selectedLesson}
-          onCreated={() => handleExerciseCreated(lessonId, selectedLesson?.course)}
+          onCreated={() => handleExerciseCreated(lessonId, selectedLesson?.course_id || selectedLesson?.course)}
         />
       ))}
     </React.Fragment>

@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Allowed hosts
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '*'] if DEBUG else []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver'] if DEBUG else ['localhost', '127.0.0.1', 'your-domain.com']
 
 
 # App

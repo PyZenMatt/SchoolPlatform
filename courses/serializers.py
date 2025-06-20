@@ -81,16 +81,51 @@ class TeacherLessonSerializer(serializers.ModelSerializer):
 class TeacherCourseSerializer(serializers.ModelSerializer):
     total_earnings = serializers.SerializerMethodField()
     total_students = serializers.SerializerMethodField()
+    enrolled_students = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    cover_image_url = serializers.SerializerMethodField()
+    lessons = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'price', 'total_earnings', 'total_students']
+        fields = ['id', 'title', 'description', 'price', 'category', 'category_display', 
+                  'cover_image', 'cover_image_url', 'is_approved', 'created_at', 'updated_at',
+                  'total_earnings', 'total_students', 'enrolled_students', 'lessons']
 
     def get_total_earnings(self, obj):
         return obj.price * obj.students.count() * 0.9
 
     def get_total_students(self, obj):
         return obj.students.count()
+        
+    def get_enrolled_students(self, obj):
+        return obj.students.count()
+        
+    def get_cover_image_url(self, obj):
+        if obj.cover_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.cover_image.url)
+        return None
+    
+    def get_lessons(self, obj):
+        # Restituisce le lezioni del corso con informazioni di base
+        lessons = obj.lessons.all().order_by('order', 'created_at')
+        lesson_data = []
+        for lesson in lessons:
+            lesson_data.append({
+                'id': lesson.id,
+                'title': lesson.title,
+                'description': lesson.content[:100] + '...' if lesson.content and len(lesson.content) > 100 else lesson.content,
+                'duration': lesson.duration,
+                'order': lesson.order,
+                'lesson_type': lesson.lesson_type,
+                'created_at': lesson.created_at,
+                'exercises_count': lesson.exercises.count(),
+                'course_id': obj.id,  # Aggiungiamo esplicitamente il course_id
+                'course': obj.id      # Per compatibilità
+            })
+        return lesson_data
     
 class LessonSerializer(serializers.ModelSerializer):
     course_id = serializers.IntegerField(source='course.id', read_only=True)
@@ -125,7 +160,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
         fields = [
-            'id', 'title', 'description', 'lesson', 'student', 'exercise_type', 'exercise_type_display',
+            'id', 'title', 'description', 'lesson', 'exercise_type', 'exercise_type_display',
             'difficulty', 'difficulty_display', 'time_estimate', 'materials', 'instructions', 
             'reference_image', 'reference_image_url', 'status', 'score', 'feedback', 'created_at', 'updated_at'
         ]
