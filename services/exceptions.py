@@ -93,3 +93,47 @@ class EmailVerificationError(TeoArtServiceException):
     def __init__(self, email: str):
         message = f"Email verification failed for {email}"
         super().__init__(message, "EMAIL_VERIFICATION_ERROR", 400)
+
+
+class WalletNotFoundError(TeoArtServiceException):
+    """Raised when a wallet is not found for a user"""
+    
+    def __init__(self, user_id: int):
+        message = f"Wallet not found for user {user_id}"
+        super().__init__(message, "WALLET_NOT_FOUND", 404)
+
+
+class InvalidWalletAddressError(TeoArtServiceException):
+    """Raised when an invalid wallet address is provided"""
+    
+    def __init__(self, address: str):
+        message = f"Invalid wallet address: {address}"
+        super().__init__(message, "INVALID_WALLET_ADDRESS", 400)
+
+
+class TokenTransferError(TeoArtServiceException):
+    """Raised when a token transfer fails"""
+    
+    def __init__(self, reason: str = None):
+        message = "Token transfer failed"
+        if reason:
+            message += f": {reason}"
+        super().__init__(message, "TOKEN_TRANSFER_ERROR", 500)
+
+
+class MintingError(TeoArtServiceException):
+    """Raised when token minting fails"""
+    
+    def __init__(self, amount: float, reason: str = None):
+        message = f"Failed to mint {amount} tokens"
+        if reason:
+            message += f": {reason}"
+        super().__init__(message, "MINTING_ERROR", 500)
+
+
+class InvalidAmountError(TeoArtServiceException):
+    """Raised when an invalid amount is provided for blockchain operations"""
+    
+    def __init__(self, amount: float):
+        message = f"Invalid amount: {amount}. Amount must be positive"
+        super().__init__(message, "INVALID_AMOUNT", 400)

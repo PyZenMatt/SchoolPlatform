@@ -117,54 +117,71 @@ def get_wallet_balance(request):
     
     user = request.user
     
-    if not user.wallet_address:
-        response_time = time.time() - start_time
-        logger.info(f"Balance API (no wallet) completed in {response_time:.3f}s")
-        return Response({
-            'error': 'Wallet not linked',
-            'balance': '0',
-            'wallet_address': None
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
-        # First check if we have a cached balance that's recent enough
-        token_balance, created = TokenBalance.objects.get_or_create(
-            user=user,
-            defaults={'balance': Decimal('0')}
-        )
+        # Use BlockchainService to get wallet balance
+        from services import blockchain_service
+        result = blockchain_service.get_user_wallet_balance(user)
         
-        # Only query blockchain if:
-        # 1. We've just created the balance record OR
-        # 2. The cached balance is stale (older than 5 minutes)
-        if created or token_balance.is_stale(minutes=5):
-            balance = teocoin_service.get_balance(user.wallet_address)
-            token_balance.balance = balance
-            token_balance.save()
-            logger.info(f"Updated blockchain balance for {user.username} from RPC call")
-        else:
-            balance = token_balance.balance
-            logger.info(f"Using cached blockchain balance for {user.username} (last updated: {token_balance.last_updated})")
-        
-        return Response({
-            'balance': str(balance),
-            'wallet_address': user.wallet_address,
-            'token_info': teocoin_service.get_token_info(),
-            'user_id': user.id,  # Add user ID for frontend verification
-            'username': user.username,  # Add username for debugging
-            'cached': not created and not token_balance.is_stale(minutes=5)  # Indicate if we used the cache
-        })
-    
-    except Exception as e:
-        logger.error(f"Error retrieving balance for {user.email}: {e}")
-        return Response({
-            'error': 'Error retrieving wallet balance',
-            'balance': '0'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    finally:
         response_time = time.time() - start_time
-        logger.info(f"Balance API completed in {response_time:.3f}s")
+        logger.info(f"Balance API completed in {response_time:.3f}s via BlockchainService")
         if response_time > 1.0:
             logger.warning(f"Slow Balance API: {response_time:.3f}s for user {user.username}")
+            
+        return Response(result)
+        
+    except Exception as e:
+        response_time = time.time() - start_time
+        logger.error(f"Error retrieving balance for {user.email}: {e}")
+        
+        # Fallback to old logic for safety during transition
+        if not user.wallet_address:
+            response_time = time.time() - start_time
+            logger.info(f"Balance API (no wallet) completed in {response_time:.3f}s")
+            return Response({
+                'error': 'Wallet not linked',
+                'balance': '0',
+                'wallet_address': None
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # First check if we have a cached balance that's recent enough
+            token_balance, created = TokenBalance.objects.get_or_create(
+                user=user,
+                defaults={'balance': Decimal('0')}
+            )
+            
+            # Only query blockchain if:
+            # 1. We've just created the balance record OR
+            # 2. The cached balance is stale (older than 5 minutes)
+            if created or token_balance.is_stale(minutes=5):
+                balance = teocoin_service.get_balance(user.wallet_address)
+                token_balance.balance = balance
+                token_balance.save()
+                logger.info(f"Updated blockchain balance for {user.username} from RPC call")
+            else:
+                balance = token_balance.balance
+                logger.info(f"Using cached blockchain balance for {user.username} (last updated: {token_balance.last_updated})")
+            
+            return Response({
+                'balance': str(balance),
+                'wallet_address': user.wallet_address,
+                'token_info': teocoin_service.get_token_info(),
+                'user_id': user.id,  # Add user ID for frontend verification
+                'username': user.username,  # Add username for debugging
+                'cached': not created and not token_balance.is_stale(minutes=5)  # Indicate if we used the cache
+            })
+        
+        except Exception as e2:
+            logger.error(f"Error retrieving balance for {user.email}: {e2}")
+            return Response({
+                'error': 'Error retrieving wallet balance',
+                'balance': '0'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            response_time = time.time() - start_time
+            logger.info(f"Balance API completed in {response_time:.3f}s")
+            if response_time > 1.0:
+                logger.warning(f"Slow Balance API: {response_time:.3f}s for user {user.username}")
 
 
 @api_view(['POST'])
@@ -197,43 +214,54 @@ def link_wallet(request):
             'error': 'Wallet address required'
         }, status=status.HTTP_400_BAD_REQUEST)
     
-    # Validate wallet address format
-    if not teocoin_service.validate_address(wallet_address):
-        return Response({
-            'error': 'Invalid wallet address format'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    # Check if address is already used by another user
-    if User.objects.filter(wallet_address=wallet_address).exclude(id=user.id).exists():
-        return Response({
-            'error': 'Wallet address already used by another user'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
-        # Save wallet address to user profile
-        user.wallet_address = wallet_address
-        user.save()
+        # Use BlockchainService to link wallet
+        from services import blockchain_service
+        result = blockchain_service.link_wallet_to_user(user, wallet_address)
         
-        # Get initial balance
-        balance = teocoin_service.get_balance(wallet_address)
+        return Response(result)
         
-        # Create/update balance record
-        TokenBalance.objects.update_or_create(
-            user=user,
-            defaults={'balance': balance}
-        )
-        
-        return Response({
-            'message': 'Wallet linked successfully',
-            'wallet_address': wallet_address,
-            'balance': str(balance)
-        })
-    
     except Exception as e:
-        logger.error(f"Error linking wallet for {user.email}: {e}")
-        return Response({
-            'error': 'Error linking wallet'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Error linking wallet via BlockchainService for {user.email}: {e}")
+        
+        # Fallback to old logic for safety during transition
+        # Validate wallet address format
+        if not teocoin_service.validate_address(wallet_address):
+            return Response({
+                'error': 'Invalid wallet address format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if address is already used by another user
+        if User.objects.filter(wallet_address=wallet_address).exclude(id=user.id).exists():
+            return Response({
+                'error': 'Wallet address already used by another user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Save wallet address to user profile
+            user.wallet_address = wallet_address
+            user.save()
+            
+            # Get initial balance
+            balance = teocoin_service.get_balance(wallet_address)
+            
+            # Create/update balance record
+            TokenBalance.objects.update_or_create(
+                user=user,
+                defaults={'balance': balance}
+            )
+            
+            return Response({
+                'message': 'Wallet linked successfully',
+                'wallet_address': wallet_address,
+                'balance': str(balance)
+            })
+        
+        except Exception as e2:
+            logger.error(f"Error linking wallet for {user.email}: {e2}")
+            return Response({
+                'error': 'Error linking wallet'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -279,62 +307,81 @@ def reward_user(request):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        amount_decimal = Decimal(str(amount))
-        if amount_decimal <= 0:
-            return Response({
-                'error': 'Amount must be positive'
-            }, status=status.HTTP_400_BAD_REQUEST)
-    except (ValueError, TypeError):
-        return Response({
-            'error': 'Invalid amount format'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
         target_user = User.objects.get(id=target_user_id)
         
-        if not target_user.wallet_address:
-            return Response({
-                'error': 'User does not have a linked wallet'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Execute mint transaction
-        tx_hash = mint_tokens(target_user.wallet_address, amount_decimal)
-        
-        # Record transaction in database
-        BlockchainTransaction.objects.create(
-            user=target_user,
-            transaction_type='mint',
-            amount=amount_decimal,
-            tx_hash=format_hash_with_prefix(tx_hash),
-            from_address=None,  # Mint operation
-            to_address=target_user.wallet_address,
-            status='pending'
-        )
-        
-        # Update cached balance
-        new_balance = teocoin_service.get_balance(target_user.wallet_address)
-        TokenBalance.objects.update_or_create(
-            user=target_user,
-            defaults={'balance': new_balance}
-        )
+        # Use BlockchainService to mint tokens
+        from services import blockchain_service
+        result = blockchain_service.mint_tokens_to_user(target_user, amount, reason)
         
         return Response({
-            'message': f'Reward of {amount_decimal} TEO sent successfully',
-            'tx_hash': tx_hash,
+            'message': f'Reward of {result["amount"]} TEO sent successfully',
+            'tx_hash': result.get('tx_hash'),
             'recipient': target_user.email,
-            'amount': str(amount_decimal),
-            'new_balance': str(new_balance)
+            'amount': str(result['amount']),
+            'new_balance': str(result['new_balance'])
         })
-    
+        
     except User.DoesNotExist:
         return Response({
             'error': 'User not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        logger.error(f"Error sending reward to user {target_user_id}: {e}")
-        return Response({
-            'error': 'Error sending reward'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Error sending reward via BlockchainService to user {target_user_id}: {e}")
+        
+        # Fallback to old logic for safety during transition
+        try:
+            amount_decimal = Decimal(str(amount))
+            if amount_decimal <= 0:
+                return Response({
+                    'error': 'Amount must be positive'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Invalid amount format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            target_user = User.objects.get(id=target_user_id)
+            
+            if not target_user.wallet_address:
+                return Response({
+                    'error': 'User does not have a linked wallet'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Execute mint transaction
+            tx_hash = mint_tokens(target_user.wallet_address, amount_decimal)
+            
+            # Record transaction in database
+            BlockchainTransaction.objects.create(
+                user=target_user,
+                transaction_type='mint',
+                amount=amount_decimal,
+                tx_hash=format_hash_with_prefix(tx_hash),
+                from_address=None,  # Mint operation
+                to_address=target_user.wallet_address,
+                status='pending'
+            )
+            
+            # Update cached balance
+            new_balance = teocoin_service.get_balance(target_user.wallet_address)
+            TokenBalance.objects.update_or_create(
+                user=target_user,
+                defaults={'balance': new_balance}
+            )
+            
+            return Response({
+                'message': f'Reward of {amount_decimal} TEO sent successfully',
+                'tx_hash': tx_hash,
+                'recipient': target_user.email,
+                'amount': str(amount_decimal),
+                'new_balance': str(new_balance)
+            })
+        
+        except Exception as e2:
+            logger.error(f"Error sending reward to user {target_user_id}: {e2}")
+            return Response({
+                'error': 'Error sending reward'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -362,29 +409,43 @@ def get_transaction_history(request):
     """
     user = request.user
     
-    transactions = BlockchainTransaction.objects.filter(
-        user=user
-    ).order_by('-created_at')[:50]  # Last 50 transactions
-    
-    transaction_list = []
-    for tx in transactions:
-        transaction_list.append({
-            'transaction_type': tx.transaction_type,
-            'type': tx.transaction_type,  # Keep for backward compatibility
-            'amount': str(tx.amount),
-            'tx_hash': format_hash_with_prefix(tx.tx_hash),
-            'transaction_hash': format_hash_with_prefix(tx.transaction_hash),
-            'from_address': tx.from_address,
-            'to_address': tx.to_address,
-            'status': tx.status,
-            'created_at': tx.created_at.isoformat(),
-            'confirmed_at': tx.confirmed_at.isoformat() if tx.confirmed_at else None
+    try:
+        # Use BlockchainService to get transaction history
+        from services import blockchain_service
+        result = blockchain_service.get_user_transaction_history(user, limit=50)
+        
+        return Response({
+            'transactions': result,
+            'total_count': len(result)
         })
-    
-    return Response({
-        'transactions': transaction_list,
-        'total_count': transactions.count()
-    })
+        
+    except Exception as e:
+        logger.error(f"Error getting transaction history via BlockchainService for {user.email}: {e}")
+        
+        # Fallback to old logic for safety during transition
+        transactions = BlockchainTransaction.objects.filter(
+            user=user
+        ).order_by('-created_at')[:50]  # Last 50 transactions
+        
+        transaction_list = []
+        for tx in transactions:
+            transaction_list.append({
+                'transaction_type': tx.transaction_type,
+                'type': tx.transaction_type,  # Keep for backward compatibility
+                'amount': str(tx.amount),
+                'tx_hash': format_hash_with_prefix(tx.tx_hash),
+                'transaction_hash': format_hash_with_prefix(tx.transaction_hash),
+                'from_address': tx.from_address,
+                'to_address': tx.to_address,
+                'status': tx.status,
+                'created_at': tx.created_at.isoformat(),
+                'confirmed_at': tx.confirmed_at.isoformat() if tx.confirmed_at else None
+            })
+        
+        return Response({
+            'transactions': transaction_list,
+            'total_count': transactions.count()
+        })
 
 
 @api_view(['GET'])
