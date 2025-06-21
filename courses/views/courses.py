@@ -62,13 +62,22 @@ class CourseListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        if getattr(self.request.user, 'role', None) != 'teacher':
-            raise PermissionDenied("Solo i maestri possono creare corsi")
-        User = get_user_model()
-        user = User.objects.get(pk=self.request.user.pk)
-        if not getattr(user, 'is_approved', False):
-            raise PermissionDenied("Solo i teacher approvati possono creare corsi. Aspetta l'approvazione dell'admin.")
-        serializer.save(teacher=user)
+        try:
+            user = self.request.user
+            if getattr(user, 'role', None) != 'teacher':
+                raise PermissionDenied("Solo i maestri possono creare corsi")
+            
+            User = get_user_model()
+            user_obj = User.objects.get(pk=user.pk)
+            if not getattr(user_obj, 'is_approved', False):
+                raise PermissionDenied("Solo i teacher approvati possono creare corsi. Aspetta l'approvazione dell'admin.")
+            
+            serializer.save(teacher=user_obj)
+        except PermissionDenied:
+            raise  # Re-raise permission errors
+        except Exception as e:
+            logger.error(f"Error in perform_create: {e}")
+            raise
 
 
 class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -77,17 +86,27 @@ class CourseDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
 
     def get_object(self):
-        obj = super().get_object()
-        user = self.request.user
-        # Admin può vedere tutto, altri solo corsi approvati
-        if not (user.is_staff or user.is_superuser) and not obj.is_approved:
-            raise PermissionDenied("Corso non approvato")
-        return obj
+        try:
+            obj = super().get_object()
+            user = self.request.user
+            # Admin può vedere tutto, altri solo corsi approvati
+            if not (user.is_staff or user.is_superuser) and not obj.is_approved:
+                raise PermissionDenied("Corso non approvato")
+            return obj
+        except Exception as e:
+            logger.error(f"Error in get_object: {e}")
+            raise
 
     def perform_update(self, serializer):
-        if serializer.instance.teacher != self.request.user:
-            raise PermissionDenied("Non sei il proprietario di questo corso")
-        serializer.save()
+        try:
+            if serializer.instance.teacher != self.request.user:
+                raise PermissionDenied("Non sei il proprietario di questo corso")
+            serializer.save()
+        except PermissionDenied:
+            raise  # Re-raise permission errors
+        except Exception as e:
+            logger.error(f"Error in perform_update: {e}")
+            raise
 
 
 class CreateCourseAPI(generics.CreateAPIView):
@@ -95,7 +114,11 @@ class CreateCourseAPI(generics.CreateAPIView):
     permission_classes = [IsTeacher]
 
     def perform_create(self, serializer):
-        serializer.save(teacher=self.request.user)
+        try:
+            serializer.save(teacher=self.request.user)
+        except Exception as e:
+            logger.error(f"Error in CreateCourseAPI perform_create: {e}")
+            raise
 
 
 class CourseListAPIView(generics.ListAPIView):
@@ -106,23 +129,22 @@ class CourseListAPIView(generics.ListAPIView):
     
     def list(self, request, *args, **kwargs):
         try:
-            # Use CourseService with fallback to original logic
-            try:
-                courses_data = course_service.get_available_courses(user=request.user)
-                return Response({
-                    'courses': courses_data,
-                    'count': len(courses_data),
-                    'success': True
-                })
-            except Exception as e:
-                return Response(
-                    {'error': f'Error retrieving courses: {str(e)}'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-                
-        except Exception as e:
+            courses_data = course_service.get_available_courses(user=request.user)
+            return Response({
+                'courses': courses_data,
+                'count': len(courses_data),
+                'success': True
+            })
+        except TeoArtServiceException as e:
+            logger.warning(f"Service error in CourseListAPIView: {e}")
             return Response(
-                {'error': f'Error retrieving courses: {str(e)}'},
+                {'error': str(e)},
+                status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in CourseListAPIView: {e}")
+            return Response(
+                {'error': 'An error occurred while retrieving courses'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -134,29 +156,40 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     
     def retrieve(self, request, *args, **kwargs):
+        course_id = kwargs.get('pk')
         try:
-            course_id = kwargs.get('pk')
+            if not course_id:
+                return Response(
+                    {'error': 'Course ID is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
-            # Use CourseService with fallback to original logic
-            try:
-                course_details = course_service.get_course_details(course_id, user=request.user)
-                return Response({
-                    **course_details,
-                    'success': True
-                })
-            except CourseNotFoundError:
-                return Response(
-                    {'error': 'Course not found'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except Exception as e:
-                return Response(
-                    {'error': f'Error retrieving course details: {str(e)}'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-                
-        except Exception as e:
+            course_details = course_service.get_course_details(int(course_id), user=request.user)
+            return Response({
+                **course_details,
+                'success': True
+            })
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid course ID: {course_id}")
             return Response(
-                {'error': f'Error retrieving course details: {str(e)}'},
+                {'error': 'Invalid course ID'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except CourseNotFoundError:
+            logger.info(f"Course not found: {course_id}")
+            return Response(
+                {'error': 'Course not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except TeoArtServiceException as e:
+            logger.warning(f"Service error in CourseDetailAPIView: {e}")
+            return Response(
+                {'error': str(e)},
+                status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in CourseDetailAPIView: {e}")
+            return Response(
+                {'error': 'An error occurred while retrieving course details'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
