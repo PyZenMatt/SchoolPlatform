@@ -106,6 +106,11 @@ DATABASES = {
     }
 }
 
+# Database connection pooling and optimization for development
+if DEBUG:
+    DATABASES['default']['CONN_MAX_AGE'] = 60  # Connection pooling for 60 seconds
+    DATABASES['default']['CONN_HEALTH_CHECKS'] = True  # Health checks for connections
+
 # Password
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
