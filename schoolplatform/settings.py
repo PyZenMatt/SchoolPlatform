@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.AutoJWTFromSessionMiddleware',
     'core.middleware.APITimingMiddleware',  # Performance monitoring
+    'core.middleware.GlobalErrorHandlingMiddleware',  # Global error handling
 ]
 
 # Debug toolbar middleware

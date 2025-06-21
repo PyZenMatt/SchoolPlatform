@@ -8,7 +8,7 @@ import time
 import datetime
 import logging
 from django.utils.deprecation import MiddlewareMixin
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
 from rest_framework_simplejwt.tokens import AccessToken
 from django.conf import settings
@@ -154,3 +154,99 @@ class APITimingMiddleware:
                 )
                 
         return response
+
+
+class GlobalErrorHandlingMiddleware:
+    """
+    Middleware per gestione centralizzata degli errori
+    
+    Fornisce:
+    - Logging centralizzato delle eccezioni
+    - Response standardizzate per API
+    - Gestione differenziata per API vs pagine HTML
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.logger = logging.getLogger(__name__)
+    
+    def __call__(self, request):
+        """Processa la request normalmente"""
+        response = self.get_response(request)
+        return response
+    
+    def process_exception(self, request, exception):
+        """
+        Gestisce le eccezioni non catturate
+        
+        Args:
+            request: La HTTP request
+            exception: L'eccezione sollevata
+            
+        Returns:
+            JsonResponse per API, None per pagine HTML (lascia gestire a Django)
+        """
+        # Log dell'errore con informazioni dettagliate
+        self.logger.error(
+            f"Unhandled exception in {request.method} {request.path}: {exception}", 
+            exc_info=True, 
+            extra={
+                'request_path': request.path,
+                'request_method': request.method,
+                'user': str(request.user) if hasattr(request, 'user') else 'Anonymous',
+                'ip_address': self._get_client_ip(request)
+            }
+        )
+        
+        # Response standardizzata per API
+        if request.path.startswith('/api/'):
+            return self._format_api_error(exception, 500)
+        
+        # Per pagine HTML, lascia che Django gestisca con le sue pagine di errore
+        return None
+    
+    def _format_api_error(self, exception, status_code=500):
+        """
+        Formatta errori per API con struttura consistente
+        
+        Args:
+            exception: L'eccezione sollevata
+            status_code: Il codice di stato HTTP
+            
+        Returns:
+            JsonResponse con formato standardizzato
+        """
+        from rest_framework import status
+        
+        # Mappa dei messaggi di errore user-friendly
+        error_map = {
+            404: 'Resource not found',
+            403: 'Permission denied', 
+            401: 'Authentication required',
+            400: 'Bad request',
+            500: 'Internal server error'
+        }
+        
+        # Struttura dati errore standardizzata
+        error_data = {
+            'error': True,
+            'message': error_map.get(status_code, 'An error occurred'),
+            'status_code': status_code,
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+        
+        # Aggiungi dettagli solo in DEBUG mode
+        if settings.DEBUG:
+            error_data['details'] = str(exception)
+            error_data['type'] = type(exception).__name__
+        
+        return JsonResponse(error_data, status=status_code)
+    
+    def _get_client_ip(self, request):
+        """Ottiene l'IP del client considerando i proxy"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
