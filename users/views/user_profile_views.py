@@ -38,29 +38,6 @@ def user_profile(request):
             {"error": f"Error retrieving profile: {str(e)}"}, 
             status=500
         )
-    
-    # OLD CODE (kept as backup) - Remove after testing
-    # try:
-    #     if user.role == 'student':
-    #         courses = CourseEnrollment.objects.filter(student=user).values(
-    #             'course__id', 'course__title', 'completed'
-    #         )
-    #     elif user.role == 'teacher':
-    #         courses = user.created_courses.values('id', 'title', 'enrolled_students')
-    #     else:
-    #         courses = []
-    # except Exception as e:
-    #     return Response(
-    #         {"error": f"Error retrieving courses: {e}"}, 
-    #         status=500
-    #     )
-    # 
-    # return Response({
-    #     'username': user.username,
-    #     'role': user.role,
-    #     'courses': courses,
-    #     'teo_coins': user.teo_coins
-    # })
 
 
 class UserProfileView(APIView):
@@ -81,10 +58,6 @@ class UserProfileView(APIView):
                 {"error": f"Error retrieving profile: {str(e)}"}, 
                 status=500
             )
-        
-        # OLD CODE (kept as backup) - Remove after testing
-        # serializer = UserProfileSerializer(request.user)
-        # return Response(serializer.data)
 
     def put(self, request):
         """Update user profile"""

@@ -29,10 +29,6 @@ class PendingTeachersView(ListAPIView, StandardizedAPIView):
             )
         except Exception as e:
             return self.handle_server_error(e)
-    
-    # OLD CODE (kept as backup) - Remove after testing
-    # queryset = User.objects.filter(role='teacher', is_approved=False)
-    # serializer_class = UserSerializer
 
 
 class ApproveTeacherView(APIView, StandardizedAPIView):
@@ -56,31 +52,6 @@ class ApproveTeacherView(APIView, StandardizedAPIView):
             return self.handle_not_found(str(e))
         except Exception as e:
             return self.handle_server_error(e)
-        
-        # OLD CODE (kept as backup) - Remove after testing
-        # try:
-        #     teacher = get_object_or_404(User, id=user_id, role='teacher')
-        #     teacher.is_approved = True
-        #     teacher.save()
-        #     
-        #     # Create approval notification
-        #     Notification.objects.create(
-        #         user=teacher,
-        #         message="Il tuo profilo docente è stato approvato!",
-        #         notification_type='teacher_approved',
-        #         related_object_id=teacher.pk
-        #     )
-        #     
-        #     return self.handle_success(
-        #         data={
-        #             "teacher_id": teacher.pk,
-        #             "teacher_email": teacher.email
-        #         },
-        #         message=f"Teacher {teacher.email} has been approved."
-        #     )
-        #     
-        # except Exception as e:
-        #     return self.handle_server_error(e)
 
 
 class RejectTeacherView(APIView, StandardizedAPIView):
@@ -107,28 +78,3 @@ class RejectTeacherView(APIView, StandardizedAPIView):
             return self.handle_not_found(str(e))
         except Exception as e:
             return self.handle_server_error(e)
-        
-        # OLD CODE (kept as backup) - Remove after testing
-        # try:
-        #     teacher = get_object_or_404(User, id=user_id, role='teacher')
-        #     
-        #     # Create rejection notification before deletion
-        #     Notification.objects.create(
-        #         user=teacher,
-        #         message="Il tuo profilo docente è stato rifiutato.",
-        #         notification_type='teacher_rejected',
-        #         related_object_id=teacher.pk
-        #     )
-        #     
-        #     teacher_email = teacher.email  # Store before deletion
-        #     teacher.delete()
-        #     
-        #     return self.handle_success(
-        #         data={
-        #             "teacher_email": teacher_email
-        #         },
-        #         message=f"Teacher {teacher_email} has been rejected and removed."
-        #     )
-        #     
-        # except Exception as e:
-        #     return self.handle_server_error(e)
