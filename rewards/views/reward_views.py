@@ -271,9 +271,9 @@ def get_reward_leaderboard(request):
     try:
         limit = int(request.query_params.get('limit', 10))
         
-        # Limit the maximum number of results
-        if limit > 100:
-            limit = 100
+        # Validate limit
+        if limit < 1 or limit > 100:
+            return Response({"error": "Limit must be between 1 and 100"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             # Use RewardService for getting leaderboard
@@ -288,8 +288,6 @@ def get_reward_leaderboard(request):
         except TeoArtServiceException as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
-    except ValueError:
-        return Response({"error": "Invalid limit parameter"}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Error retrieving reward leaderboard: {str(e)}")
         return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
