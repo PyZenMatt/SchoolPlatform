@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.AutoJWTFromSessionMiddleware',
     'core.middleware.APITimingMiddleware',  # Performance monitoring
+    'core.middleware.GlobalErrorHandlingMiddleware',  # Global error handling
 ]
 
 # Debug toolbar middleware
@@ -100,11 +101,16 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
         'OPTIONS': {
-            'timeout': 30,
+            'timeout': 20,  # Reduced from 30 for faster response
             'check_same_thread': False,
         }
     }
 }
+
+# Database connection pooling and optimization for development
+if DEBUG:
+    DATABASES['default']['CONN_MAX_AGE'] = 60  # Connection pooling for 60 seconds
+    DATABASES['default']['CONN_HEALTH_CHECKS'] = True  # Health checks for connections
 
 # Password
 AUTH_PASSWORD_VALIDATORS = [

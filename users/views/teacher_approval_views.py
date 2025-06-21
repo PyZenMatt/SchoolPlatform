@@ -1,7 +1,7 @@
 """
 Teacher approval management views
 """
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,13 +11,30 @@ from notifications.models import Notification
 from users.models import User
 from users.serializers import UserSerializer
 from core.api_standards import StandardizedAPIView
+import logging
+
+# Service imports
+from services import user_service
+from services.exceptions import TeoArtServiceException, UserNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class PendingTeachersView(ListAPIView, StandardizedAPIView):
     """List teachers pending approval"""
-    queryset = User.objects.filter(role='teacher', is_approved=False)
-    serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
+    
+    def get(self, request, *args, **kwargs):
+        """Get list of pending teachers using UserService"""
+        try:
+            pending_teachers = user_service.get_pending_teachers()
+            
+            return self.handle_success(
+                data=pending_teachers,
+                message="Pending teachers retrieved successfully"
+            )
+        except Exception as e:
+            return self.handle_server_error(e)
 
 
 class ApproveTeacherView(APIView, StandardizedAPIView):
@@ -25,27 +42,17 @@ class ApproveTeacherView(APIView, StandardizedAPIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, user_id):
+        """Approve teacher using UserService"""
         try:
-            teacher = get_object_or_404(User, id=user_id, role='teacher')
-            teacher.is_approved = True
-            teacher.save()
-            
-            # Create approval notification
-            Notification.objects.create(
-                user=teacher,
-                message="Il tuo profilo docente è stato approvato!",
-                notification_type='teacher_approved',
-                related_object_id=teacher.pk
-            )
+            result = user_service.approve_teacher(user_id)
             
             return self.handle_success(
-                data={
-                    "teacher_id": teacher.pk,
-                    "teacher_email": teacher.email
-                },
-                message=f"Teacher {teacher.email} has been approved."
+                data=result,
+                message=f"Teacher {result['teacher_email']} has been approved."
             )
             
+        except UserNotFoundError as e:
+            return self.handle_not_found(str(e))
         except Exception as e:
             return self.handle_server_error(e)
 
@@ -55,26 +62,19 @@ class RejectTeacherView(APIView, StandardizedAPIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, user_id):
+        """Reject teacher using UserService"""
         try:
-            teacher = get_object_or_404(User, id=user_id, role='teacher')
+            # Get optional rejection reason from request
+            reason = request.data.get('reason', None)
             
-            # Create rejection notification before deletion
-            Notification.objects.create(
-                user=teacher,
-                message="Il tuo profilo docente è stato rifiutato.",
-                notification_type='teacher_rejected',
-                related_object_id=teacher.pk
-            )
-            
-            teacher_email = teacher.email  # Store before deletion
-            teacher.delete()
+            result = user_service.reject_teacher(user_id, reason=reason)
             
             return self.handle_success(
-                data={
-                    "teacher_email": teacher_email
-                },
-                message=f"Teacher {teacher_email} has been rejected and removed."
+                data=result,
+                message=f"Teacher {result['teacher_email']} has been rejected."
             )
             
+        except UserNotFoundError as e:
+            return self.handle_not_found(str(e))
         except Exception as e:
             return self.handle_server_error(e)

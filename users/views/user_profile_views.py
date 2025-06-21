@@ -1,7 +1,7 @@
 """
 User profile management views
 """
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -12,6 +12,17 @@ from courses.models import CourseEnrollment
 from authentication.serializers import RegisterSerializer
 from users.models import User
 from ..serializers import UserProfileSerializer
+import logging
+
+# Service imports
+from services import user_service
+from services.exceptions import TeoArtServiceException, UserNotFoundError
+
+# Service imports
+from services import user_service
+from services.exceptions import TeoArtServiceException, UserNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -25,29 +36,27 @@ class RegisterView(generics.CreateAPIView):
 @permission_classes([IsAuthenticated])
 def user_profile(request):
     """Get user profile with course information"""
-    user = request.user
-    
     try:
-        if user.role == 'student':
-            courses = CourseEnrollment.objects.filter(student=user).values(
-                'course__id', 'course__title', 'completed'
-            )
-        elif user.role == 'teacher':
-            courses = user.created_courses.values('id', 'title', 'enrolled_students')
-        else:
-            courses = []
-    except Exception as e:
+        profile_data = user_service.get_user_profile_data(request.user)
+        return Response(profile_data)
+    except UserNotFoundError as e:
+        logger.warning(f"User not found in user_profile: {e}")
         return Response(
-            {"error": f"Error retrieving courses: {e}"}, 
-            status=500
+            {'error': str(e)},
+            status=status.HTTP_404_NOT_FOUND
         )
-
-    return Response({
-        'username': user.username,
-        'role': user.role,
-        'courses': courses,
-        'teo_coins': user.teo_coins
-    })
+    except TeoArtServiceException as e:
+        logger.warning(f"Service error in user_profile: {e}")
+        return Response(
+            {'error': str(e)},
+            status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in user_profile: {e}")
+        return Response(
+            {'error': 'An error occurred while retrieving profile'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 class UserProfileView(APIView):
@@ -57,8 +66,21 @@ class UserProfileView(APIView):
 
     def get(self, request):
         """Get user profile details"""
-        serializer = UserProfileSerializer(request.user)
-        return Response(serializer.data)
+        try:
+            profile_data = user_service.get_user_profile_data(request.user)
+            return Response(profile_data)
+        except TeoArtServiceException as e:
+            logger.warning(f"Service error in UserProfileView.get: {e}")
+            return Response(
+                {'error': str(e)},
+                status=e.status_code if hasattr(e, 'status_code') else status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in UserProfileView.get: {e}")
+            return Response(
+                {"error": "Error retrieving profile"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def put(self, request):
         """Update user profile"""

@@ -24,7 +24,7 @@ const TeacherCourseDetail = () => {
         
         // Fetch lessons
         const lessonsData = await fetchLessonsForCourse(courseId);
-        setLessons(lessonsData);
+        setLessons(lessonsData.data);
         
       } catch (err) {
         console.error('Error loading course data:', err);

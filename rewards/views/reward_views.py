@@ -8,6 +8,11 @@ from typing import Optional
 from courses.models import Lesson, Course
 from users.models import User
 from ..automation import AutomatedRewardSystem
+
+# Service imports
+from services.reward_service import reward_service
+from services.exceptions import TeoArtServiceException, UserNotFoundError, CourseNotFoundError
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +21,7 @@ logger = logging.getLogger(__name__)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def trigger_lesson_completion_reward(request):
-    """Trigger reward for lesson completion"""
+    """Trigger reward for lesson completion using RewardService"""
     try:
         lesson_id = request.data.get('lesson_id')
         course_id = request.data.get('course_id')
@@ -30,34 +35,39 @@ def trigger_lesson_completion_reward(request):
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
         try:
-            user = get_object_or_404(User, id=user_id)
-            lesson = get_object_or_404(Lesson, id=lesson_id)
+            # Use RewardService for processing
+            result = reward_service.process_lesson_completion_reward(
+                user_id=user_id,
+                lesson_id=lesson_id,
+                course_id=course_id
+            )
             
-            if course_id:
-                course = get_object_or_404(Course, id=course_id)
-            else:
-                course = lesson.course
-            
-            if not course:
-                return Response({"error": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-            reward_system = AutomatedRewardSystem()
-            result = reward_system.reward_lesson_completion(user, lesson, course)
-            
-            if result:
+            # Service-based implementation
+            if result.get('reward_processed'):
                 return Response({
                     "message": "Lesson completion reward processed successfully",
                     "reward_processed": True,
-                    "success": True
+                    "success": True,
+                    "data": {
+                        "reward_amount": result.get('reward_amount'),
+                        "lesson_title": result.get('lesson_title'),
+                        "course_title": result.get('course_title'),
+                        "transaction_id": result.get('reward_transaction_id'),
+                        "course_completed": result.get('course_completed', False),
+                        "course_completion_bonus": result.get('course_completion_bonus')
+                    }
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    "message": "No reward processed - budget exhausted or already rewarded",
+                    "message": result.get('reason', 'No reward processed'),
+                    "reward_processed": False,
                     "success": False
                 }, status=status.HTTP_200_OK)
                 
-        except ObjectDoesNotExist:
-            return Response({"error": "Invalid user, lesson, or course ID"}, status=status.HTTP_400_BAD_REQUEST)
+        except (UserNotFoundError, CourseNotFoundError) as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except TeoArtServiceException as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error processing lesson completion reward: {str(e)}")
@@ -67,7 +77,7 @@ def trigger_lesson_completion_reward(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def trigger_course_completion_check(request):
-    """Check and trigger course completion rewards"""
+    """Check and trigger course completion rewards using RewardService"""
     try:
         course_id = request.data.get('course_id')
         user_id = request.data.get('user_id', request.user.id)
@@ -80,26 +90,27 @@ def trigger_course_completion_check(request):
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
         try:
-            user = get_object_or_404(User, id=user_id)
-            course = get_object_or_404(Course, id=course_id)
+            # Use RewardService for processing
+            result = reward_service.process_course_completion_bonus(
+                user_id=user_id,
+                course_id=course_id
+            )
             
-            reward_system = AutomatedRewardSystem()
-            result = reward_system.check_and_reward_course_completion(user, course)
-            
-            if result:
-                return Response({
-                    "message": "Course completion reward processed successfully",
-                    "reward_processed": True,
-                    "success": True
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    "message": "Course not completed or already rewarded",
-                    "success": False
-                }, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Course completion reward processed successfully",
+                "reward_processed": True,
+                "success": True,
+                "data": {
+                    "bonus_amount": result.get('amount'),
+                    "course_title": result.get('course_title'),
+                    "transaction_id": result.get('transaction_id')
+                }
+            }, status=status.HTTP_200_OK)
                 
-        except ObjectDoesNotExist:
-            return Response({"error": "Invalid user or course ID"}, status=status.HTTP_400_BAD_REQUEST)
+        except (UserNotFoundError, CourseNotFoundError) as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except TeoArtServiceException as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error processing course completion check: {str(e)}")
@@ -162,31 +173,22 @@ def trigger_achievement_reward(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_reward_summary(request):
-    """Get reward summary for a user and course"""
+    """Get reward summary for a user using RewardService"""
     try:
         course_id = request.query_params.get('course_id')
         user_id = request.query_params.get('user_id', request.user.id)
+        time_period = request.query_params.get('time_period', 'all')
         
         # Only allow users to get summaries for themselves unless admin
         if int(user_id) != request.user.id and not request.user.is_staff:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
         try:
-            user = get_object_or_404(User, id=user_id)
-            course = None
-            
-            if course_id:
-                course = get_object_or_404(Course, id=course_id)
-            
-            reward_system = AutomatedRewardSystem()
-            if course:
-                summary = reward_system.get_student_reward_summary(user, course)
-            else:
-                # Return basic summary without course-specific data
-                summary = {
-                    "total_rewards": user.teo_coins,
-                    "message": "Course-specific summary requires course_id parameter"
-                }
+            # Use RewardService for getting summary
+            summary = reward_service.get_user_rewards_summary(
+                user_id=int(user_id),
+                time_period=time_period
+            )
             
             return Response({
                 "message": "Reward summary retrieved successfully",
@@ -194,8 +196,10 @@ def get_reward_summary(request):
                 "success": True
             }, status=status.HTTP_200_OK)
                 
-        except ObjectDoesNotExist:
-            return Response({"error": "Invalid user or course ID"}, status=status.HTTP_400_BAD_REQUEST)
+        except UserNotFoundError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except TeoArtServiceException as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
     except Exception as e:
         logger.error(f"Error retrieving reward summary: {str(e)}")
@@ -257,4 +261,33 @@ def bulk_process_rewards(request):
         
     except Exception as e:
         logger.error(f"Error in bulk reward processing: {str(e)}")
+        return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_reward_leaderboard(request):
+    """Get reward leaderboard using RewardService"""
+    try:
+        limit = int(request.query_params.get('limit', 10))
+        
+        # Validate limit
+        if limit < 1 or limit > 100:
+            return Response({"error": "Limit must be between 1 and 100"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Use RewardService for getting leaderboard
+            leaderboard = reward_service.get_reward_leaderboard(limit=limit)
+            
+            return Response({
+                "message": "Reward leaderboard retrieved successfully",
+                "leaderboard": leaderboard,
+                "success": True
+            }, status=status.HTTP_200_OK)
+                
+        except TeoArtServiceException as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        logger.error(f"Error retrieving reward leaderboard: {str(e)}")
         return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

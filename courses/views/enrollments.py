@@ -14,6 +14,15 @@ from rewards.models import BlockchainTransaction
 from courses.serializers import StudentCourseSerializer
 from users.permissions import IsTeacher
 
+# Service Layer imports
+from services.payment_service import payment_service
+from services.exceptions import (
+    TeoArtServiceException, 
+    UserNotFoundError, 
+    CourseNotFoundError,
+    InsufficientTeoCoinsError
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,83 +30,88 @@ class PurchaseCourseView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, course_id):
-        course = get_object_or_404(Course, id=course_id)
-        student = request.user
-        wallet_address = request.data.get('wallet_address')
-        transaction_hash = request.data.get('transaction_hash')
-        payment_confirmed = request.data.get('payment_confirmed', False)
-
-        if student.role != 'student':
-            return Response({"error": "Solo studenti possono acquistare corsi"}, status=status.HTTP_403_FORBIDDEN)
-
-        # Verifica che il corso sia approvato
-        if not course.is_approved:
-            return Response({"error": "Questo corso non è ancora disponibile per l'acquisto"}, status=status.HTTP_403_FORBIDDEN)
-
-        if student in course.students.all():
-            return Response({"error": "Hai già acquistato questo corso"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate wallet address
-        if not wallet_address:
-            return Response({
-                "error": "Wallet address è richiesto per l'acquisto",
-                "action_required": "provide_wallet"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Update user's wallet address if not set or if different
-        if not student.wallet_address:
-            student.wallet_address = wallet_address
-            student.save()
-        elif student.wallet_address.lower() != wallet_address.lower():
-            student.wallet_address = wallet_address
-            student.save()
-
+        """Handle course purchase using PaymentService"""
         try:
-            # Check blockchain balance
-            from blockchain.views import teocoin_service
-            balance = teocoin_service.get_balance(wallet_address)
-            
-            if balance < course.price:
+            wallet_address = request.data.get('wallet_address')
+            transaction_hash = request.data.get('transaction_hash')
+            payment_confirmed = request.data.get('payment_confirmed', False)
+
+            # Validate required data
+            if not wallet_address:
                 return Response({
-                    "error": f"TeoCoin insufficienti. Serve: {course.price}, Disponibili: {balance}",
-                    "required": course.price,
-                    "available": str(balance)
+                    "error": "Wallet address is required for purchase",
+                    "action_required": "provide_wallet"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Se non è stata fornita una transazione hash, richiedere il pagamento
+            # Use PaymentService to initiate purchase
             if not payment_confirmed or not transaction_hash:
-                # Calcola commissione platform e importo netto per teacher
-                commission_rate = Decimal('0.15')  # 15% commissione
-                commission_amount = course.price * commission_rate
-                teacher_amount = course.price - commission_amount
+                try:
+                    # Initiate purchase workflow
+                    result = payment_service.initiate_course_purchase(
+                        user_id=request.user.id,
+                        course_id=course_id,
+                        wallet_address=wallet_address
+                    )
+                    
+                    return Response(result, status=status.HTTP_402_PAYMENT_REQUIRED)
+                    
+                except InsufficientTeoCoinsError as e:
+                    return Response({
+                        "error": str(e),
+                        "required": e.required if hasattr(e, 'required') else None,
+                        "available": e.available if hasattr(e, 'available') else None
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                except (UserNotFoundError, CourseNotFoundError, TeoArtServiceException) as e:
+                    return Response({
+                        "error": str(e)
+                    }, status=getattr(e, 'status_code', 400))
+            
+            # Complete purchase with transaction hash
+            try:
+                result = payment_service.complete_course_purchase(
+                    user_id=request.user.id,
+                    course_id=course_id,
+                    transaction_hash=transaction_hash,
+                    wallet_address=wallet_address
+                )
                 
                 return Response({
-                    "payment_required": True,
-                    "course_price": str(course.price),
-                    "teacher_amount": str(teacher_amount),
-                    "commission_amount": str(commission_amount),
-                    "teacher_address": course.teacher.wallet_address,
-                    "student_address": wallet_address,
-                    "course_id": course.pk,
-                    "message": "Acquisto corso: Lo studente paga in TeoCoins, le gas fees sono pagate dalla reward pool"
-                }, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-            # Verifica la transazione sulla blockchain
-            # Per la nuova logica, verifichiamo che ci siano state le transazioni corrette:
-            # 1. Studente -> Teacher (importo netto)
-            # 2. Studente -> Reward Pool (commissione)
-            transaction_valid = self._verify_course_payment_transaction(
-                transaction_hash, 
-                wallet_address, 
-                course.teacher.wallet_address,
-                course.price
-            )
-            
-            if not transaction_valid:
+                    "message": result['message'],
+                    "course_title": result['course_title'],
+                    "total_paid": result['total_paid'],
+                    "teacher_received": result['teacher_received'],
+                    "platform_commission": result['platform_commission'],
+                    "transaction_hash": result['transaction_hash'],
+                    "wallet_address": wallet_address,
+                    "blockchain_verified": True,
+                    "payment_breakdown": {
+                        "student_paid": result['total_paid'],
+                        "teacher_received": result['teacher_received'],
+                        "platform_commission": result['platform_commission'],
+                        "commission_rate": "15%"
+                    },
+                    "enrollment_confirmed": result['enrollment_confirmed']
+                }, status=status.HTTP_200_OK)
+                
+            except (UserNotFoundError, CourseNotFoundError, TeoArtServiceException) as e:
                 return Response({
-                    "error": "Transazione blockchain non valida o non confermata",
-                    "transaction_hash": transaction_hash
-                }, status=status.HTTP_400_BAD_REQUEST)
+                    "error": str(e)
+                }, status=getattr(e, 'status_code', 400))
+            except Exception as e:
+                logger.error(f"Unexpected error during purchase completion: {str(e)}")
+                return Response({
+                    "error": "Payment completion failed. Please try again later.",
+                    "details": str(e) if settings.DEBUG else None
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            logger.error(f"PurchaseCourseView service failed: {str(e)}")
+            # Return error response
+            return Response({
+                "error": "Payment service temporarily unavailable. Please try again later.",
+                "details": str(e) if settings.DEBUG else None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             with transaction.atomic():
                 # Verifica che la transazione non sia già stata processata

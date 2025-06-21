@@ -13,6 +13,9 @@ from .models import BlockchainTransaction
 from blockchain.views import mint_tokens
 from courses.models import Course, Exercise, ExerciseSubmission, ExerciseReview
 
+# Import BlockchainService for new architecture
+from services.blockchain_service import blockchain_service
+
 
 logger = logging.getLogger(__name__)
 
@@ -218,10 +221,24 @@ class BlockchainRewardManager:
             submission.reward_amount = int(reward_amount * 1000)  # Supporta 3 decimali
             submission.save()
             
-            # TODO: Update this method to work with new blockchain architecture
-            # Temporarily disabled for migration
-            logger.info(f"Exercise reward system temporarily disabled during migration")
-            return None
+            # Use BlockchainService for token transfer
+            try:
+                result = blockchain_service.mint_tokens_to_user(
+                    user=submission.student,
+                    amount=reward_amount,
+                    reason=f"Exercise reward for: {submission.exercise.title}"
+                )
+                
+                if result.get('success'):
+                    logger.info(f"Exercise reward transferred successfully: {reward_amount} TeoCoin to {submission.student.username}")
+                    return blockchain_transaction
+                else:
+                    logger.error(f"Exercise reward transfer failed: {result.get('error')}")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Error transferring exercise reward: {str(e)}")
+                return None
             
             # # Effettua il trasferimento dalla reward pool
             # blockchain_tx = cls._transfer_from_reward_pool(
@@ -281,10 +298,24 @@ class BlockchainRewardManager:
                 notes=f"Review reward for submission {submission.id}"
             )
             
-            # TODO: Update this method to work with new blockchain architecture
-            # Temporarily disabled for migration
-            logger.info(f"Review reward system temporarily disabled during migration")
-            return None
+            # Use BlockchainService for reviewer reward transfer
+            try:
+                result = blockchain_service.mint_tokens_to_user(
+                    user=review.reviewer,
+                    amount=reviewer_reward,
+                    reason=f"Review reward for exercise: {submission.exercise.title}"
+                )
+                
+                if result.get('success'):
+                    logger.info(f"Review reward transferred successfully: {reviewer_reward} TeoCoin to {review.reviewer.username}")
+                    return blockchain_transaction
+                else:
+                    logger.error(f"Review reward transfer failed: {result.get('error')}")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Error transferring review reward: {str(e)}")
+                return None
             
             # # Effettua il trasferimento dalla reward pool
             # blockchain_tx = cls._transfer_from_reward_pool(
