@@ -1,7 +1,7 @@
 """
 Teacher approval management views
 """
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +11,13 @@ from notifications.models import Notification
 from users.models import User
 from users.serializers import UserSerializer
 from core.api_standards import StandardizedAPIView
+import logging
+
+# Service imports
+from services import user_service
+from services.exceptions import TeoArtServiceException, UserNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class PendingTeachersView(ListAPIView, StandardizedAPIView):
@@ -20,7 +27,6 @@ class PendingTeachersView(ListAPIView, StandardizedAPIView):
     def get(self, request, *args, **kwargs):
         """Get list of pending teachers using UserService"""
         try:
-            from services import user_service
             pending_teachers = user_service.get_pending_teachers()
             
             return self.handle_success(
@@ -38,9 +44,6 @@ class ApproveTeacherView(APIView, StandardizedAPIView):
     def post(self, request, user_id):
         """Approve teacher using UserService"""
         try:
-            from services import user_service
-            from services.exceptions import UserNotFoundError
-            
             result = user_service.approve_teacher(user_id)
             
             return self.handle_success(
@@ -61,9 +64,6 @@ class RejectTeacherView(APIView, StandardizedAPIView):
     def post(self, request, user_id):
         """Reject teacher using UserService"""
         try:
-            from services import user_service
-            from services.exceptions import UserNotFoundError
-            
             # Get optional rejection reason from request
             reason = request.data.get('reason', None)
             
