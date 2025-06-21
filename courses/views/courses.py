@@ -7,12 +7,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as drf_filters
 from django.contrib.auth import get_user_model
 from django.db import models
+import logging
 
 from users.permissions import IsAdminOrApprovedTeacherOrReadOnly, IsTeacher
 from courses.models import Course
 from courses.serializers import CourseSerializer
 from services.course_service import course_service
 from services.exceptions import CourseNotFoundError, TeoArtServiceException
+
+logger = logging.getLogger(__name__)
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -109,11 +112,12 @@ class CourseListAPIView(generics.ListAPIView):
                 return Response({
                     'courses': courses_data,
                     'count': len(courses_data),
-                    'service_used': 'CourseService'
+                    'service_used': 'CourseService',
+                    'success': True
                 })
             except Exception as e:
-                # Fallback to original logic
-                print(f"CourseService failed, using fallback: {e}")
+                # TODO: Remove fallback logic in production once CourseService is fully stable
+                logger.warning(f"CourseService failed, using fallback: {e}")
                 
                 user = request.user
                 if user.is_staff or user.is_superuser:
@@ -170,7 +174,8 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
                 course_details = course_service.get_course_details(course_id, user=request.user)
                 return Response({
                     **course_details,
-                    'service_used': 'CourseService'
+                    'service_used': 'CourseService',
+                    'success': True
                 })
             except CourseNotFoundError:
                 return Response(
@@ -178,8 +183,8 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             except Exception as e:
-                # Fallback to original logic
-                print(f"CourseService failed, using fallback: {e}")
+                # TODO: Remove fallback logic in production once CourseService is fully stable  
+                logger.warning(f"CourseService failed, using fallback: {e}")
                 
                 try:
                     course = Course.objects.select_related('teacher').get(

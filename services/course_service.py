@@ -8,16 +8,13 @@ purchase workflows, and progress tracking.
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
 from django.contrib.auth import get_user_model
-from django.db import transaction
 from django.utils import timezone
 
 from courses.models import Course, CourseEnrollment, Lesson, LessonCompletion
-from rewards.models import BlockchainTransaction
 from services.base import TransactionalService
 from services.exceptions import (
     TeoArtServiceException,
     CourseNotFoundError,
-    InsufficientTeoCoinsError,
     UserNotFoundError,
 )
 
