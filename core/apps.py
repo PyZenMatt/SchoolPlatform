@@ -38,6 +38,9 @@ class CoreConfig(AppConfig):
             # Import and register cache invalidation signals
             import core.cache_signals
             
+            # Import database optimizations
+            import core.db_backend
+            
         except ImportError as e:
             # Log import errors but don't fail app startup
             import logging
