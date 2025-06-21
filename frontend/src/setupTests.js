@@ -1,6 +1,57 @@
 // Setup Jest per testing
 import '@testing-library/jest-dom';
 
+// Console warnings suppression for cleaner test output
+const originalError = console.error;
+const originalWarn = console.warn;
+
+beforeAll(() => {
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: An update to') &&
+      args[0].includes('act(...)')
+    ) {
+      return; // Suppress act() warnings during testing
+    }
+    originalError.call(console, ...args);
+  };
+
+  console.warn = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('React Router Future Flag Warning') ||
+       args[0].includes('validateDOMNesting'))
+    ) {
+      return; // Suppress React Router and DOM nesting warnings
+    }
+    originalWarn.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+  console.warn = originalWarn;
+});
+
+// MSW Setup per test che richiedono mock API (disabilitato per ora)
+// import { server } from './__mocks__/server';
+
+// Setup MSW server (da abilitare quando necessario)
+/*
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'warn' });
+});
+
+afterEach(() => {
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
+});
+*/
+
 // Mock per window.matchMedia (non supportato in jsdom)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
