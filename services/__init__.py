@@ -15,6 +15,7 @@ from .base import BaseService, TransactionalService
 from .user_service import UserService, user_service
 from .blockchain_service import BlockchainService, blockchain_service
 from .course_service import CourseService, course_service
+from .notification_service import NotificationService, notification_service
 from .exceptions import (
     TeoArtServiceException,
     InsufficientTeoCoinsError,
@@ -37,6 +38,8 @@ __all__ = [
     'blockchain_service',
     'CourseService',
     'course_service',
+    'NotificationService',
+    'notification_service',
     'TeoArtServiceException',
     'InsufficientTeoCoinsError', 
     'CourseNotFoundError',
