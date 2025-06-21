@@ -1,6 +1,9 @@
 // Setup Jest per testing
 import '@testing-library/jest-dom';
 
+// Mock fetch for testing environment
+global.fetch = jest.fn();
+
 // Console warnings suppression for cleaner test output
 const originalError = console.error;
 const originalWarn = console.warn;

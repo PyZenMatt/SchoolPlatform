@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Form, Badge, Row, Col } from 'react-bootstrap';
 import { blockchainAPI } from '../../services/api/blockchainAPI';
 
+// Mock missing components for testing
+const CardHeader = ({ children }) => <Card.Header>{children}</Card.Header>;
+const CardTitle = ({ children, className }) => <div className={className}>{children}</div>;
+const CardContent = ({ children }) => <Card.Body>{children}</Card.Body>;
+const Trophy = ({ className }) => <i className={`feather icon-award ${className}`}></i>;
+const Input = ({ type, placeholder, value, onChange, className, ...props }) => (
+  <input
+    type={type}
+    placeholder={placeholder}
+    value={value}
+    onChange={onChange}
+    className={`form-control ${className || ''}`}
+    {...props}
+  />
+);
+
 const RewardSystem = ({ user }) => {
   const [rewardHistory, setRewardHistory] = useState([]);
   const [rewardSummary, setRewardSummary] = useState(null);
