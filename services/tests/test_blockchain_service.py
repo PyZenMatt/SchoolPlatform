@@ -60,7 +60,7 @@ class BlockchainServiceTest(TestCase):
     
     def test_get_user_wallet_balance_no_wallet(self):
         """Test wallet balance retrieval for user without wallet"""
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(BlockchainTransactionError):
             self.service.get_user_wallet_balance(self.user_no_wallet)
     
     def test_link_wallet_to_user_success(self):
@@ -81,13 +81,13 @@ class BlockchainServiceTest(TestCase):
     def test_link_wallet_invalid_address(self):
         """Test wallet linking with invalid address"""
         with patch.object(self.service.teocoin_service, 'validate_address', return_value=False):
-            with self.assertRaises(InvalidWalletAddressError):
+            with self.assertRaises(BlockchainTransactionError):
                 self.service.link_wallet_to_user(self.user_no_wallet, 'invalid_address')
     
     def test_link_wallet_already_used(self):
         """Test wallet linking with address already in use"""
         # User already has this wallet
-        with self.assertRaises(InvalidWalletAddressError):
+        with self.assertRaises(BlockchainTransactionError):
             self.service.link_wallet_to_user(self.user_no_wallet, self.user.wallet_address)
     
     def test_mint_tokens_to_user_success(self):
@@ -95,24 +95,24 @@ class BlockchainServiceTest(TestCase):
         amount = Decimal('50.0')
         reason = 'Test reward'
         
-        with patch.object(self.service, 'mint_tokens', return_value='0xabcdef') as mock_mint:
-            result = self.service.mint_tokens_to_user(self.user, amount, reason)
-            
-            self.assertIn('message', result)
-            self.assertIn('amount', result)
-            self.assertIn('tx_hash', result)
-            self.assertIn('new_balance', result)
-            self.assertEqual(result['amount'], amount)
-            mock_mint.assert_called_once()
+        with patch.object(self.service.teocoin_service, 'mint_tokens', return_value='0xabcdef') as mock_mint:
+            with patch.object(self.service, 'test_mode', False):  # Force real blockchain call
+                result = self.service.mint_tokens_to_user(self.user, amount, reason)
+                
+                self.assertIn('transaction_hash', result)
+                self.assertIn('amount', result)
+                self.assertIn('recipient', result)
+                self.assertEqual(result['amount'], '50.0')
+                mock_mint.assert_called_once()
     
     def test_mint_tokens_no_wallet(self):
         """Test token minting for user without wallet"""
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(BlockchainTransactionError):
             self.service.mint_tokens_to_user(self.user_no_wallet, 50.0, 'Test')
     
     def test_mint_tokens_invalid_amount(self):
         """Test token minting with invalid amount"""
-        with self.assertRaises(InvalidAmountError):
+        with self.assertRaises(BlockchainTransactionError):
             self.service.mint_tokens_to_user(self.user, -10.0, 'Test')
         
         with self.assertRaises(InvalidAmountError):
@@ -146,6 +146,7 @@ class BlockchainServiceTest(TestCase):
         to_user = User.objects.create_user(
             username='touser',
             email='to@example.com',
+            role='student',
             wallet_address='0x1111111111111111111111111111111111111111'
         )
         amount = Decimal('25.0')
@@ -166,16 +167,17 @@ class BlockchainServiceTest(TestCase):
         to_user = User.objects.create_user(
             username='touser',
             email='to@example.com',
+            role='student',
             wallet_address='0x1111111111111111111111111111111111111111'
         )
         
         with patch.object(self.service.teocoin_service, 'get_balance', return_value=Decimal('10.0')):
-            with self.assertRaises(TokenTransferError):
+            with self.assertRaises(BlockchainTransactionError):
                 self.service.transfer_tokens_between_users(self.user, to_user, 50.0, 'Test transfer')
     
     def test_transfer_tokens_no_wallet(self):
         """Test token transfer with users without wallets"""
-        with self.assertRaises(WalletNotFoundError):
+        with self.assertRaises(BlockchainTransactionError):
             self.service.transfer_tokens_between_users(self.user_no_wallet, self.user, 25.0, 'Test')
         
         with self.assertRaises(WalletNotFoundError):

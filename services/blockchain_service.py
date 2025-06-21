@@ -12,6 +12,7 @@ from django.db import transaction
 from django.conf import settings
 import logging
 import time
+import uuid
 
 from services.base import TransactionalService
 from services.exceptions import (
@@ -202,8 +203,8 @@ class BlockchainService(TransactionalService):
             
             # Mint tokens
             if self.test_mode:
-                # Mock transaction for testing
-                tx_hash = f"0xtest_mint_{user.id}_{int(time.time())}"
+                # Mock transaction for testing with more randomness
+                tx_hash = f"0xtest_mint_{user.id}_{uuid.uuid4().hex[:8]}"
                 self.log_debug(f"Using test mode transaction hash: {tx_hash}")
             else:
                 tx_hash = self.teocoin_service.mint_tokens(user.wallet_address, amount_decimal)
@@ -338,7 +339,7 @@ class BlockchainService(TransactionalService):
             
             # Execute transfer
             if self.test_mode:
-                tx_hash = f"0xtest_transfer_{from_user.id}_{to_user.id}_{int(time.time())}"
+                tx_hash = f"0xtest_transfer_{from_user.id}_{to_user.id}_{uuid.uuid4().hex[:8]}"
                 self.log_debug(f"Using test mode transaction hash: {tx_hash}")
             else:
                 tx_hash = self.teocoin_service.transfer_tokens(

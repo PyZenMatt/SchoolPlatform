@@ -80,11 +80,8 @@ class InsufficientTeoCoinsError(TeoArtServiceException):
 class BlockchainTransactionError(TeoArtServiceException):
     """Raised when a blockchain transaction fails"""
     
-    def __init__(self, operation: str, reason: str = None):
-        message = f"Blockchain transaction failed: {operation}"
-        if reason:
-            message += f" - {reason}"
-        super().__init__(message, "BLOCKCHAIN_TRANSACTION_ERROR", 500)
+    def __init__(self, message: str, code: str = None, status_code: int = 500):
+        super().__init__(message, code or "BLOCKCHAIN_TRANSACTION_ERROR", status_code)
 
 
 class EmailVerificationError(TeoArtServiceException):
