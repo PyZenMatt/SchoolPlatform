@@ -134,3 +134,28 @@ class InvalidAmountError(TeoArtServiceException):
     def __init__(self, amount: float):
         message = f"Invalid amount: {amount}. Amount must be positive"
         super().__init__(message, "INVALID_AMOUNT", 400)
+
+
+class PaymentError(TeoArtServiceException):
+    """Raised when a payment operation fails"""
+    
+    def __init__(self, message: str, code: str = None, status_code: int = 400):
+        super().__init__(message, code or "PAYMENT_ERROR", status_code)
+
+
+class TransactionAlreadyProcessedError(TeoArtServiceException):
+    """Raised when trying to process a transaction that was already processed"""
+    
+    def __init__(self, transaction_hash: str):
+        message = f"Transaction {transaction_hash} has already been processed"
+        super().__init__(message, "TRANSACTION_ALREADY_PROCESSED", 400)
+
+
+class TransactionVerificationError(TeoArtServiceException):
+    """Raised when blockchain transaction verification fails"""
+    
+    def __init__(self, transaction_hash: str, reason: str = None):
+        message = f"Transaction verification failed for {transaction_hash}"
+        if reason:
+            message += f": {reason}"
+        super().__init__(message, "TRANSACTION_VERIFICATION_FAILED", 400)
