@@ -11,6 +11,8 @@ from django.db import models
 from users.permissions import IsAdminOrApprovedTeacherOrReadOnly, IsTeacher
 from courses.models import Course
 from courses.serializers import CourseSerializer
+from services.course_service import course_service
+from services.exceptions import CourseNotFoundError, TeoArtServiceException
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -91,3 +93,144 @@ class CreateCourseAPI(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user)
+
+
+class CourseListAPIView(generics.ListAPIView):
+    """
+    API view for listing courses using CourseService
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            # Use CourseService with fallback to original logic
+            try:
+                courses_data = course_service.get_available_courses(user=request.user)
+                return Response({
+                    'courses': courses_data,
+                    'count': len(courses_data),
+                    'service_used': 'CourseService'
+                })
+            except Exception as e:
+                # Fallback to original logic
+                print(f"CourseService failed, using fallback: {e}")
+                
+                user = request.user
+                if user.is_staff or user.is_superuser:
+                    queryset = Course.objects.all()
+                else:
+                    queryset = Course.objects.filter(is_approved=True)
+                
+                queryset = queryset.select_related('teacher').prefetch_related('students')
+                
+                courses_data = []
+                for course in queryset:
+                    is_enrolled = course.students.filter(id=user.id).exists() if user.is_authenticated else False
+                    courses_data.append({
+                        'id': course.id,
+                        'title': course.title,
+                        'description': course.description,
+                        'price': float(course.price),
+                        'category': course.category,
+                        'cover_image': course.cover_image.url if course.cover_image else None,
+                        'creator': {
+                            'id': course.teacher.id,
+                            'username': course.teacher.username,
+                        },
+                        'is_enrolled': is_enrolled,
+                        'lesson_count': course.lessons_in_course.count(),
+                        'created_at': course.created_at.isoformat(),
+                    })
+                
+                return Response({
+                    'courses': courses_data,
+                    'count': len(courses_data),
+                    'service_used': 'Fallback'
+                })
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Error retrieving courses: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CourseDetailAPIView(generics.RetrieveAPIView):
+    """
+    API view for course details using CourseService
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            course_id = kwargs.get('pk')
+            
+            # Use CourseService with fallback to original logic
+            try:
+                course_details = course_service.get_course_details(course_id, user=request.user)
+                return Response({
+                    **course_details,
+                    'service_used': 'CourseService'
+                })
+            except CourseNotFoundError:
+                return Response(
+                    {'error': 'Course not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except Exception as e:
+                # Fallback to original logic
+                print(f"CourseService failed, using fallback: {e}")
+                
+                try:
+                    course = Course.objects.select_related('teacher').get(
+                        id=course_id,
+                        is_approved=True
+                    )
+                except Course.DoesNotExist:
+                    return Response(
+                        {'error': 'Course not found'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                
+                is_enrolled = course.students.filter(id=request.user.id).exists()
+                lessons = course.lessons_in_course.all().order_by('id')
+                
+                lessons_data = []
+                for lesson in lessons:
+                    lessons_data.append({
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'content': lesson.content,
+                        'lesson_type': lesson.lesson_type,
+                        'duration': lesson.duration,
+                        'is_completed': False,  # Simplified for fallback
+                    })
+                
+                course_details = {
+                    'id': course.id,
+                    'title': course.title,
+                    'description': course.description,
+                    'price': float(course.price),
+                    'category': course.category,
+                    'cover_image': course.cover_image.url if course.cover_image else None,
+                    'creator': {
+                        'id': course.teacher.id,
+                        'username': course.teacher.username,
+                        'bio': getattr(course.teacher, 'bio', ''),
+                    },
+                    'is_enrolled': is_enrolled,
+                    'progress': 0,  # Simplified for fallback
+                    'lessons': lessons_data,
+                    'total_lessons': len(lessons_data),
+                    'created_at': course.created_at.isoformat(),
+                    'updated_at': course.updated_at.isoformat(),
+                    'service_used': 'Fallback'
+                }
+                
+                return Response(course_details)
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Error retrieving course details: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
