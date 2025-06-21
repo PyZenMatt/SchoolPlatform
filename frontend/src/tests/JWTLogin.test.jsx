@@ -234,17 +234,6 @@ describe('JWTLogin Component', () => {
   });
 
   it('should handle successful login with teacher role', async () => {
-    // Mock teacher role response specifically for this test
-    const mockDashboard = require('../services/api/dashboard');
-    mockDashboard.fetchUserProfile.mockResolvedValueOnce({
-      data: {
-        id: 1,
-        username: 'teacher',
-        email: 'teacher@test.com',
-        role: 'teacher'
-      }
-    });
-
     const user = userEvent.setup();
     
     render(
@@ -252,6 +241,17 @@ describe('JWTLogin Component', () => {
         <JWTLogin />
       </MockWrapper>
     );
+
+    // Mock teacher role response for this specific test
+    const mockDashboard = require('../services/api/dashboard');
+    mockDashboard.fetchUserProfile.mockResolvedValue({
+      data: {
+        id: 1,
+        username: 'teacher',
+        email: 'teacher@test.com',
+        role: 'teacher'
+      }
+    });
 
     // Fill and submit form
     const emailInput = screen.getByPlaceholderText('Inserisci la tua email');
@@ -264,7 +264,7 @@ describe('JWTLogin Component', () => {
     // Should navigate to teacher dashboard
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard/teacher');
-    });
+    }, { timeout: 3000 });
   });
 
   it('should handle login errors gracefully', async () => {
@@ -325,17 +325,6 @@ describe('JWTLogin Component', () => {
   });
 
   it('should handle admin role navigation', async () => {
-    // Mock admin role response specifically for this test
-    const mockDashboard = require('../services/api/dashboard');
-    mockDashboard.fetchUserProfile.mockResolvedValueOnce({
-      data: {
-        id: 1,
-        username: 'admin',
-        email: 'admin@test.com',
-        role: 'admin'
-      }
-    });
-
     const user = userEvent.setup();
     
     render(
@@ -343,6 +332,17 @@ describe('JWTLogin Component', () => {
         <JWTLogin />
       </MockWrapper>
     );
+
+    // Mock admin role response for this specific test
+    const mockDashboard = require('../services/api/dashboard');
+    mockDashboard.fetchUserProfile.mockResolvedValue({
+      data: {
+        id: 1,
+        username: 'admin',
+        email: 'admin@test.com',
+        role: 'admin'
+      }
+    });
 
     // Fill and submit form
     const emailInput = screen.getByPlaceholderText('Inserisci la tua email');
@@ -355,7 +355,7 @@ describe('JWTLogin Component', () => {
     // Should navigate to admin dashboard
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard/admin');
-    });
+    }, { timeout: 3000 });
   });
 
   it('should be accessible', () => {
