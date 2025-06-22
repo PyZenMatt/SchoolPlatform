@@ -26,6 +26,15 @@ logger = logging.getLogger(__name__)
 class TeoCoinStakingService:
     """Service for managing TeoCoin staking operations"""
     
+    # Staking tier definitions - adjusted for 10,000 TEO total supply
+    TIER_CONFIG = {
+        0: {'min_stake': 0, 'commission_rate': 2500, 'name': 'Bronze'},      # 25%
+        1: {'min_stake': 100, 'commission_rate': 2200, 'name': 'Silver'},    # 22%
+        2: {'min_stake': 300, 'commission_rate': 1900, 'name': 'Gold'},      # 19%
+        3: {'min_stake': 600, 'commission_rate': 1600, 'name': 'Platinum'},  # 16%
+        4: {'min_stake': 1000, 'commission_rate': 1500, 'name': 'Diamond'}   # 15%
+    }
+    
     def __init__(self):
         self.teo_service = TeoCoinService()
         self.web3 = self.teo_service.web3
@@ -43,6 +52,42 @@ class TeoCoinStakingService:
             self.staking_contract = None
             logger.warning("Staking contract not configured yet")
     
+    def validate_supply_constraints(self) -> Dict:
+        """
+        Validate that staking tiers are realistic given current TEO supply
+        Returns analysis of maximum possible stakers per tier
+        """
+        try:
+            total_supply = self.teo_service.get_total_supply()
+            total_supply_teo = total_supply / 10**18
+            
+            analysis = {
+                'total_supply_teo': total_supply_teo,
+                'tier_analysis': {},
+                'warnings': []
+            }
+            
+            for tier_idx, tier_config in self.TIER_CONFIG.items():
+                min_stake = tier_config['min_stake']
+                if min_stake > 0:
+                    max_stakers = int(total_supply_teo // min_stake)
+                    analysis['tier_analysis'][tier_config['name']] = {
+                        'min_stake': min_stake,
+                        'max_possible_stakers': max_stakers,
+                        'commission_rate': f"{tier_config['commission_rate'] / 100}%"
+                    }
+                    
+                    if max_stakers < 5:
+                        analysis['warnings'].append(
+                            f"{tier_config['name']} tier ({min_stake} TEO) allows max {max_stakers} stakers"
+                        )
+                        
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Supply validation error: {e}")
+            return {'error': str(e)}
+
     # ========== TIER MANAGEMENT ==========
     
     def get_tier_info(self, tier_index: int) -> Dict:

@@ -92,13 +92,14 @@ contract TeoCoinStaking is ReentrancyGuard, Ownable, Pausable {
     
     /**
      * @dev Initialize the staking tier system
+     * Note: Adjusted for current supply of 10,000 TEO total
      */
     function _initializeTiers() internal {
-        tiers[0] = StakingTier(0, 2500, "Bronze");      // 25% platform commission
-        tiers[1] = StakingTier(500 * 10**18, 2200, "Silver");    // 22% platform commission
-        tiers[2] = StakingTier(1500 * 10**18, 1900, "Gold");     // 19% platform commission
-        tiers[3] = StakingTier(3000 * 10**18, 1600, "Platinum"); // 16% platform commission
-        tiers[4] = StakingTier(5000 * 10**18, 1500, "Diamond");  // 15% platform commission
+        tiers[0] = StakingTier(0, 2500, "Bronze");           // 25% platform commission
+        tiers[1] = StakingTier(100 * 10**18, 2200, "Silver");   // 22% platform commission (100 TEO)
+        tiers[2] = StakingTier(300 * 10**18, 1900, "Gold");     // 19% platform commission (300 TEO)
+        tiers[3] = StakingTier(600 * 10**18, 1600, "Platinum"); // 16% platform commission (600 TEO)
+        tiers[4] = StakingTier(1000 * 10**18, 1500, "Diamond"); // 15% platform commission (1000 TEO)
     }
     
     /**

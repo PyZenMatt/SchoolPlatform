@@ -155,7 +155,17 @@ abstract contract Pausable {{
 
 def deploy_contract(web3, contract_interface, deployer_account):
     """Deploy the TeoCoinStaking contract"""
-    print(f"🚀 Deploying TeoCoinStaking contract...")
+    print("\n📊 Current TeoCoin Stats:")
+    print(f"- Total Supply: 10,000 TEO")
+    print(f"- Circulating: ~{total_supply / 10**18:,.0f} TEO")
+    print("\n🚀 Deploying TeoCoinStaking contract...")
+    print("⚠️  Note: Staking tiers adjusted for current 10K supply:")
+    print("   Bronze: 0 TEO (25% commission)")
+    print("   Silver: 100 TEO (22% commission)")
+    print("   Gold: 300 TEO (19% commission)")
+    print("   Platinum: 600 TEO (16% commission)")
+    print("   Diamond: 1,000 TEO (15% commission)")
+    print()
     print(f"📍 Deployer: {deployer_account.address}")
     print(f"💰 Balance: {web3.from_wei(web3.eth.get_balance(deployer_account.address), 'ether')} MATIC")
     

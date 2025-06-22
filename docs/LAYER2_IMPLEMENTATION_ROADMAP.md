@@ -58,14 +58,23 @@
 #### **Week 1-2: Staking System Implementation**
 
 ```
-🔒 STAKING SYSTEM DEVELOPMENT
+🔒 STAKING SYSTEM DEVELOPMENT (ADJUSTED FOR 10K TEO SUPPLY)
 
 Week 1: Smart Contract Extension
 ├── Deploy TeoCoinStaking contract on Amoy
 ├── Integrate with existing TeoCoin2 contract
-├── Implement tier-based staking (Bronze→Diamond)
+├── Implement tier-based staking (Bronze→Diamond) 
 ├── Commission rate automation for teachers
 └── Stake/unstake functionality testing
+
+**STAKING TIER SYSTEM (Realistic for Current Supply):**
+- Bronze (0 TEO): 25% platform commission
+- Silver (100 TEO): 22% platform commission  
+- Gold (300 TEO): 19% platform commission
+- Platinum (600 TEO): 16% platform commission
+- Diamond (1,000 TEO): 15% platform commission
+
+*Max 10 Diamond stakers possible with 10K total supply*
 
 Week 2: Frontend Staking Integration
 ├── Staking interface in user dashboard
