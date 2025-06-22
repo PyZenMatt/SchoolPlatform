@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -326,11 +327,16 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 FILE_UPLOAD_TEMP_DIR = None  # Use system default temp directory
 
 # ========== STRIPE PAYMENT CONFIGURATION ==========
-# Test keys - replace with live keys for production
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_51RcjXd1ION4Zwx6o6sYtV3D7Kq8rOxB2Jr99saydr5tf499pv9pi9yrKAukluL6FHmXEAVgDnHZMKROHjeezlPLu00XRVqvbus')
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_51RcjXd1ION4Zwx6o0Vxcf7s6GzbXAqBUCgpGyCMTj0GHz5NO3Z4LwWm4N8w8tmv2NLDrsihbZO3JKG8HyFoA2CqC003jLl7MiK')
+# Environment variables required - no defaults for security
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+
+# Validate that Stripe keys are configured
+if not STRIPE_SECRET_KEY and not DEBUG:
+    raise ImproperlyConfigured("STRIPE_SECRET_KEY environment variable is required for production")
 
 # Platform wallet address for TeoCoin payments
+PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x742d35Cc6C4d8a8c8C1fd9A2C3a8a6e3F7b1D8e9')
 PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x742d35Cc6C4d8a8c8C1fd9A2C3a8a6e3F7b1D8e9')
 
 # Payment configuration
