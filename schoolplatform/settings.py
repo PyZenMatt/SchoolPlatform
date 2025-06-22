@@ -324,3 +324,15 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 # Media file serving timeout for large files
 FILE_UPLOAD_TEMP_DIR = None  # Use system default temp directory
+
+# ========== STRIPE PAYMENT CONFIGURATION ==========
+# Test keys - replace with live keys for production
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_51RcjXd1ION4Zwx6o6sYtV3D7Kq8rOxB2Jr99saydr5tf499pv9pi9yrKAukluL6FHmXEAVgDnHZMKROHjeezlPLu00XRVqvbus')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_51RcjXd1ION4Zwx6o0Vxcf7s6GzbXAqBUCgpGyCMTj0GHz5NO3Z4LwWm4N8w8tmv2NLDrsihbZO3JKG8HyFoA2CqC003jLl7MiK')
+
+# Platform wallet address for TeoCoin payments
+PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x742d35Cc6C4d8a8c8C1fd9A2C3a8a6e3F7b1D8e9')
+
+# Payment configuration
+TEOCOIN_EUR_RATE = 10  # 1 EUR = 10 TEO (base rate before discounts)
+TEOCOIN_POOL_PERCENTAGE = 10  # 10% of fiat revenue goes to TeoCoin reward pool
