@@ -24,7 +24,7 @@ const CoursesGrid = memo(({ courses, loading, onAddCourse, showModal, onHideModa
 // Configurazione finale ottimizzata in vite.config.mjs
 export default defineConfig({
   build: {
-    target: 'es2015',
+    target: 'es2020', // Updated to support BigInt literals and modern JS features
     outDir: 'dist',
     minify: 'terser', // Semplificato senza opzioni complesse
     rollupOptions: {
@@ -41,6 +41,25 @@ export default defineConfig({
     }
   }
 });
+```
+
+#### **4. BigInt Literals Support Fix (June 2025 Update)**
+```javascript
+// ❌ Problema: Build failing with BigInt literals in web3Service.js
+// ERROR: Big integer literals are not available in target environment "es2015"
+
+// ✅ Soluzione: Updated build target to es2020
+// File: vite.config.mjs
+export default defineConfig({
+  build: {
+    target: 'es2020', // Supports BigInt literals (60000n)
+    // ... rest of config
+  }
+});
+
+// Now these work without errors:
+// gasLimit: 60000n ✅
+// BigInt literal support enabled
 ```
 
 ---
