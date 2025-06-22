@@ -20,6 +20,7 @@ from users.models import User, TeacherProfile
 
 # Import blockchain configuration
 from blockchain.blockchain import TeoCoinService
+from .staking_config import load_contract_config, TIER_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -27,27 +28,28 @@ class TeoCoinStakingService:
     """Service for managing TeoCoin staking operations"""
     
     # Staking tier definitions - adjusted for 10,000 TEO total supply
-    TIER_CONFIG = {
-        0: {'min_stake': 0, 'commission_rate': 2500, 'name': 'Bronze'},      # 25%
-        1: {'min_stake': 100, 'commission_rate': 2200, 'name': 'Silver'},    # 22%
-        2: {'min_stake': 300, 'commission_rate': 1900, 'name': 'Gold'},      # 19%
-        3: {'min_stake': 600, 'commission_rate': 1600, 'name': 'Platinum'},  # 16%
-        4: {'min_stake': 1000, 'commission_rate': 1500, 'name': 'Diamond'}   # 15%
-    }
+    TIER_CONFIG = TIER_CONFIG
     
     def __init__(self):
         self.teo_service = TeoCoinService()
         self.web3 = self.teo_service.web3
         
-        # Staking contract configuration (will be set after deployment)
-        self.staking_contract_address = getattr(settings, 'STAKING_CONTRACT_ADDRESS', None)
-        self.staking_abi = getattr(settings, 'STAKING_ABI', None)
+        # Load contract configuration
+        contract_config = load_contract_config()
+        self.staking_contract_address = contract_config['address']
+        self.staking_abi = contract_config['abi']
+        self.development_mode = contract_config['development_mode']
         
+        # Initialize contract if deployed
         if self.staking_contract_address and self.staking_abi:
             self.staking_contract = self.web3.eth.contract(
                 address=self.staking_contract_address,
                 abi=self.staking_abi
             )
+            logger.info(f"Staking contract initialized at: {self.staking_contract_address}")
+        else:
+            self.staking_contract = None
+            logger.warning("Staking contract not deployed yet - using development mode")
         else:
             self.staking_contract = None
             logger.warning("Staking contract not configured yet")
@@ -388,38 +390,182 @@ class TeoCoinStakingService:
                 'error': str(e)
             }
     
-    def get_staking_statistics(self) -> Dict:
+    # ========== PUBLIC API METHODS ==========
+    
+    def get_user_staking_info(self, wallet_address: str) -> Dict:
+        """Get complete user staking information"""
+        try:
+            if not self.staking_contract:
+                raise Exception("Staking contract not initialized")
+            
+            # Get user staking info from contract
+            result = self.staking_contract.functions.getUserStakingInfo(wallet_address).call()
+            amount, tier, staking_time, active, tier_name, commission_rate = result
+            
+            # Convert wei to TEO
+            amount_teo = self.web3.from_wei(amount, 'ether')
+            
+            return {
+                'wallet_address': wallet_address,
+                'staked_amount': float(amount_teo),
+                'tier': tier,
+                'tier_name': tier_name,
+                'commission_rate': commission_rate,
+                'commission_percentage': commission_rate / 100,
+                'staking_time': staking_time,
+                'active': active,
+                'last_updated': cache.get(f'staking_last_updated_{wallet_address}', None)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting user staking info: {e}")
+            return {
+                'wallet_address': wallet_address,
+                'staked_amount': 0,
+                'tier': 0,
+                'tier_name': 'Bronze',
+                'commission_rate': 2500,
+                'commission_percentage': 25.0,
+                'staking_time': 0,
+                'active': False,
+                'error': str(e)
+            }
+    
+    def get_platform_stats(self) -> Dict:
         """Get platform-wide staking statistics"""
         try:
             if not self.staking_contract:
                 raise Exception("Staking contract not initialized")
             
-            # Get from cache first
-            cache_key = 'staking_statistics'
-            cached_stats = cache.get(cache_key)
-            if cached_stats:
-                return cached_stats
-            
-            # Get from contract
             stats = self.staking_contract.functions.getStakingStats().call()
-            total_staked = stats[0]
-            total_stakers = stats[1]
+            total_staked_wei, total_stakers = stats
             
-            result = {
-                'total_staked': total_staked,
-                'total_staked_formatted': float(self.web3.from_wei(total_staked, 'ether')),
+            # Convert wei to TEO
+            total_staked_teo = self.web3.from_wei(total_staked_wei, 'ether')
+            
+            return {
+                'total_staked': float(total_staked_teo),
                 'total_stakers': total_stakers,
-                'average_stake': float(self.web3.from_wei(total_staked // max(total_stakers, 1), 'ether')),
-                'tiers': self.get_all_tiers()
+                'average_stake': float(total_staked_teo) / max(total_stakers, 1),
+                'utilization_percentage': (float(total_staked_teo) / 10000) * 100  # 10K TEO supply
             }
             
-            # Cache for 5 minutes
-            cache.set(cache_key, result, 300)
-            return result
+        except Exception as e:
+            logger.error(f"Error getting platform stats: {e}")
+            return {
+                'total_staked': 0,
+                'total_stakers': 0,
+                'average_stake': 0,
+                'utilization_percentage': 0,
+                'error': str(e)
+            }
+    
+    def stake_tokens(self, wallet_address: str, amount: float) -> Dict:
+        """Stake TEO tokens for a user"""
+        try:
+            if not self.staking_contract:
+                raise Exception("Staking contract not initialized")
+            
+            # Convert TEO to wei
+            amount_wei = self.web3.to_wei(amount, 'ether')
+            
+            # Check user's TEO balance first
+            teo_balance = self.teo_service.get_balance(wallet_address)
+            if teo_balance < amount:
+                return {
+                    'success': False,
+                    'error': f'Insufficient TEO balance. Required: {amount}, Available: {teo_balance}'
+                }
+            
+            # Check if user has approved the staking contract to spend their tokens
+            # Note: This would require user interaction in frontend
+            logger.info(f"Staking {amount} TEO for user {wallet_address}")
+            
+            # For now, return a success simulation since actual staking requires user wallet interaction
+            # In production, this would trigger a MetaMask transaction
+            
+            # Get current staking info to calculate new tier
+            current_info = self.get_user_staking_info(wallet_address)
+            new_total = current_info['staked_amount'] + amount
+            new_tier = self.calculate_tier(new_total)
+            
+            # Cache the pending transaction
+            cache.set(f'pending_stake_{wallet_address}', {
+                'amount': amount,
+                'timestamp': cache.time.time()
+            }, 300)  # 5 minutes
+            
+            return {
+                'success': True,
+                'transaction_hash': f'0x{"0" * 64}',  # Placeholder - would be real tx hash
+                'new_tier': new_tier,
+                'new_total_staked': new_total,
+                'requires_wallet_approval': True,
+                'message': 'Transaction prepared. Please approve in your wallet.'
+            }
             
         except Exception as e:
-            logger.error(f"Error getting staking statistics: {e}")
-            raise
+            logger.error(f"Error staking tokens: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def unstake_tokens(self, wallet_address: str, amount: float) -> Dict:
+        """Unstake TEO tokens for a user"""
+        try:
+            if not self.staking_contract:
+                raise Exception("Staking contract not initialized")
+            
+            # Get current staking info
+            current_info = self.get_user_staking_info(wallet_address)
+            
+            if not current_info['active']:
+                return {
+                    'success': False,
+                    'error': 'No active stake found'
+                }
+            
+            if current_info['staked_amount'] < amount:
+                return {
+                    'success': False,
+                    'error': f'Insufficient staked amount. Staked: {current_info["staked_amount"]}, Requested: {amount}'
+                }
+            
+            # Calculate new totals
+            new_total = current_info['staked_amount'] - amount
+            new_tier = self.calculate_tier(new_total)
+            
+            logger.info(f"Unstaking {amount} TEO for user {wallet_address}")
+            
+            # Cache the pending transaction
+            cache.set(f'pending_unstake_{wallet_address}', {
+                'amount': amount,
+                'timestamp': cache.time.time()
+            }, 300)  # 5 minutes
+            
+            return {
+                'success': True,
+                'transaction_hash': f'0x{"1" * 64}',  # Placeholder - would be real tx hash
+                'new_tier': new_tier,
+                'new_total_staked': new_total,
+                'requires_wallet_approval': True,
+                'message': 'Unstaking transaction prepared. Please approve in your wallet.'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error unstaking tokens: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def calculate_tier(self, staked_amount: float) -> int:
+        """Calculate tier based on staked amount"""
+        for tier in range(4, -1, -1):  # Check from highest to lowest
+            if staked_amount >= self.TIER_CONFIG[tier]['min_stake']:
+                return tier
+        return 0  # Bronze tier
     
     # ========== UTILITY FUNCTIONS ==========
     

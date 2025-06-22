@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 
 import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
+import StakingInterface from '../../components/StakingInterface';
 import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
@@ -300,6 +301,26 @@ const TeacherDashboard = () => {
           <Row className="mb-4">
             <Col lg={12}>
               <StudentTeoCoinDashboard />
+            </Col>
+          </Row>
+
+          {/* Staking Interface */}
+          <Row className="mb-4">
+            <Col lg={12}>
+              <Card>
+                <Card.Header>
+                  <Card.Title as="h5">
+                    <i className="feather icon-trending-up me-2"></i>
+                    TeoCoin Staking System
+                  </Card.Title>
+                  <p className="mb-0 text-muted">
+                    Stake your TeoCoin to reduce platform commission rates
+                  </p>
+                </Card.Header>
+                <Card.Body>
+                  <StakingInterface />
+                </Card.Body>
+              </Card>
             </Col>
           </Row>
 
