@@ -28,6 +28,20 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
         fetchPaymentSummary();
     }, [course.id]);
 
+    // Handle ESC key to close modal
+    useEffect(() => {
+        const handleEscKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscKey);
+        return () => {
+            document.removeEventListener('keydown', handleEscKey);
+        };
+    }, [onClose]);
+
     const fetchPaymentSummary = async () => {
         try {
             // Import the API function
@@ -47,7 +61,10 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     };
 
     const handleFiatPayment = async () => {
+        console.log('🔄 Starting fiat payment process...');
+        
         if (!stripe || !elements) {
+            console.error('❌ Stripe not loaded');
             onError('Stripe not loaded');
             return;
         }
@@ -55,16 +72,21 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
         setProcessing(true);
 
         try {
+            console.log('📡 Importing API functions...');
             // Import the API function
             const { createPaymentIntent, confirmPayment } = await import('../services/api/courses');
             
+            console.log('💳 Creating payment intent for course:', course.id);
             // Create payment intent using our API
             const intentResponse = await createPaymentIntent(course.id);
+            
+            console.log('📝 Payment intent response:', intentResponse);
             
             if (!intentResponse.data.success) {
                 throw new Error(intentResponse.data.error || 'Failed to create payment intent');
             }
 
+            console.log('✅ Payment intent created, confirming with Stripe...');
             // Confirm payment with Stripe
             const cardElement = elements.getElement(CardElement);
             const { error, paymentIntent } = await stripe.confirmCardPayment(
@@ -73,21 +95,35 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                     payment_method: {
                         card: cardElement,
                         billing_details: {
-                            name: 'Student', // You can get this from user context
+                            name: 'Test Student',
+                            email: 'test@example.com',
+                            address: {
+                                postal_code: '12345',
+                                country: 'IT',
+                            },
                         },
                     },
                 }
             );
 
+            console.log('🔍 Stripe confirmation result:', { error, paymentIntent });
+
+            console.log('🔍 Stripe confirmation result:', { error, paymentIntent });
+
             if (error) {
+                console.error('❌ Stripe payment error:', error);
                 throw new Error(error.message);
             }
 
             if (paymentIntent.status === 'succeeded') {
+                console.log('✅ Payment succeeded, confirming with backend...');
                 // Confirm with backend using our API
                 const confirmResponse = await confirmPayment(course.id, paymentIntent.id);
                 
+                console.log('📋 Backend confirmation response:', confirmResponse);
+                
                 if (confirmResponse.data.success) {
+                    console.log('🎉 Payment completed successfully!');
                     onSuccess({
                         method: 'fiat',
                         amount: paymentIntent.amount,
@@ -95,13 +131,19 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                         enrollment: confirmResponse.data.enrollment
                     });
                 } else {
+                    console.error('❌ Backend confirmation failed:', confirmResponse.data.error);
                     throw new Error(confirmResponse.data.error || 'Payment confirmation failed');
                 }
+            } else {
+                console.error('❌ Payment intent status:', paymentIntent.status);
+                throw new Error('Payment was not successful');
             }
 
         } catch (error) {
+            console.error('💥 Payment process failed:', error);
             onError(error.message);
         } finally {
+            console.log('🏁 Payment process completed, stopping spinner...');
             setProcessing(false);
         }
     };
@@ -144,8 +186,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
     if (loading) {
         return (
-            <div className="payment-modal-overlay">
-                <div className="payment-modal">
+            <div className="payment-modal-overlay" onClick={onClose}>
+                <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="loading">Loading payment options...</div>
                 </div>
             </div>
@@ -154,8 +196,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
     if (paymentSummary?.already_enrolled) {
         return (
-            <div className="payment-modal-overlay">
-                <div className="payment-modal">
+            <div className="payment-modal-overlay" onClick={onClose}>
+                <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="already-enrolled">
                         <h3>✅ Already Enrolled</h3>
                         <p>You are already enrolled in this course!</p>
@@ -171,8 +213,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const pricingOptions = paymentSummary?.pricing_options || [];
 
     return (
-        <div className="payment-modal-overlay">
-            <div className="payment-modal">
+        <div className="payment-modal-overlay" onClick={onClose}>
+            <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="payment-header">
                     <h3>💳 Choose Payment Method</h3>
                     <button onClick={onClose} className="close-btn">×</button>

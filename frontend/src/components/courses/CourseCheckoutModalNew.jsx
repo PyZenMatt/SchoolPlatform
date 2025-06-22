@@ -217,6 +217,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
           course={course}
           onSuccess={handleStripeSuccess}
           onError={handleStripeError}
+          onClose={handleClose}
           embedded={true}
         />
       </div>
