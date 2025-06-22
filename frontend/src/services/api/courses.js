@@ -1,5 +1,24 @@
 import api from '../core/apiClient';
 
+// ⚡ PERFORMANCE: Cache for payment-related API calls
+const apiCache = new Map();
+const CACHE_DURATION = 3 * 60 * 1000; // 3 minutes
+
+const getCachedResponse = (key) => {
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedResponse = (key, data) => {
+  apiCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
 export const fetchCourses = async (params = {}) => {
   const searchParams = new URLSearchParams();
   
@@ -85,17 +104,42 @@ export const fetchExerciseDetail = async (exerciseId) => {
   return response.data;
 };
 
-// Payment endpoints for Stripe integration
+// ⚡ OPTIMIZED Payment endpoints with caching and performance improvements
 export const createPaymentIntent = async (courseId) => {
+  // No caching for payment intents (security)
   return api.post(`courses/${courseId}/create-payment-intent/`);
 };
 
 export const confirmPayment = async (courseId, paymentIntentId) => {
-  return api.post(`courses/${courseId}/confirm-payment/`, {
+  // No caching for payment confirmations (security)
+  const response = await api.post(`courses/${courseId}/confirm-payment/`, {
     payment_intent_id: paymentIntentId
   });
+  
+  // ⚡ PERFORMANCE: Invalidate payment summary cache after successful payment
+  if (response.data.success) {
+    const cacheKey = `payment_summary_${courseId}`;
+    apiCache.delete(cacheKey);
+  }
+  
+  return response;
 };
 
 export const getPaymentSummary = async (courseId) => {
-  return api.get(`courses/${courseId}/payment-summary/`);
+  // ⚡ PERFORMANCE: Try cache first for payment summary
+  const cacheKey = `payment_summary_${courseId}`;
+  const cached = getCachedResponse(cacheKey);
+  
+  if (cached) {
+    return cached;
+  }
+  
+  const response = await api.get(`courses/${courseId}/payment-summary/`);
+  
+  // Cache successful responses
+  if (response.data.success) {
+    setCachedResponse(cacheKey, response);
+  }
+  
+  return response;
 };
