@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.core.validators import MinValueValidator
+from decimal import Decimal
 from users.models import User
 from notifications.models import Notification
 from rewards.models import BlockchainTransaction
@@ -49,10 +50,35 @@ class Course(models.Model):
         help_text="Immagine di copertina del corso (opzionale)"
     )
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_created')
+    # LEGACY PRICE (keep for compatibility)
     price = models.PositiveIntegerField(
         default=0,
         validators=[MinValueValidator(0, message="Il prezzo non può essere negativo")]
     )
+    
+    # FIAT PRICING SYSTEM
+    price_eur = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Prezzo in Euro per pagamento fiat"
+    )
+    
+    # TEOCOIN INTEGRATION  
+    teocoin_reward = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="TeoCoin ricompensa per completamento corso"
+    )
+    
+    teocoin_discount_percent = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=Decimal('10.00'),
+        help_text="Percentuale sconto pagando con TeoCoin"
+    )
+    
     students = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through='CourseEnrollment',
@@ -68,6 +94,47 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_teocoin_price(self):
+        """Calculate TeoCoin price with discount"""
+        if self.price_eur > 0:
+            # Convert EUR to TEO (example rate: 1 EUR = 10 TEO)
+            base_teo_price = self.price_eur * Decimal('10')
+            discount = base_teo_price * (self.teocoin_discount_percent / Decimal('100'))
+            return base_teo_price - discount
+        return Decimal('0')
+    
+    def get_pricing_options(self):
+        """Return all payment options for this course"""
+        options = []
+        
+        if self.price_eur > 0:
+            options.append({
+                'method': 'fiat',
+                'price': self.price_eur,
+                'currency': 'EUR',
+                'reward': self.teocoin_reward,
+                'description': f'€{self.price_eur} + {self.teocoin_reward} TEO reward'
+            })
+            
+            teocoin_price = self.get_teocoin_price()
+            options.append({
+                'method': 'teocoin',
+                'price': teocoin_price,
+                'currency': 'TEO',
+                'discount': self.teocoin_discount_percent,
+                'description': f'{teocoin_price} TEO ({self.teocoin_discount_percent}% discount)'
+            })
+        else:
+            options.append({
+                'method': 'free',
+                'price': 0,
+                'currency': 'FREE',
+                'reward': self.teocoin_reward,
+                'description': f'Free + {self.teocoin_reward} TEO reward'
+            })
+            
+        return options
 
     def purchase_by_student(self, student):
         """
@@ -315,6 +382,7 @@ class Exercise(models.Model):
 class CourseEnrollment(models.Model):
     """
     Rappresenta l'iscrizione di uno studente a un corso e il suo stato di completamento.
+    Enhanced with payment tracking for fiat and TeoCoin payments.
     """
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -326,10 +394,61 @@ class CourseEnrollment(models.Model):
         on_delete=models.CASCADE,
         related_name='enrollments'
     )
+    
+    # PAYMENT TRACKING
+    PAYMENT_METHODS = [
+        ('fiat', 'Euro Payment'),
+        ('teocoin', 'TeoCoin Payment'),
+        ('free', 'Free Course'),
+        ('admin', 'Admin Granted'),
+    ]
+    
+    payment_method = models.CharField(
+        max_length=10, 
+        choices=PAYMENT_METHODS,
+        default='free'
+    )
+    
+    amount_paid_eur = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Amount paid in EUR for fiat payments"
+    )
+    
+    amount_paid_teocoin = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Amount paid in TeoCoin for crypto payments"
+    )
+    
+    stripe_payment_intent_id = models.CharField(
+        max_length=200, 
+        null=True, 
+        blank=True,
+        help_text="Stripe payment intent ID for fiat payments"
+    )
+    
+    teocoin_reward_given = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="TeoCoin reward given for course purchase"
+    )
+    
+    # EXISTING FIELDS
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(
         default=False,
         help_text="Flag che indica se lo studente ha completato tutte le lezioni (per il certificato)."
+    )
+    completed_at = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Date when course was completed"
     )
 
     class Meta:
@@ -337,7 +456,8 @@ class CourseEnrollment(models.Model):
 
     def __str__(self):
         status = "Completato" if self.completed else "In corso"
-        return f"{self.student.username} → {self.course.title} ({status})"
+        payment_info = f" - {self.get_payment_method_display()}"
+        return f"{self.student.username} → {self.course.title} ({status}){payment_info}"
 
 class ExerciseSubmission(models.Model):
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='submissions')

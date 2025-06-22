@@ -481,6 +481,306 @@ class PaymentService(TransactionalService):
         except Exception as e:
             self.log_error(f"Failed to send purchase notifications: {str(e)}")
 
+    # ========== FIAT PAYMENT METHODS ==========
+    
+    def create_fiat_payment_intent(
+        self,
+        user_id: int,
+        course_id: int,
+        amount_eur: Decimal
+    ) -> Dict[str, Any]:
+        """
+        Create Stripe payment intent for fiat payment
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID  
+            amount_eur: Amount in EUR
+            
+        Returns:
+            dict: Success status, client_secret, payment_intent_id or error
+        """
+        def _create_intent():
+            # Import Stripe here to avoid import issues if not configured
+            try:
+                import stripe
+                stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+            except ImportError:
+                raise PaymentServiceException(
+                    "Stripe not installed. Please install stripe package.",
+                    "STRIPE_NOT_INSTALLED",
+                    500
+                )
+            
+            # Validate user
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                raise UserNotFoundError(user_id)
+            
+            # Validate course
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                raise CourseNotFoundError(course_id)
+            
+            # Validate amount
+            if amount_eur <= 0:
+                raise PaymentServiceException(
+                    "Invalid payment amount",
+                    "INVALID_AMOUNT",
+                    400
+                )
+            
+            # Check if user is already enrolled
+            from courses.models import CourseEnrollment
+            if CourseEnrollment.objects.filter(student=user, course=course).exists():
+                raise PaymentServiceException(
+                    "Already enrolled in this course",
+                    "ALREADY_ENROLLED",
+                    400
+                )
+            
+            # Create Stripe payment intent
+            try:
+                intent = stripe.PaymentIntent.create(
+                    amount=int(amount_eur * 100),  # Stripe uses cents
+                    currency='eur',
+                    metadata={
+                        'course_id': course.id,
+                        'user_id': user.id,
+                        'payment_type': 'course_purchase',
+                        'teocoin_reward': str(course.teocoin_reward),
+                        'course_title': course.title,
+                        'student_email': user.email
+                    },
+                    description=f"Course: {course.title}"
+                )
+                
+                return {
+                    'success': True,
+                    'client_secret': intent.client_secret,
+                    'payment_intent_id': intent.id,
+                    'amount': amount_eur,
+                    'course_title': course.title,
+                    'teocoin_reward': course.teocoin_reward
+                }
+                
+            except stripe.error.StripeError as e:
+                raise PaymentServiceException(
+                    f"Payment processing error: {str(e)}",
+                    "STRIPE_ERROR",
+                    400
+                )
+        
+        try:
+            return self.execute_in_transaction(_create_intent)
+        except Exception as e:
+            self.log_error(f"Failed to create fiat payment intent: {str(e)}")
+            raise
+    
+    def process_successful_fiat_payment(
+        self,
+        payment_intent_id: str,
+        course_id: int,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """
+        Handle successful fiat payment completion
+        
+        Args:
+            payment_intent_id: Stripe payment intent ID
+            course_id: Course ID
+            user_id: User ID
+            
+        Returns:
+            dict: Success status, enrollment, teocoin_reward or error
+        """
+        def _process_payment():
+            # Import Stripe
+            try:
+                import stripe
+                stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+            except ImportError:
+                raise PaymentServiceException(
+                    "Stripe not installed",
+                    "STRIPE_NOT_INSTALLED", 
+                    500
+                )
+            
+            # Validate user and course
+            try:
+                user = User.objects.get(id=user_id)
+                course = Course.objects.get(id=course_id)
+            except User.DoesNotExist:
+                raise UserNotFoundError(user_id)
+            except Course.DoesNotExist:
+                raise CourseNotFoundError(course_id)
+            
+            # Verify payment with Stripe
+            try:
+                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            except stripe.error.StripeError as e:
+                raise PaymentServiceException(
+                    f"Payment verification error: {str(e)}",
+                    "STRIPE_VERIFICATION_ERROR",
+                    400
+                )
+            
+            if intent.status != 'succeeded':
+                raise PaymentServiceException(
+                    f"Payment not successful. Status: {intent.status}",
+                    "PAYMENT_NOT_SUCCESSFUL",
+                    400
+                )
+            
+            # Double-check enrollment doesn't exist
+            from courses.models import CourseEnrollment
+            existing_enrollment = CourseEnrollment.objects.filter(
+                student=user, 
+                course=course
+            ).first()
+            
+            if existing_enrollment:
+                raise PaymentServiceException(
+                    "Already enrolled in this course",
+                    "ALREADY_ENROLLED",
+                    400
+                )
+            
+            # Create enrollment record
+            enrollment = CourseEnrollment.objects.create(
+                student=user,
+                course=course,
+                payment_method='fiat',
+                amount_paid_eur=Decimal(intent.amount) / 100,
+                stripe_payment_intent_id=payment_intent_id,
+                teocoin_reward_given=course.teocoin_reward,
+                enrolled_at=timezone.now()
+            )
+            
+            # Award TeoCoin reward if configured
+            teocoin_reward_given = Decimal('0')
+            if course.teocoin_reward > 0:
+                try:
+                    from blockchain.views import teocoin_service
+                    
+                    if user.wallet_address:
+                        teocoin_service.mint_tokens(
+                            user.wallet_address,
+                            float(course.teocoin_reward),
+                            f"Course purchase reward: {course.title}"
+                        )
+                        teocoin_reward_given = course.teocoin_reward
+                        
+                        # Record the reward transaction
+                        BlockchainTransaction.objects.create(
+                            user=user,
+                            transaction_type='reward',
+                            amount=course.teocoin_reward,
+                            status='completed',
+                            related_object_id=str(course.id),
+                            notes=f"Fiat payment reward for course: {course.title}"
+                        )
+                    
+                except Exception as blockchain_error:
+                    # Log but don't fail the enrollment
+                    self.log_error(f"TeoCoin reward failed: {blockchain_error}")
+            
+            # Send notifications
+            try:
+                from notifications.models import Notification
+                Notification.objects.create(
+                    user=user,
+                    message=f"Successfully enrolled in '{course.title}' via fiat payment. Received {teocoin_reward_given} TEO reward.",
+                    notification_type='course_purchased'
+                )
+                
+                # Notify teacher
+                if course.teacher != user:
+                    Notification.objects.create(
+                        user=course.teacher,
+                        message=f"New student {user.get_full_name() or user.username} enrolled in your course '{course.title}' (€{enrollment.amount_paid_eur})",
+                        notification_type='course_enrollment'
+                    )
+                    
+            except Exception as notification_error:
+                self.log_error(f"Notification failed: {notification_error}")
+            
+            return {
+                'success': True,
+                'enrollment': {
+                    'id': enrollment.id,
+                    'course_title': course.title,
+                    'payment_method': enrollment.payment_method,
+                    'amount_paid_eur': enrollment.amount_paid_eur,
+                    'enrolled_at': enrollment.enrolled_at
+                },
+                'teocoin_reward': teocoin_reward_given,
+                'amount_paid': enrollment.amount_paid_eur
+            }
+        
+        try:
+            from django.utils import timezone
+            return self.execute_in_transaction(_process_payment)
+        except Exception as e:
+            self.log_error(f"Failed to process fiat payment: {str(e)}")
+            raise
+
+    def get_payment_summary(self, user_id: int, course_id: int) -> Dict[str, Any]:
+        """
+        Get payment options summary for a course
+        
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            
+        Returns:
+            dict: Payment options and user eligibility
+        """
+        try:
+            user = User.objects.get(id=user_id)
+            course = Course.objects.get(id=course_id)
+        except User.DoesNotExist:
+            raise UserNotFoundError(user_id)
+        except Course.DoesNotExist:
+            raise CourseNotFoundError(course_id)
+        
+        # Check if already enrolled
+        from courses.models import CourseEnrollment
+        enrollment = CourseEnrollment.objects.filter(student=user, course=course).first()
+        if enrollment:
+            return {
+                'already_enrolled': True,
+                'enrollment': {
+                    'payment_method': enrollment.payment_method,
+                    'amount_paid_eur': enrollment.amount_paid_eur,
+                    'amount_paid_teocoin': enrollment.amount_paid_teocoin,
+                    'enrolled_at': enrollment.enrolled_at
+                }
+            }
+        
+        # Get pricing options
+        pricing_options = course.get_pricing_options()
+        
+        # Check TeoCoin balance if applicable
+        teocoin_balance = Decimal('0')
+        if user.wallet_address:
+            try:
+                balance = self._get_user_balance(user.wallet_address)
+                teocoin_balance = Decimal(str(balance))
+            except:
+                pass
+        
+        return {
+            'already_enrolled': False,
+            'pricing_options': pricing_options,
+            'user_teocoin_balance': teocoin_balance,
+            'can_pay_with_teocoin': teocoin_balance >= course.get_teocoin_price() if course.get_teocoin_price() > 0 else False,
+            'wallet_connected': bool(user.wallet_address),
+            'course_approved': course.is_approved
+        }
+
 
 # Global service instance
 payment_service = PaymentService()

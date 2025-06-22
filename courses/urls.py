@@ -15,6 +15,13 @@ from courses.views.enrollments import (
     TeacherCourseStudentsView
 )
 
+# === PAYMENTS ===
+from courses.views.payments import (
+    CreatePaymentIntentView,
+    ConfirmPaymentView, 
+    PaymentSummaryView
+)
+
 # === LESSONS ===
 from courses.views.lessons import (
     CourseLessonsView,
@@ -86,4 +93,9 @@ urlpatterns = [
     path('pending-courses/', PendingCoursesView.as_view(), name='pending-courses'),
     path('approve-course/<int:course_id>/', ApproveCourseView.as_view(), name='approve-course'),
     path('reject-course/<int:course_id>/', RejectCourseView.as_view(), name='reject-course'),
+    
+    # === FIAT PAYMENTS ===
+    path('payment/create-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
+    path('payment/confirm/', ConfirmPaymentView.as_view(), name='confirm-payment'),
+    path('payment/summary/<int:course_id>/', PaymentSummaryView.as_view(), name='payment-summary'),
 ]
