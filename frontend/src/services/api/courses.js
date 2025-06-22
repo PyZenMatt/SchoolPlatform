@@ -84,3 +84,18 @@ export const fetchExerciseDetail = async (exerciseId) => {
   const response = await api.get(`exercises/${exerciseId}/`);
   return response.data;
 };
+
+// Payment endpoints for Stripe integration
+export const createPaymentIntent = async (courseId) => {
+  return api.post(`courses/${courseId}/create-payment-intent/`);
+};
+
+export const confirmPayment = async (courseId, paymentIntentId) => {
+  return api.post(`courses/${courseId}/confirm-payment/`, {
+    payment_intent_id: paymentIntentId
+  });
+};
+
+export const getPaymentSummary = async (courseId) => {
+  return api.get(`courses/${courseId}/payment-summary/`);
+};

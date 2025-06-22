@@ -61,7 +61,7 @@ api.interceptors.response.use(
     }
     
     // Log errors in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('API Error:', {
         url: error.config?.url,
         method: error.config?.method,

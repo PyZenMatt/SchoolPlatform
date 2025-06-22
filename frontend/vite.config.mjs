@@ -16,7 +16,8 @@ export default defineConfig({
     }
   },
   define: {
-    global: 'window'
+    global: 'window',
+    'process.env': {}
   },
   resolve: {
     alias: []

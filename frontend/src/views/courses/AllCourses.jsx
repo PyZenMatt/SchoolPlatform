@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Row, Col, Spinner, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
 import { fetchCourses } from '../../services/api/courses';
-import CourseCheckoutModal from '../../components/courses/CourseCheckoutModal';
+import CourseCheckoutModal from '../../components/courses/CourseCheckoutModalNew';
 
 const AllCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -262,15 +262,36 @@ const AllCourses = () => {
                     }
                   </Card.Text>
                   
-                  {/* Course Stats */}
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div className="d-flex align-items-center">
-                      <i className="feather icon-users me-1 text-muted"></i>
-                      <small className="text-muted">{course.student_count || 0} studenti</small>
+                  {/* Course Stats and Pricing */}
+                  <div className="mb-3">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div className="d-flex align-items-center">
+                        <i className="feather icon-users me-1 text-muted"></i>
+                        <small className="text-muted">{course.student_count || 0} studenti</small>
+                      </div>
                     </div>
-                    <div className="d-flex align-items-center">
-                      <i className="feather icon-dollar-sign me-1" style={{ color: '#6c63ff' }}></i>
-                      <strong style={{ color: '#6c63ff' }}>{course.price} TC</strong>
+                    
+                    {/* Dual Pricing Display */}
+                    <div className="pricing-section p-2" style={{ backgroundColor: '#f8f9fa', borderRadius: '6px' }}>
+                      {course.price_eur > 0 ? (
+                        <>
+                          <div className="d-flex justify-content-between align-items-center mb-1">
+                            <span className="text-primary fw-bold">💳 €{course.price_eur}</span>
+                            <small className="text-success">+{course.teocoin_reward} TEO</small>
+                          </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="text-success">🪙 {course.get_teocoin_price || (course.price_eur * 10 * 0.8).toFixed(0)} TEO</span>
+                            <small className="text-muted">{course.teocoin_discount_percent || 20}% sconto</small>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <span className="text-success fw-bold">🆓 GRATUITO</span>
+                          {course.teocoin_reward > 0 && (
+                            <small className="d-block text-muted">+{course.teocoin_reward} TEO reward</small>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   

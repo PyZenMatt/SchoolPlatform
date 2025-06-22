@@ -14,7 +14,7 @@ import {
 import './PaymentModal.css';
 
 // Initialize Stripe (you'll need to set your publishable key)
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...');
 
 const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const stripe = useStripe();
@@ -60,29 +60,20 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
         setProcessing(true);
 
         try {
-            // Create payment intent
-            const intentResponse = await fetch('/api/courses/payment/create-intent/', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    course_id: course.id,
-                    amount_eur: course.price_eur
-                }),
-            });
-
-            const intentData = await intentResponse.json();
+            // Import the API function
+            const { createPaymentIntent, confirmPayment } = await import('../services/api/courses');
             
-            if (!intentData.success) {
-                throw new Error(intentData.error || 'Failed to create payment intent');
+            // Create payment intent using our API
+            const intentResponse = await createPaymentIntent(course.id);
+            
+            if (!intentResponse.data.success) {
+                throw new Error(intentResponse.data.error || 'Failed to create payment intent');
             }
 
             // Confirm payment with Stripe
             const cardElement = elements.getElement(CardElement);
             const { error, paymentIntent } = await stripe.confirmCardPayment(
-                intentData.client_secret,
+                intentResponse.data.client_secret,
                 {
                     payment_method: {
                         card: cardElement,
@@ -98,30 +89,18 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             }
 
             if (paymentIntent.status === 'succeeded') {
-                // Confirm with backend
-                const confirmResponse = await fetch('/api/courses/payment/confirm/', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        payment_intent_id: paymentIntent.id,
-                        course_id: course.id
-                    }),
-                });
-
-                const confirmData = await confirmResponse.json();
+                // Confirm with backend using our API
+                const confirmResponse = await confirmPayment(course.id, paymentIntent.id);
                 
-                if (confirmData.success) {
+                if (confirmResponse.data.success) {
                     onSuccess({
                         method: 'fiat',
-                        amount: intentData.amount,
-                        teocoingReward: confirmData.teocoin_reward,
-                        enrollment: confirmData.enrollment
+                        amount: paymentIntent.amount,
+                        teocoinReward: confirmResponse.data.teocoin_reward,
+                        enrollment: confirmResponse.data.enrollment
                     });
                 } else {
-                    throw new Error(confirmData.error || 'Payment confirmation failed');
+                    throw new Error(confirmResponse.data.error || 'Payment confirmation failed');
                 }
             }
 
