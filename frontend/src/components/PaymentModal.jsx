@@ -30,19 +30,14 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
     const fetchPaymentSummary = async () => {
         try {
-            const response = await fetch(`/api/courses/payment/summary/${course.id}/`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                setPaymentSummary(data.data);
+            // Import the API function
+            const { getPaymentSummary } = await import('../services/api/courses');
+            
+            const response = await getPaymentSummary(course.id);
+            if (response.data.success) {
+                setPaymentSummary(response.data.data);
             } else {
-                onError(data.error || 'Failed to load payment options');
+                onError(response.data.error || 'Failed to load payment options');
             }
         } catch (error) {
             onError('Failed to load payment options');

@@ -21,38 +21,21 @@ class CreatePaymentIntentView(APIView):
     """
     Create Stripe payment intent for fiat course purchase
     
-    POST /api/courses/payment/create-intent/
-    {
-        "course_id": 1,
-        "amount_eur": "29.99"
-    }
+    POST /api/courses/{course_id}/create-payment-intent/
     """
     permission_classes = [IsAuthenticated]
     
-    def post(self, request):
+    def post(self, request, course_id):
         try:
-            course_id = request.data.get('course_id')
-            amount_eur = request.data.get('amount_eur')
+            # Get course and validate
+            course = get_object_or_404(Course, id=course_id)
             
-            if not course_id:
-                return Response({
-                    'success': False,
-                    'error': 'course_id is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
+            # Use course's EUR price
+            amount_eur = course.price_eur
             if not amount_eur:
                 return Response({
                     'success': False,
-                    'error': 'amount_eur is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Convert to Decimal
-            try:
-                amount_eur = Decimal(str(amount_eur))
-            except (ValueError, TypeError):
-                return Response({
-                    'success': False,
-                    'error': 'Invalid amount format'
+                    'error': 'Course does not have EUR pricing configured'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Create payment intent using service
@@ -89,29 +72,21 @@ class ConfirmPaymentView(APIView):
     """
     Confirm successful Stripe payment and enroll student
     
-    POST /api/courses/payment/confirm/
+    POST /api/courses/{course_id}/confirm-payment/
     {
-        "payment_intent_id": "pi_...",
-        "course_id": 1
+        "payment_intent_id": "pi_..."
     }
     """
     permission_classes = [IsAuthenticated]
     
-    def post(self, request):
+    def post(self, request, course_id):
         try:
             payment_intent_id = request.data.get('payment_intent_id')
-            course_id = request.data.get('course_id')
             
             if not payment_intent_id:
                 return Response({
                     'success': False,
                     'error': 'payment_intent_id is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not course_id:
-                return Response({
-                    'success': False,
-                    'error': 'course_id is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Process payment confirmation using service
