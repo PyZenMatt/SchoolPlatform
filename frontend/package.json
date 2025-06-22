@@ -20,6 +20,8 @@
   "dependencies": {
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@react-google-maps/api": "^2.19.3",
+    "@stripe/react-stripe-js": "^2.9.0",
+    "@stripe/stripe-js": "^2.4.0",
     "@tanem/react-nprogress": "^5.0.51",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^15.0.2",
