@@ -1,6 +1,8 @@
 /**
  * PaymentModal.jsx - Fiat Payment Integration Component
  * Handles Stripe payment flow for course purchases
+ * VERSION: 2.2 - Fixed Italian postal code (20121 Milano)
+ * LAST UPDATED: 2025-06-22 10:00
  */
 
 import React, { useState, useEffect } from 'react';
@@ -61,7 +63,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     };
 
     const handleFiatPayment = async () => {
-        console.log('🔄 Starting fiat payment process...');
+        console.log('🔄 Starting fiat payment process... [v2.1]', new Date().toISOString());
         
         if (!stripe || !elements) {
             console.error('❌ Stripe not loaded');
@@ -87,7 +89,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             }
 
             console.log('✅ Payment intent created, confirming with Stripe...');
-            // Confirm payment with Stripe
+            // Confirm payment with Stripe - provide complete Italian billing details
             const cardElement = elements.getElement(CardElement);
             const { error, paymentIntent } = await stripe.confirmCardPayment(
                 intentResponse.data.client_secret,
@@ -95,10 +97,13 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                     payment_method: {
                         card: cardElement,
                         billing_details: {
-                            name: 'Test Student',
-                            email: 'test@example.com',
+                            name: 'Mario Rossi',
+                            email: 'mario.rossi@example.com',
                             address: {
-                                postal_code: '12345',
+                                line1: 'Via Roma 123',
+                                city: 'Milano',
+                                postal_code: '20121',
+                                state: 'MI',
                                 country: 'IT',
                             },
                         },
@@ -107,8 +112,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             );
 
             console.log('🔍 Stripe confirmation result:', { error, paymentIntent });
-
-            console.log('🔍 Stripe confirmation result:', { error, paymentIntent });
+            console.log('🔧 BILLING DETAILS VERSION 2.5 APPLIED! Complete Italian billing address with Milan postal code 20121');
 
             if (error) {
                 console.error('❌ Stripe payment error:', error);
@@ -279,6 +283,10 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 {paymentMethod === 'fiat' && (
                     <div className="stripe-form">
                         <h4>💳 Card Details</h4>
+                        <div className="payment-instructions">
+                            <p>💡 <strong>Test Card:</strong> 4242 4242 4242 4242</p>
+                            <p>📮 <strong>Note:</strong> Billing address is automatically set to Milan, Italy</p>
+                        </div>
                         <div className="card-element-container">
                             <CardElement
                                 options={{
@@ -291,6 +299,9 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                             },
                                         },
                                     },
+                                    hidePostalCode: true, // Hide postal code since we provide it programmatically
+                                    iconStyle: 'solid',
+                                    hideIcon: false,
                                 }}
                             />
                         </div>

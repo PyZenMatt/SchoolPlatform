@@ -546,6 +546,7 @@ class PaymentService(TransactionalService):
                 intent = stripe.PaymentIntent.create(
                     amount=int(amount_eur * 100),  # Stripe uses cents
                     currency='eur',
+                    payment_method_types=['card'],
                     metadata={
                         'course_id': course.id,
                         'user_id': user.id,
