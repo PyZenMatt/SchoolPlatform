@@ -4,16 +4,32 @@ This directory contains comprehensive documentation for the TeoArt School Platfo
 
 ## Table of Contents
 
+### Core Documentation
 - [Architecture Overview](./architecture.md)
 - [Business Logic](./business-logic.md)
 - [API Documentation](./api.md)
-- [Frontend Components](./frontend.md)
 - [Database Schema](./database.md)
-- [Deployment Guide](./deployment.md)
-- [Development Guide](./development.md)
-- [TeoCoin System](./teocoin.md)
-- [Reward System](./rewards.md)
-- [Security Guidelines](./security.md)
+- [Context & Configuration](./context.md)
+
+### Implementation Reports
+- [Service Layer Implementation](./SERVICE_LAYER_FINAL_REPORT.md)
+- [Integration Testing](./INTEGRATION_TESTING_SUCCESS_FINAL.md)
+- [Authentication Testing](./AUTHENTICATION_TESTING_COMPLETE.md)
+- [Frontend Testing](./FRONTEND_TESTING_COMPLETE.md)
+
+### Technical Guides
+- [Service Layers](./service_layers.md)
+- [Course Payment System](./SISTEMA_PAGAMENTO_CORSI.md)
+- [Migration Guide](./MIGRATION_GUIDE.md)
+
+### Blockchain Integration
+- [TeoCoin Implementation](./blockchain/implementing_teo_coin.md)
+- [Course Payment API](./API_COURSE_PAYMENT.md)
+
+### Improvements & Optimizations
+- [Performance Optimization](./improvements/PERFORMANCE_OPTIMIZATION_GUIDE.md)
+- [React Build Optimization](./improvements/REACT_BUILD_OPTIMIZATION_COMPLETE.md)
+- [Refactoring Progress](./improvements/REFACTORING_PROGRESS_SUMMARY.md)
 
 ## Quick Start
 
