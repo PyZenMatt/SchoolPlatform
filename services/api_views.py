@@ -26,7 +26,7 @@ def staking_info(request):
     """Get user's complete staking information"""
     try:
         staking_service = TeoCoinStakingService()
-        wallet_address = request.user.userprofile.wallet_address
+        wallet_address = request.user.wallet_address
         
         if not wallet_address:
             return Response({
@@ -64,7 +64,7 @@ def stake_tokens(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         staking_service = TeoCoinStakingService()
-        wallet_address = request.user.userprofile.wallet_address
+        wallet_address = request.user.wallet_address
         
         if not wallet_address:
             return Response({
@@ -106,7 +106,7 @@ def unstake_tokens(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         staking_service = TeoCoinStakingService()
-        wallet_address = request.user.userprofile.wallet_address
+        wallet_address = request.user.wallet_address
         
         if not wallet_address:
             return Response({

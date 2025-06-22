@@ -16,7 +16,7 @@ from web3.exceptions import ContractLogicError
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
-from users.models import User, TeacherProfile
+from users.models import User
 
 # Import blockchain configuration
 from blockchain.blockchain import TeoCoinService
@@ -32,7 +32,7 @@ class TeoCoinStakingService:
     
     def __init__(self):
         self.teo_service = TeoCoinService()
-        self.web3 = self.teo_service.web3
+        self.web3 = self.teo_service.w3  # Use w3 instead of web3
         
         # Load contract configuration
         contract_config = load_contract_config()
@@ -50,9 +50,6 @@ class TeoCoinStakingService:
         else:
             self.staking_contract = None
             logger.warning("Staking contract not deployed yet - using development mode")
-        else:
-            self.staking_contract = None
-            logger.warning("Staking contract not configured yet")
     
     def validate_supply_constraints(self) -> Dict:
         """
