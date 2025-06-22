@@ -74,7 +74,7 @@ export default defineConfig({
   ],
   build: {
     // Production build optimizations
-    target: 'es2015',
+    target: 'es2020',
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false, // Disable sourcemaps in production for smaller bundle
