@@ -6,6 +6,7 @@ import PendingCoursesCard from '../../components/PendingCoursesCard';
 import ApprovalStats from '../../components/ApprovalStats';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
 import AdminTeoCoinDashboard from '../../components/blockchain/AdminTeoCoinDashboard';
+import RevenueAnalytics from '../../components/admin/RevenueAnalytics';
 import { fetchAdminDashboard } from '../../services/api/admin';
 import { fetchUserProfile } from '../../services/api/dashboard';
 import { getRewardPoolInfo } from '../../services/api/blockchain';
@@ -174,21 +175,26 @@ const AdminDashboard = () => {
                   </Link>
                 </Col>
                 <Col md={3} sm={6}>
-                  <Link to="/admin/pending-courses" className="btn btn-outline-success w-100 py-3">
+                  <Button variant="outline-success" className="w-100 py-3" onClick={() => {
+                    const revenueSection = document.getElementById('revenue-analytics');
+                    if (revenueSection) {
+                      revenueSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}>
+                    <i className="feather icon-bar-chart-2 d-block mb-2" style={{ fontSize: '1.5rem' }}></i>
+                    Revenue Analytics
+                  </Button>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Link to="/admin/pending-courses" className="btn btn-outline-info w-100 py-3">
                     <i className="feather icon-book-open d-block mb-2" style={{ fontSize: '1.5rem' }}></i>
                     Pending Courses
                   </Link>
                 </Col>
                 <Col md={3} sm={6}>
-                  <Button variant="outline-info" className="w-100 py-3">
+                  <Button variant="outline-warning" className="w-100 py-3">
                     <i className="feather icon-users d-block mb-2" style={{ fontSize: '1.5rem' }}></i>
                     User Management
-                  </Button>
-                </Col>
-                <Col md={3} sm={6}>
-                  <Button variant="outline-warning" className="w-100 py-3">
-                    <i className="feather icon-settings d-block mb-2" style={{ fontSize: '1.5rem' }}></i>
-                    System Settings
                   </Button>
                 </Col>
                 <Col md={3} sm={6}>
@@ -230,6 +236,26 @@ const AdminDashboard = () => {
             </Card.Header>
             <Card.Body className="approval-stats">
               <ApprovalStats />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Revenue Analytics */}
+      <Row className="g-3 mb-4" id="revenue-analytics">
+        <Col lg={12}>
+          <Card className="h-100">
+            <Card.Header>
+              <Card.Title as="h5">
+                <i className="feather icon-trending-up me-2"></i>
+                Revenue Analytics
+              </Card.Title>
+              <p className="text-muted mb-0 small">
+                Comprehensive revenue tracking, course performance, and TEO economics
+              </p>
+            </Card.Header>
+            <Card.Body>
+              <RevenueAnalytics />
             </Card.Body>
           </Card>
         </Col>

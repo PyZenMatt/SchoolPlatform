@@ -25,6 +25,7 @@ from .dashboard import (
 from .api import dashboard_data
 from .batch_api import StudentBatchDataAPI, CourseBatchDataAPI, LessonBatchDataAPI
 from .health_check import HealthCheckView
+from .analytics import analytics_dashboard, revenue_chart_data, public_stats
 
 # URL patterns organized by functionality
 urlpatterns = [
@@ -42,6 +43,13 @@ urlpatterns = [
     path('dashboard/role/', UserRoleDashboardAPI.as_view(), name='user-role-dashboard'),
     path('dashboard/transactions/', dashboard_transactions, name='dashboard-transactions'),
     path('dashboard/data/', dashboard_data, name='dashboard-data'),
+    
+    # ============================================
+    # ANALYTICS APIS (Revenue & Platform Metrics)
+    # ============================================
+    path('analytics/dashboard/', analytics_dashboard, name='analytics-dashboard'),
+    path('analytics/revenue-chart/', revenue_chart_data, name='revenue-chart-data'),
+    path('analytics/public-stats/', public_stats, name='public-stats'),
     
     # ============================================
     # BATCH DATA APIS (Performance Optimization)
