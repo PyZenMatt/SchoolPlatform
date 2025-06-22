@@ -662,38 +662,119 @@ class PaymentService(TransactionalService):
             
             # Award TeoCoin reward if configured
             teocoin_reward_given = Decimal('0')
+            reward_status = 'none'
+            
             if course.teocoin_reward > 0:
                 try:
                     from blockchain.views import teocoin_service
                     
                     if user.wallet_address:
-                        teocoin_service.mint_tokens(
-                            user.wallet_address,
-                            float(course.teocoin_reward),
-                            f"Course purchase reward: {course.title}"
-                        )
+                        # User has wallet - give rewards immediately
+                        try:
+                            mint_result = teocoin_service.mint_tokens(
+                                user.wallet_address,
+                                float(course.teocoin_reward)
+                            )
+                            
+                            if mint_result:  # Transaction hash returned
+                                teocoin_reward_given = course.teocoin_reward
+                                reward_status = 'distributed'
+                                
+                                # Record the successful reward transaction
+                                BlockchainTransaction.objects.create(
+                                    user=user,
+                                    transaction_type='reward',
+                                    amount=course.teocoin_reward,
+                                    status='completed',
+                                    transaction_hash=mint_result,
+                                    related_object_id=str(course.id),
+                                    notes=f"Fiat payment reward for course: {course.title}"
+                                )
+                                
+                                self.log_info(f"✅ TeoCoin reward distributed: {course.teocoin_reward} TEO to {user.username}")
+                            else:
+                                # Minting failed - record as pending
+                                teocoin_reward_given = course.teocoin_reward
+                                reward_status = 'pending'
+                                
+                                BlockchainTransaction.objects.create(
+                                    user=user,
+                                    transaction_type='reward',
+                                    amount=course.teocoin_reward,
+                                    status='pending',
+                                    related_object_id=str(course.id),
+                                    notes=f"Pending fiat payment reward for course: {course.title} (Mint returned None)"
+                                )
+                                
+                                self.log_error(f"❌ TeoCoin minting returned None for {user.username}")
+                            
+                        except Exception as mint_error:
+                            # Minting failed - record as pending
+                            teocoin_reward_given = course.teocoin_reward
+                            reward_status = 'pending'
+                            
+                            BlockchainTransaction.objects.create(
+                                user=user,
+                                transaction_type='reward',
+                                amount=course.teocoin_reward,
+                                status='pending',
+                                related_object_id=str(course.id),
+                                notes=f"Pending fiat payment reward for course: {course.title} (Mint error: {str(mint_error)})"
+                            )
+                            
+                            self.log_error(f"❌ TeoCoin minting failed: {mint_error}")
+                    else:
+                        # User has no wallet - record as pending reward
                         teocoin_reward_given = course.teocoin_reward
+                        reward_status = 'pending_wallet'
                         
-                        # Record the reward transaction
                         BlockchainTransaction.objects.create(
                             user=user,
                             transaction_type='reward',
                             amount=course.teocoin_reward,
-                            status='completed',
+                            status='pending',
                             related_object_id=str(course.id),
-                            notes=f"Fiat payment reward for course: {course.title}"
+                            notes=f"Pending fiat payment reward for course: {course.title} (No wallet connected)"
                         )
+                        
+                        self.log_info(f"💰 TeoCoin reward pending (no wallet): {course.teocoin_reward} TEO for {user.username}")
                     
                 except Exception as blockchain_error:
-                    # Log but don't fail the enrollment
-                    self.log_error(f"TeoCoin reward failed: {blockchain_error}")
+                    # Log error but don't fail the enrollment
+                    teocoin_reward_given = course.teocoin_reward
+                    reward_status = 'failed'
+                    
+                    self.log_error(f"🚨 TeoCoin reward system error: {blockchain_error}")
+                    
+                    # Still record the attempted reward
+                    BlockchainTransaction.objects.create(
+                        user=user,
+                        transaction_type='reward',
+                        amount=course.teocoin_reward,
+                        status='failed',
+                        related_object_id=str(course.id),
+                        notes=f"Failed fiat payment reward for course: {course.title} (Error: {str(blockchain_error)})"
+                    )
             
             # Send notifications
             try:
                 from notifications.models import Notification
+                
+                # Create appropriate message based on reward status
+                if reward_status == 'distributed':
+                    message = f"🎉 Successfully enrolled in '{course.title}' via fiat payment! Received {teocoin_reward_given} TEO reward in your wallet."
+                elif reward_status == 'pending_wallet':
+                    message = f"✅ Successfully enrolled in '{course.title}' via fiat payment! {teocoin_reward_given} TEO reward pending - connect your wallet to claim."
+                elif reward_status == 'pending':
+                    message = f"✅ Successfully enrolled in '{course.title}' via fiat payment! {teocoin_reward_given} TEO reward will be processed shortly."
+                elif reward_status == 'failed':
+                    message = f"✅ Successfully enrolled in '{course.title}' via fiat payment! {teocoin_reward_given} TEO reward pending (technical issue)."
+                else:
+                    message = f"✅ Successfully enrolled in '{course.title}' via fiat payment!"
+                
                 Notification.objects.create(
                     user=user,
-                    message=f"Successfully enrolled in '{course.title}' via fiat payment. Received {teocoin_reward_given} TEO reward.",
+                    message=message,
                     notification_type='course_purchased'
                 )
                 
@@ -717,8 +798,17 @@ class PaymentService(TransactionalService):
                     'amount_paid_eur': enrollment.amount_paid_eur,
                     'enrolled_at': enrollment.enrolled_at
                 },
-                'teocoin_reward': teocoin_reward_given,
-                'amount_paid': enrollment.amount_paid_eur
+                'teocoin_reward': {
+                    'amount': teocoin_reward_given,
+                    'status': reward_status,
+                    'message': 'Reward distributed immediately' if reward_status == 'distributed' 
+                              else 'Reward pending - connect wallet' if reward_status == 'pending_wallet'
+                              else 'Reward processing' if reward_status == 'pending'
+                              else 'Reward failed - contact support' if reward_status == 'failed'
+                              else 'No reward configured'
+                },
+                'amount_paid': enrollment.amount_paid_eur,
+                'message': message
             }
         
         try:
