@@ -10,27 +10,10 @@ from blockchain.blockchain import TeoCoinService
 from decimal import Decimal
 import logging
 
+# Import the model from services.models
+from .models import TeoEarning
+
 logger = logging.getLogger(__name__)
-
-class TeoEarning(models.Model):
-    """Track all TEO earnings for users"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teo_earnings')
-    earning_type = models.CharField(max_length=50)
-    amount = models.DecimalField(max_digits=18, decimal_places=8)
-    source_id = models.IntegerField(null=True, blank=True)  # course_id, exercise_id, etc.
-    transaction_hash = models.CharField(max_length=66, null=True, blank=True)
-    reason = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'teo_earnings'
-        indexes = [
-            models.Index(fields=['user', 'earning_type']),
-            models.Index(fields=['created_at']),
-        ]
-
-    def __str__(self):
-        return f"{self.user.username} earned {self.amount} TEO for {self.earning_type}"
 
 class TeoEarningService:
     """Enhanced earning service using your existing TeoCoinService"""

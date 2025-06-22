@@ -7,7 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
-from services.teo_earning_service import teo_earning_service, TeoEarning
+from services.teo_earning_service import teo_earning_service
+from services.models import TeoEarning
 from blockchain.blockchain import TeoCoinService
 # ...existing imports...
 

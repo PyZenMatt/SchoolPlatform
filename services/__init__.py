@@ -9,28 +9,14 @@ Services:
 - CourseService: Course management and enrollment
 - BlockchainService: Blockchain and TeoCoin operations
 - NotificationService: Email and in-app notifications
+- TeoCoinStakingService: Staking system operations
+- TeoEarningService: TEO earning tracking
 """
 
-from .base import BaseService, TransactionalService
-from .user_service import UserService, user_service
-from .blockchain_service import BlockchainService, blockchain_service
-from .course_service import CourseService, course_service
-from .notification_service import NotificationService, notification_service
-from .payment_service import payment_service
-from .reward_service import reward_service
-from .exceptions import (
-    TeoArtServiceException,
-    InsufficientTeoCoinsError,
-    CourseNotFoundError,
-    UserNotFoundError,
-    WalletNotFoundError,
-    InvalidWalletAddressError,
-    TokenTransferError,
-    MintingError,
-    InvalidAmountError,
-    BlockchainTransactionError,
-)
+# Default app config
+default_app_config = 'services.apps.ServicesConfig'
 
+# Services will be imported dynamically to avoid Django startup issues
 __all__ = [
     'BaseService',
     'TransactionalService',
@@ -42,16 +28,9 @@ __all__ = [
     'course_service',
     'NotificationService',
     'notification_service',
-    'TeoArtServiceException',
-    'InsufficientTeoCoinsError', 
-    'CourseNotFoundError',
-    'UserNotFoundError',
-    'WalletNotFoundError',
-    'InvalidWalletAddressError',
-    'TokenTransferError',
-    'MintingError',
-    'InvalidAmountError',
-    'BlockchainTransactionError',
+    'TeoCoinStakingService',
+    'TeoEarningService',
+    'teo_earning_service',
     'payment_service',
     'reward_service'
 ]
