@@ -14,7 +14,7 @@ from core.api_standards import StandardizedAPIView
 import logging
 
 # Service imports
-from services import user_service
+from services.user_service import user_service
 from services.exceptions import TeoArtServiceException, UserNotFoundError
 
 logger = logging.getLogger(__name__)

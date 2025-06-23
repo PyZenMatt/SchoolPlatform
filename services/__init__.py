@@ -22,15 +22,32 @@ __all__ = [
     'TransactionalService',
     'UserService',
     'user_service',
-    'BlockchainService',
-    'blockchain_service',
-    'CourseService',
-    'course_service',
-    'NotificationService',
-    'notification_service',
-    'TeoCoinStakingService',
     'TeoEarningService',
     'teo_earning_service',
-    'payment_service',
-    'reward_service'
+    'TeoCoinStakingService',
 ]
+
+def __getattr__(name):
+    """Lazy import of services to avoid Django startup issues"""
+    if name == 'user_service':
+        from .user_service import user_service as _user_service
+        return _user_service
+    elif name == 'UserService':
+        from .user_service import UserService
+        return UserService
+    elif name == 'teo_earning_service':
+        from .teo_earning_service import teo_earning_service as _teo_earning_service
+        return _teo_earning_service
+    elif name == 'TeoEarningService':
+        from .teo_earning_service import TeoEarningService
+        return TeoEarningService
+    elif name == 'TeoCoinStakingService':
+        from .teocoin_staking_service import TeoCoinStakingService
+        return TeoCoinStakingService
+    elif name == 'BaseService':
+        from .base import BaseService
+        return BaseService
+    elif name == 'TransactionalService':
+        from .base import TransactionalService
+        return TransactionalService
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
