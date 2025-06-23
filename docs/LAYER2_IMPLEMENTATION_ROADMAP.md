@@ -117,9 +117,9 @@ Week 2: Frontend Staking Integration - COMPLETE
 Week 3: Smart Contract Discount Logic
 ├── Deploy TeoCoinDiscount contract on Amoy
 ├── Discount request/approval mechanisms (up to 15% off)
-├── Teacher compensation (125% TEO return)
+├── Teacher compensation from reward pool (125% TEO)
 ├── Auto-decline timer (2 hours)
-├── Integration with existing TeoCoin2
+├── Integration with existing TeoCoin2 + reward pool
 ├── TEO exchange rate: 1 TEO = €0.10 discount
 └── Backend discount service implementation
 
@@ -137,8 +137,9 @@ Week 4: Platform Discount Integration
 🔧 SMART CONTRACT LAYER (Days 1-4):
 ├── TeoCoinDiscount.sol development
 ├── Discount request/approval logic
-├── TeoCoin burn/mint mechanisms
-├── Teacher compensation automation (125%)
+├── TeoCoin burn from student wallets
+├── TeoCoin transfer from reward pool to teachers (125%)
+├── Reward pool integration (NO MINTING - sustainable economy)
 ├── Auto-decline timer (2 hours)
 ├── Security and access controls
 ├── Polygon Amoy deployment
