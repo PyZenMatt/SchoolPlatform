@@ -135,11 +135,12 @@ Week 4: Platform Discount Integration
 📋 DETAILED TECHNICAL ROADMAP:
 
 🔧 SMART CONTRACT LAYER (Days 1-4):
-├── TeoCoinDiscount.sol development
-├── Discount request/approval logic
-├── Direct TeoCoin transfer from student to teacher
+├── TeoCoinDiscount.sol development with gas-free student experience
+├── Platform-paid gas fee architecture
+├── Direct MetaMask-to-MetaMask transfers (student → teacher)
 ├── Bonus TeoCoin transfer from reward pool (25% bonus)
-├── Reward pool integration (minimal pool usage - sustainable)
+├── Reward pool gas treasury integration (MATIC for fees)
+├── Pre-approval signature system (no student gas)
 ├── Auto-decline timer (2 hours)
 ├── Security and access controls
 ├── Polygon Amoy deployment
@@ -165,18 +166,18 @@ Week 4: Platform Discount Integration
 ```
 
 **Key Features Being Implemented:**
-- **Student Experience**: Choose discount level, instant TeoCoin balance check
-- **Teacher Experience**: Mobile notifications, choice to accept/decline
-- **Platform Integration**: Seamless checkout with TeoCoin discounts
-- **Smart Compensation**: Teachers get 125% TeoCoin when absorbing discounts
+- **Student Experience**: Choose discount level, instant TeoCoin balance check, ZERO GAS FEES
+- **Teacher Experience**: Mobile notifications, direct MetaMask deposits, choice to accept/decline
+- **Platform Integration**: Seamless checkout, platform-paid gas fees, perfect Layer 2 UX
+- **Smart Compensation**: Teachers get 125% TeoCoin directly to MetaMask when absorbing discounts
 
 **Example Implementation Flow:**
 ```
-1. Student: "I want 15% off this €100 course" (needs 30 TEO)
-2. System: Validates student has 30 TEO
-3. Teacher: Gets notification "Accept discount? You get 30 TEO + 8 TEO bonus = 38 TEO"
-4. Teacher: Clicks "Accept" → Student pays €85, Student transfers 30 TEO to teacher, Platform adds 8 TEO bonus
-5. Platform: Handles all TeoCoin transactions automatically
+1. Student: "I want 15% off this €100 course" (needs 30 TEO, NO GAS FEES!)
+2. System: Validates student has 30 TEO in MetaMask, creates pre-approval signature
+3. Teacher: Gets notification "Accept discount? You get 30 TEO + 8 TEO bonus = 38 TEO directly in MetaMask"
+4. Teacher: Clicks "Accept" → Platform pays gas fees, direct MetaMask transfer executed
+5. Result: Student pays €85, Teacher receives 38 TEO in MetaMask, Perfect Layer 2 UX!
 ```
 
 **Deliverables:**
