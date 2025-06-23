@@ -137,9 +137,9 @@ Week 4: Platform Discount Integration
 🔧 SMART CONTRACT LAYER (Days 1-4):
 ├── TeoCoinDiscount.sol development
 ├── Discount request/approval logic
-├── TeoCoin burn from student wallets
-├── TeoCoin transfer from reward pool to teachers (125%)
-├── Reward pool integration (NO MINTING - sustainable economy)
+├── Direct TeoCoin transfer from student to teacher
+├── Bonus TeoCoin transfer from reward pool (25% bonus)
+├── Reward pool integration (minimal pool usage - sustainable)
 ├── Auto-decline timer (2 hours)
 ├── Security and access controls
 ├── Polygon Amoy deployment
@@ -174,8 +174,8 @@ Week 4: Platform Discount Integration
 ```
 1. Student: "I want 15% off this €100 course" (needs 30 TEO)
 2. System: Validates student has 30 TEO
-3. Teacher: Gets notification "Accept discount? You get 38 TEO"
-4. Teacher: Clicks "Accept" → Student pays €85, Teacher gets €85 + 38 TEO
+3. Teacher: Gets notification "Accept discount? You get 30 TEO + 8 TEO bonus = 38 TEO"
+4. Teacher: Clicks "Accept" → Student pays €85, Student transfers 30 TEO to teacher, Platform adds 8 TEO bonus
 5. Platform: Handles all TeoCoin transactions automatically
 ```
 
