@@ -382,3 +382,30 @@ CACHES = {
 CACHE_MIDDLEWARE_ALIAS = 'default'
 CACHE_MIDDLEWARE_SECONDS = 300
 CACHE_MIDDLEWARE_KEY_PREFIX = 'teoart'
+
+# ========== TEOCOIN DISCOUNT SYSTEM CONFIGURATION ==========
+
+# TeoCoin Discount Contract Configuration
+TEOCOIN_DISCOUNT_CONTRACT_ADDRESS = os.getenv('TEOCOIN_DISCOUNT_CONTRACT_ADDRESS')
+TEOCOIN_DISCOUNT_CONTRACT_ABI = [
+    # This will be populated when we deploy the contract
+    # For now, it's a placeholder that will be updated
+]
+
+# Platform account private key for gas-free transactions
+PLATFORM_PRIVATE_KEY = os.getenv('PLATFORM_PRIVATE_KEY')
+
+# Discount system configuration
+DISCOUNT_SYSTEM = {
+    'REQUEST_TIMEOUT_HOURS': 2,
+    'TEACHER_BONUS_PERCENT': 25,  # 25% bonus on top of student payment
+    'MAX_DISCOUNT_PERCENT': 15,   # Maximum 15% discount
+    'TEO_TO_EUR_RATE': 10,        # 1 TEO = 0.10 EUR discount value
+    'MIN_DISCOUNT_PERCENT': 5,    # Minimum 5% discount
+}
+
+# Validate discount system configuration in production
+if not DEBUG and TEOCOIN_DISCOUNT_CONTRACT_ADDRESS and not PLATFORM_PRIVATE_KEY:
+    raise ImproperlyConfigured("PLATFORM_PRIVATE_KEY is required when discount system is enabled")
+
+# ========== END TEOCOIN DISCOUNT CONFIGURATION ==========
