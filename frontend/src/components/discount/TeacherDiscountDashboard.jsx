@@ -31,8 +31,8 @@ import {
   Assignment,
   MonetizationOn
 } from '@mui/icons-material';
-import { useWeb3Context } from '../contexts/Web3Context';
-import { useNotification } from '../contexts/NotificationContext';
+import { useWeb3Context } from '../../contexts/Web3Context';
+import { useNotification } from '../../contexts/NotificationContext';
 
 /**
  * TeacherDiscountDashboard - Manage student discount requests

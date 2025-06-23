@@ -4,6 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 
 import routes, { renderRoutes } from './routes';
+import NotificationDisplay from './components/ui/NotificationDisplay';
 
 // Import mobile-responsive styles
 import './styles/mobile-responsive.css';
@@ -16,6 +17,7 @@ const App = () => {
     <BrowserRouter>
       <Elements stripe={stripePromise}>
         {renderRoutes(routes)}
+        <NotificationDisplay />
       </Elements>
     </BrowserRouter>
   );

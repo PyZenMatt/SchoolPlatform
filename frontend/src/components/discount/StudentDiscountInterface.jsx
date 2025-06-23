@@ -28,8 +28,8 @@ import {
   HourglassEmpty
 } from '@mui/icons-material';
 import { ethers } from 'ethers';
-import { useWeb3Context } from '../contexts/Web3Context';
-import { useNotification } from '../contexts/NotificationContext';
+import { useWeb3Context } from '../../contexts/Web3Context';
+import { useNotification } from '../../contexts/NotificationContext';
 
 /**
  * StudentDiscountInterface - Gas-free TeoCoin discount system for students

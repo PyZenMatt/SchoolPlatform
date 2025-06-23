@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card,
-  CardBody,
-  CardHeader,
   Badge,
   Button,
-  Input,
+  Form,
   Alert,
   Spinner,
-  Progress,
-  Table,
-  TableHeader,
-  TableBody,
-  TableColumn,
-  TableRow,
-  TableCell
-} from '@nextui-org/react';
-import { useAuth } from '../../contexts/AuthContext';
-import { stakingService } from '../../services/stakingService';
+  ProgressBar,
+  Table
+} from 'react-bootstrap';
+import { useAuth } from '../contexts/AuthContext';
+import { stakingService } from '../services/stakingService';
 import './StakingInterface.scss';
 
 const StakingInterface = () => {
@@ -109,7 +102,7 @@ const StakingInterface = () => {
   };
 
   const getTierColor = (tierIndex) => {
-    const colors = ['secondary', 'default', 'warning', 'primary', 'success'];
+    const colors = ['secondary', 'info', 'warning', 'primary', 'success'];
     return colors[tierIndex] || 'secondary';
   };
 
@@ -127,18 +120,21 @@ const StakingInterface = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <Spinner size="lg" label="Loading staking data..." />
+      <div className="d-flex justify-content-center align-items-center p-4">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading staking data...</span>
+        </Spinner>
       </div>
     );
   }
 
   return (
-    <div className="staking-interface p-6 space-y-6">
+    <div className="staking-interface p-4">
       {alert && (
         <Alert 
-          color={alert.type === 'error' ? 'danger' : 'success'}
+          variant={alert.type === 'error' ? 'danger' : 'success'}
           onClose={() => setAlert(null)}
+          dismissible
           className="mb-4"
         >
           {alert.message}
@@ -146,181 +142,217 @@ const StakingInterface = () => {
       )}
 
       {/* Current Staking Status */}
-      <Card>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">Your Staking Status</h3>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">
+      <Card className="mb-4">
+        <Card.Header>
+          <h3>Your Staking Status</h3>
+        </Card.Header>
+        <Card.Body>
+          <div className="row">
+            <div className="col-md-4 text-center">
+              <h2 className="text-primary">
                 {stakingData?.staked_amount?.toFixed(2) || '0.00'} TEO
-              </p>
-              <p className="text-small text-gray-500">Staked Amount</p>
+              </h2>
+              <small className="text-muted">Staked Amount</small>
             </div>
             
-            <div className="text-center">
-              <Badge color={getTierColor(stakingData?.tier)} variant="flat" size="lg">
+            <div className="col-md-4 text-center">
+              <Badge bg={getTierColor(stakingData?.tier)} className="fs-6">
                 {stakingData?.tier_name || 'Bronze'}
               </Badge>
-              <p className="text-small text-gray-500 mt-1">Current Tier</p>
+              <div><small className="text-muted">Current Tier</small></div>
             </div>
             
-            <div className="text-center">
-              <p className="text-2xl font-bold text-success">
+            <div className="col-md-4 text-center">
+              <h2 className="text-success">
                 {stakingData?.commission_percentage?.toFixed(1) || '25.0'}%
-              </p>
-              <p className="text-small text-gray-500">Commission Rate</p>
+              </h2>
+              <small className="text-muted">Commission Rate</small>
             </div>
           </div>
 
           {/* Progress to Next Tier */}
           {stakingData?.tier < 4 && (
-            <div className="mt-6">
-              <div className="flex justify-between mb-2">
+            <div className="mt-4">
+              <div className="d-flex justify-content-between mb-2">
                 <span>Progress to {getTierName(stakingData.tier + 1)}</span>
                 <span>
                   {tierConfig?.[stakingData.tier + 1]?.min_stake - stakingData.staked_amount} TEO needed
                 </span>
               </div>
-              <Progress 
-                value={calculateProgress(stakingData.staked_amount, stakingData.tier + 1)}
-                color="primary"
+              <ProgressBar 
+                now={calculateProgress(stakingData.staked_amount, stakingData.tier + 1)}
+                variant="primary"
                 className="mb-2"
               />
             </div>
           )}
-        </CardBody>
+        </Card.Body>
       </Card>
 
       {/* Staking Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="row mb-4">
         {/* Stake Tokens */}
-        <Card>
-          <CardHeader>
-            <h4 className="font-semibold">Stake TEO Tokens</h4>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <Input
-              label="Amount to Stake"
-              placeholder="Enter TEO amount"
-              value={stakeAmount}
-              onChange={(e) => setStakeAmount(e.target.value)}
-              type="number"
-              min="0"
-              step="0.01"
-              endContent={<span className="text-small text-gray-400">TEO</span>}
-            />
-            <Button
-              color="primary"
-              onClick={handleStake}
-              disabled={isStaking || !stakeAmount}
-              className="w-full"
-            >
-              {isStaking ? <Spinner size="sm" /> : 'Stake Tokens'}
-            </Button>
-          </CardBody>
-        </Card>
+        <div className="col-md-6">
+          <Card>
+            <Card.Header>
+              <h4>Stake TEO Tokens</h4>
+            </Card.Header>
+            <Card.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Amount to Stake</Form.Label>
+                <Form.Control
+                  type="number"
+                  placeholder="Enter TEO amount"
+                  value={stakeAmount}
+                  onChange={(e) => setStakeAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </Form.Group>
+              <Button
+                variant="primary"
+                onClick={handleStake}
+                disabled={isStaking || !stakeAmount}
+                className="w-100"
+              >
+                {isStaking ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Staking...
+                  </>
+                ) : (
+                  'Stake Tokens'
+                )}
+              </Button>
+            </Card.Body>
+          </Card>
+        </div>
 
         {/* Unstake Tokens */}
-        <Card>
-          <CardHeader>
-            <h4 className="font-semibold">Unstake TEO Tokens</h4>
-          </CardHeader>
-          <CardBody className="space-y-4">
-            <Input
-              label="Amount to Unstake"
-              placeholder="Enter TEO amount"
-              value={unstakeAmount}
-              onChange={(e) => setUnstakeAmount(e.target.value)}
-              type="number"
-              min="0"
-              max={stakingData?.staked_amount || 0}
-              step="0.01"
-              endContent={<span className="text-small text-gray-400">TEO</span>}
-            />
-            <Button
-              color="secondary"
-              onClick={handleUnstake}
-              disabled={isUnstaking || !unstakeAmount || !stakingData?.active}
-              className="w-full"
-            >
-              {isUnstaking ? <Spinner size="sm" /> : 'Unstake Tokens'}
-            </Button>
-          </CardBody>
-        </Card>
+        <div className="col-md-6">
+          <Card>
+            <Card.Header>
+              <h4>Unstake TEO Tokens</h4>
+            </Card.Header>
+            <Card.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Amount to Unstake</Form.Label>
+                <Form.Control
+                  type="number"
+                  placeholder="Enter TEO amount"
+                  value={unstakeAmount}
+                  onChange={(e) => setUnstakeAmount(e.target.value)}
+                  min="0"
+                  max={stakingData?.staked_amount || 0}
+                  step="0.01"
+                />
+              </Form.Group>
+              <Button
+                variant="secondary"
+                onClick={handleUnstake}
+                disabled={isUnstaking || !unstakeAmount || !stakingData?.active}
+                className="w-100"
+              >
+                {isUnstaking ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Unstaking...
+                  </>
+                ) : (
+                  'Unstake Tokens'
+                )}
+              </Button>
+            </Card.Body>
+          </Card>
+        </div>
       </div>
 
       {/* Tier Information */}
-      <Card>
-        <CardHeader>
-          <h4 className="font-semibold">Staking Tiers & Benefits</h4>
-        </CardHeader>
-        <CardBody>
-          <Table aria-label="Staking tiers">
-            <TableHeader>
-              <TableColumn>Tier</TableColumn>
-              <TableColumn>Required TEO</TableColumn>
-              <TableColumn>Commission Rate</TableColumn>
-              <TableColumn>Benefits</TableColumn>
-            </TableHeader>
-            <TableBody>
+      <Card className="mb-4">
+        <Card.Header>
+          <h4>Staking Tiers & Benefits</h4>
+        </Card.Header>
+        <Card.Body>
+          <Table striped bordered hover responsive>
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>Required TEO</th>
+                <th>Commission Rate</th>
+                <th>Benefits</th>
+              </tr>
+            </thead>
+            <tbody>
               {tierConfig && Object.entries(tierConfig).map(([tier, config]) => (
-                <TableRow key={tier}>
-                  <TableCell>
+                <tr key={tier}>
+                  <td>
                     <Badge 
-                      color={getTierColor(parseInt(tier))} 
-                      variant={stakingData?.tier === parseInt(tier) ? "solid" : "flat"}
+                      bg={getTierColor(parseInt(tier))} 
+                      className={stakingData?.tier === parseInt(tier) ? "fw-bold" : ""}
                     >
                       {config.name}
                     </Badge>
-                  </TableCell>
-                  <TableCell>{config.min_stake} TEO</TableCell>
-                  <TableCell>{(config.commission_rate / 100).toFixed(1)}%</TableCell>
-                  <TableCell>
+                  </td>
+                  <td>{config.min_stake} TEO</td>
+                  <td>{(config.commission_rate / 100).toFixed(1)}%</td>
+                  <td>
                     {config.commission_rate === 1500 ? 'Maximum savings' : 
                      `Save ${((2500 - config.commission_rate) / 100).toFixed(1)}% vs Bronze`}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
+            </tbody>
           </Table>
-        </CardBody>
+        </Card.Body>
       </Card>
 
       {/* Platform Statistics */}
       <Card>
-        <CardHeader>
-          <h4 className="font-semibold">Platform Statistics</h4>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-xl font-bold text-primary">
+        <Card.Header>
+          <h4>Platform Statistics</h4>
+        </Card.Header>
+        <Card.Body>
+          <div className="row text-center">
+            <div className="col-md-3 col-6">
+              <h3 className="text-primary">
                 {platformStats?.total_staked?.toFixed(0) || '0'}
-              </p>
-              <p className="text-small text-gray-500">Total Staked TEO</p>
+              </h3>
+              <small className="text-muted">Total Staked TEO</small>
             </div>
-            <div>
-              <p className="text-xl font-bold text-secondary">
+            <div className="col-md-3 col-6">
+              <h3 className="text-secondary">
                 {platformStats?.total_stakers || '0'}
-              </p>
-              <p className="text-small text-gray-500">Total Stakers</p>
+              </h3>
+              <small className="text-muted">Total Stakers</small>
             </div>
-            <div>
-              <p className="text-xl font-bold text-warning">
+            <div className="col-md-3 col-6">
+              <h3 className="text-warning">
                 {platformStats?.average_stake?.toFixed(1) || '0.0'}
-              </p>
-              <p className="text-small text-gray-500">Average Stake</p>
+              </h3>
+              <small className="text-muted">Average Stake</small>
             </div>
-            <div>
-              <p className="text-xl font-bold text-success">
+            <div className="col-md-3 col-6">
+              <h3 className="text-success">
                 {platformStats?.utilization_percentage?.toFixed(1) || '0.0'}%
-              </p>
-              <p className="text-small text-gray-500">Supply Staked</p>
+              </h3>
+              <small className="text-muted">Supply Staked</small>
             </div>
           </div>
-        </CardBody>
+        </Card.Body>
       </Card>
     </div>
   );
