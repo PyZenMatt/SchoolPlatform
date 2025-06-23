@@ -11,7 +11,7 @@ class StakingService {
    */
   async getStakingInfo() {
     try {
-      const response = await api.get('/api/v1/services/staking/info/');
+      const response = await api.get('/services/staking/info/');
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to fetch staking info');
@@ -24,7 +24,7 @@ class StakingService {
    */
   async stakeTokens(amount) {
     try {
-      const response = await api.post('/api/v1/services/staking/stake/', {
+      const response = await api.post('/services/staking/stake/', {
         amount: amount
       });
       return response.data;
@@ -39,7 +39,7 @@ class StakingService {
    */
   async unstakeTokens(amount) {
     try {
-      const response = await api.post('/api/v1/services/staking/unstake/', {
+      const response = await api.post('/services/staking/unstake/', {
         amount: amount
       });
       return response.data;
@@ -53,7 +53,7 @@ class StakingService {
    */
   async getStakingTiers() {
     try {
-      const response = await api.get('/api/v1/services/staking/tiers/');
+      const response = await api.get('/services/staking/tiers/');
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Failed to fetch staking tiers');
@@ -66,7 +66,7 @@ class StakingService {
    */
   async calculateCommission(currentStake = 0) {
     try {
-      const response = await api.get('/api/v1/services/staking/calculator/', {
+      const response = await api.get('/services/staking/calculator/', {
         params: { current_stake: currentStake }
       });
       return response.data;
