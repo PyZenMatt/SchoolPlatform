@@ -62,21 +62,17 @@ class ExerciseSubmissionSerializer(serializers.ModelSerializer):
     
 class TeacherLessonSerializer(serializers.ModelSerializer):
     total_students = serializers.SerializerMethodField()
-    total_earnings = serializers.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        read_only=True
-    )
+    total_earnings = serializers.SerializerMethodField()
     
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'price', 'total_students', 'total_earnings']
+        fields = ['id', 'title', 'total_students', 'total_earnings']
 
     def get_total_students(self, obj):
         return obj.students.count()
 
     def get_total_earnings(self, obj):
-        return obj.price * obj.students.count() * 0.9  # 10% fee to platform
+        return obj.price_eur * obj.students.count() * 0.9  # 10% fee to platform
 
 class TeacherCourseSerializer(serializers.ModelSerializer):
     total_earnings = serializers.SerializerMethodField()
@@ -88,12 +84,12 @@ class TeacherCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'price', 'category', 'category_display', 
+        fields = ['id', 'title', 'description', 'price_eur', 'category', 'category_display', 
                   'cover_image', 'cover_image_url', 'is_approved', 'created_at', 'updated_at',
                   'total_earnings', 'total_students', 'enrolled_students', 'lessons']
 
     def get_total_earnings(self, obj):
-        return obj.price * obj.students.count() * 0.9
+        return obj.price_eur * obj.students.count() * 0.9
 
     def get_total_students(self, obj):
         return obj.students.count()
@@ -197,7 +193,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'id', 'title', 'description', 'category', 'category_display', 'cover_image', 'cover_image_url',
-            'price', 'price_eur', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
+            'price_eur', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
             'created_at', 'updated_at', 'is_enrolled', 'is_approved'
         ]
         read_only_fields = ['teacher', 'students']
@@ -205,10 +201,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'lessons': {'read_only': True}
         }
 
-    def validate_price(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Il prezzo deve essere maggiore di zero")
-        return value
+    # Removed validate_price since 'price' field is gone
 
     def get_total_duration(self, obj):
         return sum(lesson.duration for lesson in obj.lessons.all())
@@ -248,4 +241,4 @@ class CourseEnrollmentSerializer(serializers.ModelSerializer):
 class StudentCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'price']
+        fields = ['id', 'title', 'description', 'price_eur']

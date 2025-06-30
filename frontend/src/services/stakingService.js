@@ -29,7 +29,22 @@ class StakingService {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.error || 'Failed to stake tokens');
+      // Log the full error for debugging
+      console.error('Staking API Error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
+      // Extract the specific error message
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to stake tokens';
+      
+      throw new Error(errorMessage);
     }
   }
 

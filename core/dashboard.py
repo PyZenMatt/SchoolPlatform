@@ -98,7 +98,7 @@ class TeacherDashboardAPI(APIView):
             'students', 'lessons', 'lessons__exercises'
         ).annotate(
             student_count=Count('students'),
-            total_revenue=Count('students') * F('price')
+            total_revenue=Count('students') * F('price_eur')
         )
         
         total_courses = courses.count()
@@ -111,9 +111,8 @@ class TeacherDashboardAPI(APIView):
         for course in courses:
             # Use annotated student_count instead of calling .count() 
             student_count = course.student_count
-            course_earnings = (course.price or 0) * student_count * 0.9
+            course_earnings = (course.price_eur or 0) * student_count * 0.9
             total_earnings += course_earnings
-            
             # Collect all unique student IDs efficiently
             total_students_set.update(course.students.values_list('id', flat=True))
 
