@@ -50,11 +50,7 @@ class Course(models.Model):
         help_text="Immagine di copertina del corso (opzionale)"
     )
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_created')
-    # LEGACY PRICE (keep for compatibility)
-    price = models.PositiveIntegerField(
-        default=0,
-        validators=[MinValueValidator(0, message="Il prezzo non può essere negativo")]
-    )
+    # Removed legacy price field; use price_eur for all pricing
     
     # FIAT PRICING SYSTEM
     price_eur = models.DecimalField(
@@ -151,7 +147,7 @@ class Course(models.Model):
                 raise ValueError("Wallet non collegato. Collega il tuo wallet per acquistare corsi.")
             
             balance = teocoin_service.get_balance(student.wallet_address)
-            if balance < self.price:
+            if balance < self.price_eur:
                 raise ValueError("TeoCoin insufficienti nel wallet")
             
             # For now, we just add the student to the course
@@ -169,7 +165,7 @@ class Course(models.Model):
             # Record blockchain transaction
             BlockchainTransaction.objects.create(
                 user=student,
-                amount=self.price,
+                amount=self.price_eur,
                 transaction_type='course_purchase',
                 status='pending',
                 related_object_id=str(self.pk) if self.pk else None

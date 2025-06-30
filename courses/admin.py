@@ -79,7 +79,7 @@ class ExerciseAdmin(admin.ModelAdmin):
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     form = CourseAdminForm 
-    list_display = ['id', 'title', 'price', 'teacher', 'total_students', 'is_approved']
+    list_display = ['id', 'title', 'price_eur', 'teacher', 'total_students', 'is_approved']
     list_filter = ['teacher', 'is_approved']
     search_fields = ['title']
     autocomplete_fields = ['students', 'teacher']
