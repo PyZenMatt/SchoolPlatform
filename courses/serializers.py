@@ -197,7 +197,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'id', 'title', 'description', 'category', 'category_display', 'cover_image', 'cover_image_url',
-            'price', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
+            'price', 'price_eur', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
             'created_at', 'updated_at', 'is_enrolled', 'is_approved'
         ]
         read_only_fields = ['teacher', 'students']
