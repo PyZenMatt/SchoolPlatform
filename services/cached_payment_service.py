@@ -95,7 +95,7 @@ class CachedPaymentService:
                 'id': course.id,
                 'title': course.title,
                 'price_eur': float(course.price_eur) if course.price_eur else None,
-                'price_teocoin': float(course.price) if course.price else None,
+                'price_teocoin': float(course.get_teocoin_price()) if hasattr(course, 'get_teocoin_price') else None,
                 'teocoin_reward': float(course.teocoin_reward) if course.teocoin_reward else 0,
                 'is_approved': course.is_approved,
                 'teacher_id': course.teacher.id,
