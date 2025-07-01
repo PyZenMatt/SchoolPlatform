@@ -286,13 +286,22 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 throw new Error('TeoCoin discount not available');
             }
 
+            // Get wallet address from Web3 context or localStorage
+            const walletAddress = localStorage.getItem('wallet_address') || 
+                                localStorage.getItem('connectedWalletAddress');
+            
+            if (!walletAddress) {
+                throw new Error('Please connect your wallet to use TeoCoin discounts');
+            }
+
             // Use the new discount-based payment intent creation
             const { createPaymentIntent } = await import('../services/api/courses');
             
             console.log('🪙 Creating TeoCoin discount payment intent...');
             const intentResponse = await createPaymentIntent(course.id, {
                 teocoin_discount: teoOption.discount,
-                payment_method: 'teocoin'
+                payment_method: 'teocoin',
+                wallet_address: walletAddress
             });
             
             console.log('📝 TeoCoin payment intent response:', intentResponse);
@@ -301,12 +310,18 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 throw new Error(intentResponse.data.error || 'Failed to create TeoCoin payment intent');
             }
 
-            // For TeoCoin payments, the backend should handle the discount automatically
+            const data = intentResponse.data;
+            
+            // Show success with discount details
+            const message = `Discount applied! ${data.discount_applied}€ saved using ${data.teo_cost} TEO`;
+            
             onSuccess({
                 method: 'teocoin',
                 discount: teoOption.discount,
-                amount: intentResponse.data.final_amount,
-                enrollment: intentResponse.data.enrollment
+                amount: data.final_amount,
+                discount_applied: data.discount_applied,
+                teo_cost: data.teo_cost,
+                message: message
             });
             
         } catch (error) {

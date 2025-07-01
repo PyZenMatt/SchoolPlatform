@@ -57,34 +57,64 @@ class CreatePaymentIntentView(APIView):
 
             # Handle TeoCoin discount payments
             if payment_method == 'teocoin' and teocoin_discount > 0:
-                # Use the TeoCoin discount service
-                from services.teo_discount_service import teo_discount_service
+                # Use the gas-free TeoCoin discount service
+                from services.teocoin_discount_service import teocoin_discount_service
                 from courses.models import Course
                 
                 course = Course.objects.get(id=course_id)
-                teocoin_to_spend = Decimal(str(teocoin_discount * amount_eur / 100))  # Convert percentage to amount
                 
-                result = teo_discount_service.apply_teocoin_discount(
-                    user=request.user,
-                    course=course,
-                    teocoin_to_spend=teocoin_to_spend
-                )
+                # Check if user has a wallet address
+                wallet_address = getattr(request.user, 'wallet_address', None)
                 
-                if result['success']:
-                    return Response({
-                        'success': True,
-                        'payment_method': 'teocoin_discount',
-                        'final_amount': result['final_price_eur'],
-                        'discount_applied': result['discount_applied_eur'],
-                        'teocoin_spent': result['teocoin_spent'],
-                        'enrollment': True,  # TeoCoin payments are instant
-                        'message': result['message']
-                    }, status=status.HTTP_200_OK)
-                else:
+                # Also check for wallet_address in request data (from frontend)
+                if not wallet_address:
+                    wallet_address = request.data.get('wallet_address')
+                
+                if not wallet_address:
                     return Response({
                         'success': False,
-                        'error': result['error']
+                        'error': 'Please connect your wallet to use TeoCoin discounts'
                     }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Calculate TEO cost based on discount percentage
+                discount_value_eur = (amount_eur * teocoin_discount) / 100
+                teo_cost_wei = int(discount_value_eur * 10 * 10**18)  # 10 TEO = 1 EUR
+                teacher_bonus_wei = int(teo_cost_wei * 25 / 100)  # 25% bonus
+                
+                # Check balances
+                teo_service = teocoin_discount_service.teocoin_service
+                student_balance = teo_service.get_balance(wallet_address)
+                required_teo = teo_cost_wei / 10**18
+                
+                if student_balance < required_teo:
+                    return Response({
+                        'success': False,
+                        'error': f'Insufficient TEO balance. Required: {required_teo:.2f} TEO, Available: {student_balance:.2f} TEO'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Check reward pool balance
+                reward_pool_balance = teo_service.get_reward_pool_balance()
+                required_bonus = teacher_bonus_wei / 10**18
+                
+                if reward_pool_balance < required_bonus:
+                    return Response({
+                        'success': False,
+                        'error': 'Insufficient reward pool balance for teacher bonus'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # For now, return the calculation (we'll implement the actual discount request later)
+                final_price = amount_eur - discount_value_eur
+                
+                return Response({
+                    'success': True,
+                    'payment_method': 'teocoin_discount',
+                    'final_amount': float(final_price),
+                    'discount_applied': float(discount_value_eur),
+                    'teo_cost': float(required_teo),
+                    'teacher_bonus': float(required_bonus),
+                    'requires_signature': True,
+                    'message': f'Ready to apply {teocoin_discount}% discount using {required_teo:.2f} TEO'
+                }, status=status.HTTP_200_OK)
             
             # ⚡ PERFORMANCE: Create payment intent using optimized service
             result = cached_payment_service.create_payment_intent_optimized(
