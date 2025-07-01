@@ -35,8 +35,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const [paymentMethod, setPaymentMethod] = useState('fiat');
     const [paymentSummary, setPaymentSummary] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [hybridTeoAmount, setHybridTeoAmount] = useState('');
-    const [hybridError, setHybridError] = useState('');
     // Hybrid payment handler
     const handleHybridPayment = async () => {
         console.log('[Hybrid] Button clicked');
@@ -281,7 +279,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
         setProcessing(true);
         try {
             // Find the TeoCoin pricing option to get discount amount
-            const teoOption = pricingOptions.find(opt => opt.method === 'teocoin');
+            const teoOption = cleanedOptions.find(opt => opt.method === 'teocoin');
             if (!teoOption || !teoOption.discount) {
                 throw new Error('TeoCoin discount not available');
             }
@@ -297,34 +295,37 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             // Use the new discount-based payment intent creation
             const { createPaymentIntent } = await import('../services/api/courses');
             
-            console.log('🪙 Creating TeoCoin discount payment intent...');
+            console.log('🪙 Processing TeoCoin discount payment...');
             const intentResponse = await createPaymentIntent(course.id, {
                 teocoin_discount: teoOption.discount,
                 payment_method: 'teocoin',
                 wallet_address: walletAddress
             });
             
-            console.log('📝 TeoCoin payment intent response:', intentResponse);
+            console.log('📝 TeoCoin payment response:', intentResponse);
             
             if (!intentResponse.data.success) {
-                throw new Error(intentResponse.data.error || 'Failed to create TeoCoin payment intent');
+                throw new Error(intentResponse.data.error || 'Failed to process TeoCoin payment');
             }
 
             const data = intentResponse.data;
             
-            // Show success with discount details
-            const message = `Discount applied! ${data.discount_applied}€ saved using ${data.teo_cost} TEO`;
+            // Show success with discount details and automatically complete enrollment
+            const message = `✅ Discount applied! You saved €${data.discount_applied} using ${data.teo_cost} TEO. Course enrollment complete!`;
             
             onSuccess({
-                method: 'teocoin',
+                method: 'teocoin_discount',
                 discount: teoOption.discount,
-                amount: data.final_amount,
+                final_amount: data.final_amount,
                 discount_applied: data.discount_applied,
                 teo_cost: data.teo_cost,
-                message: message
+                teacher_bonus: data.teacher_bonus,
+                message: message,
+                enrollment: true  // Automatically enrolled
             });
             
         } catch (error) {
+            console.error('TeoCoin payment error:', error);
             onError(error.message);
         } finally {
             setProcessing(false);
@@ -358,8 +359,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     }
 
     const pricingOptions = paymentSummary?.pricing_options || [];
-    // Show hybrid option if teocoin payment offers a discount
-    const hybridAvailable = pricingOptions.some(opt => opt.method === 'teocoin' && opt.discount > 0);
+    // Remove hybrid option - only show fiat and teocoin
+    const cleanedOptions = pricingOptions.filter(opt => opt.method !== 'hybrid');
 
     return (
         <div className="payment-modal-overlay" onClick={onClose}>
@@ -375,7 +376,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 </div>
 
                 <div className="payment-options">
-                    {pricingOptions.map((option) => (
+                    {cleanedOptions.map((option) => (
                         <div
                             key={option.method}
                             className={`payment-option ${paymentMethod === option.method ? 'selected' : ''}`}
@@ -420,29 +421,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             )}
                         </div>
                     ))}
-                    {hybridAvailable && (
-                        <div
-                            className={`payment-option ${paymentMethod === 'hybrid' ? 'selected' : ''}`}
-                            onClick={() => setPaymentMethod('hybrid')}
-                        >
-                            <div className="option-header">
-                                <input
-                                    type="radio"
-                                    name="payment"
-                                    checked={paymentMethod === 'hybrid'}
-                                    onChange={() => setPaymentMethod('hybrid')}
-                                />
-                                <div className="option-info">
-                                    <div className="price">
-                                        Hybrid: TEO + Card
-                                    </div>
-                                    <div className="description">
-                                        Use TeoCoin for a discount, pay the rest with card
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {paymentMethod === 'fiat' && (
@@ -486,48 +464,20 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                     {paymentMethod === 'teocoin' && (
                         <button
                             onClick={handleTeoCoinPayment}
-                            disabled={processing || !paymentSummary?.can_pay_with_teocoin}
+                            disabled={processing}
                             className="btn-crypto"
                         >
-                            {processing ? '⏳ Processing...' : '🪙 Pay with TeoCoin'}
+                            {processing ? '⏳ Processing...' : '🪙 Apply Discount & Pay'}
                         </button>
                     )}
-                    {(() => {
-                        console.log('[Hybrid Render] hybridAvailable:', hybridAvailable, 'paymentMethod:', paymentMethod);
-                        if (paymentMethod === 'hybrid') {
-                            console.log('[Hybrid Render] Rendering hybrid payment button');
-                        }
-                        return paymentMethod === 'hybrid' && (
-                            <div className="hybrid-form">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max={paymentSummary?.user_teocoin_balance || 0}
-                                    value={hybridTeoAmount}
-                                    onChange={e => setHybridTeoAmount(e.target.value)}
-                                    placeholder="TeoCoin to spend"
-                                    disabled={processing}
-                                    style={{ marginRight: 8 }}
-                                />
-                                <button
-                                    onClick={handleHybridPayment}
-                                    disabled={processing}
-                                    className="btn-hybrid"
-                                >
-                                    {processing ? '⏳ Processing...' : 'Hybrid: TEO + Card'}
-                                </button>
-                                {hybridError && <div className="error" style={{ color: 'red', marginTop: 4 }}>{hybridError}</div>}
-                            </div>
-                        );
-                    })()}
                     <button onClick={onClose} className="btn-secondary">
                         Cancel
                     </button>
                 </div>
 
-                {!paymentSummary?.wallet_connected && paymentMethod === 'teocoin' && (
-                    <div className="wallet-warning">
-                        ⚠️ Connect your wallet to pay with TeoCoin
+                {paymentMethod === 'teocoin' && (
+                    <div className="teocoin-info">
+                        ℹ️ This will automatically deduct the required TEO for the discount and complete your enrollment.
                     </div>
                 )}
             </div>
