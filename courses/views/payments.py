@@ -18,6 +18,9 @@ import logging
 from courses.models import Course
 from services.cached_payment_service import cached_payment_service, payment_rate_limit
 
+# Import payment_service for fallback logic
+from services.payment_service import payment_service
+
 logger = logging.getLogger(__name__)
 
 

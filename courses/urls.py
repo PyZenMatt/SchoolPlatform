@@ -9,11 +9,13 @@ from courses.views.courses import (
     CourseDetailAPIView
 )
 
+
 from courses.views.enrollments import (
     PurchaseCourseView,
     StudentEnrolledCoursesView,
     TeacherCourseStudentsView
 )
+from courses.views.hybrid_payment import HybridPaymentView
 
 # === PAYMENTS ===
 from courses.views.payments import (
@@ -58,6 +60,9 @@ urlpatterns = [
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseDetailView.as_view(), name='course-detail'),
     path('courses/<int:course_id>/purchase/', PurchaseCourseView.as_view(), name='course-purchase'),
+
+    # === HYBRID PAYMENT ===
+    path('courses/<int:course_id>/hybrid-payment/', HybridPaymentView.as_view(), name='hybrid-payment'),
     
     # === NEW COURSE SERVICE ENDPOINTS ===
     path('courses-service/', CourseListAPIView.as_view(), name='course-list-api'),

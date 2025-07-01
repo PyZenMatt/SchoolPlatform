@@ -35,9 +35,9 @@ class CourseListCreateView(generics.ListCreateAPIView):
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated, IsAdminOrApprovedTeacherOrReadOnly]
     filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter, drf_filters.OrderingFilter]
-    filterset_fields = ['teacher', 'price', 'category']
+    filterset_fields = ['teacher', 'price_eur', 'category']
     search_fields = ['title', 'description', 'teacher__username']
-    ordering_fields = ['created_at', 'price', 'student_count']
+    ordering_fields = ['created_at', 'price_eur', 'student_count']
     ordering = ['-created_at']  # Default ordering by newest
 
     def get_queryset(self):

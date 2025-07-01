@@ -35,6 +35,97 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const [paymentMethod, setPaymentMethod] = useState('fiat');
     const [paymentSummary, setPaymentSummary] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [hybridTeoAmount, setHybridTeoAmount] = useState('');
+    const [hybridError, setHybridError] = useState('');
+    // Hybrid payment handler
+    const handleHybridPayment = async () => {
+        console.log('[Hybrid] Button clicked');
+        setProcessing(true);
+        setHybridError('');
+        try {
+            // Dynamically import hybrid API
+            const { initiateHybridPayment, confirmHybridPayment } = await import('../services/api/hybrid');
+            // Validate input
+            const teoAmount = parseFloat(hybridTeoAmount);
+            console.log('[Hybrid] TeoCoin amount:', teoAmount, 'Course ID:', course.id);
+            if (!teoAmount || teoAmount <= 0) {
+                setHybridError('Enter a valid TeoCoin amount');
+                setProcessing(false);
+                return;
+            }
+            // Get wallet address (assume from user profile or context)
+            const walletAddress = localStorage.getItem('wallet_address');
+            console.log('[Hybrid] Wallet address:', walletAddress);
+            if (!walletAddress) {
+                setHybridError('Connect your wallet to use hybrid payment');
+                setProcessing(false);
+                return;
+            }
+            // Step 1: Initiate hybrid payment (get Stripe intent)
+            const initRes = await initiateHybridPayment(course.id, teoAmount, walletAddress);
+            console.log('[Hybrid] initiateHybridPayment response:', initRes);
+            if (!initRes.data.success) {
+                setHybridError(initRes.data.error || 'Failed to initiate hybrid payment');
+                setProcessing(false);
+                return;
+            }
+            // Step 2: Stripe payment for remainder
+            if (!stripe || !elements) {
+                setHybridError('Stripe not loaded');
+                setProcessing(false);
+                return;
+            }
+            const cardElement = elements.getElement(CardElement);
+            const { error, paymentIntent } = await stripe.confirmCardPayment(
+                initRes.data.client_secret,
+                {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: 'Mario Rossi',
+                            email: 'mario.rossi@example.com',
+                            address: {
+                                line1: 'Via Roma 123',
+                                city: 'Milano',
+                                postal_code: '20121',
+                                state: 'MI',
+                                country: 'IT',
+                            },
+                        },
+                    },
+                }
+            );
+            console.log('[Hybrid] Stripe confirmCardPayment result:', { error, paymentIntent });
+            if (error) {
+                setHybridError(error.message);
+                setProcessing(false);
+                return;
+            }
+            if (paymentIntent.status !== 'succeeded') {
+                setHybridError('Payment was not successful');
+                setProcessing(false);
+                return;
+            }
+            // Step 3: Confirm hybrid payment with backend
+            const confirmRes = await confirmHybridPayment(course.id, paymentIntent.id);
+            console.log('[Hybrid] confirmHybridPayment response:', confirmRes);
+            if (confirmRes.data.success) {
+                onSuccess({
+                    method: 'hybrid',
+                    amount: initRes.data.discounted_amount,
+                    teocoinUsed: initRes.data.discount_applied,
+                    enrollment: confirmRes.data.enrollment
+                });
+            } else {
+                setHybridError(confirmRes.data.error || 'Failed to confirm hybrid payment');
+            }
+        } catch (err) {
+            console.error('[Hybrid] Error:', err);
+            setHybridError(err.message || 'Hybrid payment failed');
+        } finally {
+            setProcessing(false);
+        }
+    };
 
     // ⚡ PERFORMANCE: Memoize cache key
     const cacheKey = useMemo(() => `payment_summary_${course.id}`, [course.id]);
@@ -185,23 +276,18 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
     const handleTeoCoinPayment = async () => {
         setProcessing(true);
-        
         try {
-            // This would call your existing TeoCoin payment API
-            const response = await fetch('/api/courses/purchase/', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    course_id: course.id,
-                    payment_method: 'teocoin'
-                }),
-            });
-
-            const data = await response.json();
-            
+            // Use the purchaseCourse API helper which posts to /courses/${courseId}/purchase/
+            const { purchaseCourse } = await import('../services/api/courses');
+            // Get wallet address (assume from user profile or context)
+            const walletAddress = localStorage.getItem('wallet_address');
+            if (!walletAddress) {
+                onError('Connect your wallet to pay with TeoCoin');
+                setProcessing(false);
+                return;
+            }
+            const response = await purchaseCourse(course.id, walletAddress, { payment_method: 'teocoin' });
+            const data = response.data;
             if (data.success) {
                 onSuccess({
                     method: 'teocoin',
@@ -211,7 +297,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             } else {
                 throw new Error(data.error || 'TeoCoin payment failed');
             }
-
         } catch (error) {
             onError(error.message);
         } finally {
@@ -246,6 +331,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     }
 
     const pricingOptions = paymentSummary?.pricing_options || [];
+    // Show hybrid option if teocoin payment offers a discount
+    const hybridAvailable = pricingOptions.some(opt => opt.method === 'teocoin' && opt.discount > 0);
 
     return (
         <div className="payment-modal-overlay" onClick={onClose}>
@@ -283,13 +370,11 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                     </div>
                                 </div>
                             </div>
-                            
                             {option.discount && (
                                 <div className="discount-badge">
                                     {option.discount}% OFF
                                 </div>
                             )}
-                            
                             {option.method === 'fiat' && (
                                 <div className="fiat-benefits">
                                     <div className="benefit">💳 Pay with credit/debit card</div>
@@ -297,7 +382,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                     <div className="benefit">⚡ Instant access</div>
                                 </div>
                             )}
-                            
                             {option.method === 'teocoin' && (
                                 <div className="teocoin-benefits">
                                     <div className="benefit">🪙 Pay with TeoCoin</div>
@@ -309,6 +393,29 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             )}
                         </div>
                     ))}
+                    {hybridAvailable && (
+                        <div
+                            className={`payment-option ${paymentMethod === 'hybrid' ? 'selected' : ''}`}
+                            onClick={() => setPaymentMethod('hybrid')}
+                        >
+                            <div className="option-header">
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    checked={paymentMethod === 'hybrid'}
+                                    onChange={() => setPaymentMethod('hybrid')}
+                                />
+                                <div className="option-info">
+                                    <div className="price">
+                                        Hybrid: TEO + Card
+                                    </div>
+                                    <div className="description">
+                                        Use TeoCoin for a discount, pay the rest with card
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {paymentMethod === 'fiat' && (
@@ -349,7 +456,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             {processing ? '⏳ Processing...' : '💳 Pay with Card'}
                         </button>
                     )}
-
                     {paymentMethod === 'teocoin' && (
                         <button
                             onClick={handleTeoCoinPayment}
@@ -359,7 +465,34 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             {processing ? '⏳ Processing...' : '🪙 Pay with TeoCoin'}
                         </button>
                     )}
-
+                    {(() => {
+                        console.log('[Hybrid Render] hybridAvailable:', hybridAvailable, 'paymentMethod:', paymentMethod);
+                        if (paymentMethod === 'hybrid') {
+                            console.log('[Hybrid Render] Rendering hybrid payment button');
+                        }
+                        return paymentMethod === 'hybrid' && (
+                            <div className="hybrid-form">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max={paymentSummary?.user_teocoin_balance || 0}
+                                    value={hybridTeoAmount}
+                                    onChange={e => setHybridTeoAmount(e.target.value)}
+                                    placeholder="TeoCoin to spend"
+                                    disabled={processing}
+                                    style={{ marginRight: 8 }}
+                                />
+                                <button
+                                    onClick={handleHybridPayment}
+                                    disabled={processing}
+                                    className="btn-hybrid"
+                                >
+                                    {processing ? '⏳ Processing...' : 'Hybrid: TEO + Card'}
+                                </button>
+                                {hybridError && <div className="error" style={{ color: 'red', marginTop: 4 }}>{hybridError}</div>}
+                            </div>
+                        );
+                    })()}
                     <button onClick={onClose} className="btn-secondary">
                         Cancel
                     </button>

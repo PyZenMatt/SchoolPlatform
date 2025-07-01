@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
-from django.contrib.auth import get_user_model
+from users.models import User
 import uuid
 import logging
 
@@ -26,7 +26,7 @@ from .exceptions import (
 from courses.models import Course
 from rewards.models import BlockchainTransaction
 
-User = get_user_model()
+# User is now imported directly above
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,289 @@ class PaymentServiceException(TeoArtServiceException):
 
 
 class PaymentService(TransactionalService):
+    def create_hybrid_payment_intent(
+        self,
+        user_id: int,
+        course_id: int,
+        teocoin_to_spend: Decimal,
+        wallet_address: str
+    ) -> Dict[str, Any]:
+        """
+        Create a hybrid payment intent: deduct TeoCoin for discount, pay remainder with fiat (Stripe).
+        Args:
+            user_id: User ID
+            course_id: Course ID
+            teocoin_to_spend: Amount of TeoCoin to spend for discount
+            wallet_address: User's wallet address
+        Returns:
+            dict: Success status, client_secret, payment_intent_id, discounted_amount, discount_applied, etc.
+        """
+        def _hybrid_intent():
+            # Validate user and course
+            try:
+                user = User.objects.get(pk=user_id)
+            except User.DoesNotExist:
+                raise UserNotFoundError(user_id)
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                raise CourseNotFoundError(course_id)
+
+            # Validate wallet
+            if not wallet_address:
+                raise PaymentServiceException("Wallet address required for hybrid payment", "WALLET_REQUIRED", 400)
+
+            # Validate not already enrolled
+            from courses.models import CourseEnrollment
+            if CourseEnrollment.objects.filter(student=user, course=course).exists():
+                raise PaymentServiceException("Already enrolled in this course", "ALREADY_ENROLLED", 400)
+
+            # Validate teocoin_to_spend
+            if teocoin_to_spend <= 0:
+                raise PaymentServiceException("TeoCoin amount must be positive", "INVALID_TEOCOIN_AMOUNT", 400)
+
+            # Check user balance
+            balance = self._get_user_balance(wallet_address)
+            if balance < teocoin_to_spend:
+                raise InsufficientTeoCoinsError(required=float(teocoin_to_spend), available=float(balance))
+
+            # Calculate discount: assume 1 TEO = 1 EUR discount, but cap at max allowed by course discount percent
+            max_discount_eur = (course.price_eur * Decimal(course.teocoin_discount_percent or 0) / 100).quantize(Decimal('0.01'))
+            teocoin_to_use = min(teocoin_to_spend, max_discount_eur)
+            if teocoin_to_use <= 0:
+                raise PaymentServiceException("No discount available for this course", "NO_DISCOUNT", 400)
+
+            # Calculate new price
+            discounted_price = (course.price_eur - teocoin_to_use).quantize(Decimal('0.01'))
+            if discounted_price < 0:
+                discounted_price = Decimal('0.00')
+
+            # Deduct TeoCoin: create a pending BlockchainTransaction (actual transfer after Stripe success)
+            pending_tx = BlockchainTransaction.objects.create(
+                user=user,
+                amount=-teocoin_to_use,
+                transaction_type='hybrid_discount_pending',
+                status='pending',
+                from_address=wallet_address,
+                to_address=getattr(settings, 'REWARD_POOL_ADDRESS', 'reward_pool'),
+                related_object_id=str(course.pk),
+                notes=f"Hybrid payment discount for course: {course.title}"
+            )
+
+            # Create Stripe payment intent for discounted price
+            try:
+                import stripe
+                stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+                intent = stripe.PaymentIntent.create(
+                    amount=int(discounted_price * 100),
+                    currency='eur',
+                    payment_method_types=['card'],
+                    metadata={
+                        'course_id': course.id,
+                        'user_id': user.pk,
+                        'payment_type': 'hybrid',
+                        'teocoin_discount': str(teocoin_to_use),
+                        'course_title': course.title,
+                        'student_email': user.email
+                    },
+                    description=f"Hybrid payment for course: {course.title}"
+                )
+            except ImportError:
+                raise PaymentServiceException("Stripe not installed. Please install stripe package.", "STRIPE_NOT_INSTALLED", 500)
+            except stripe.error.StripeError as e:
+                raise PaymentServiceException(f"Payment processing error: {str(e)}", "STRIPE_ERROR", 400)
+
+            return {
+                'success': True,
+                'client_secret': intent.client_secret,
+                'payment_intent_id': intent.id,
+                'discounted_amount': float(discounted_price),
+                'discount_applied': float(teocoin_to_use),
+                'original_price': float(course.price_eur),
+                'teocoin_pending_tx_id': pending_tx.id,
+                'course_title': course.title,
+                'teocoin_reward': course.teocoin_reward
+            }
+
+        try:
+            return self.execute_in_transaction(_hybrid_intent)
+        except Exception as e:
+            self.log_error(f"Failed to create hybrid payment intent: {str(e)}")
+            raise
+
+    def process_successful_hybrid_payment(
+        self,
+        payment_intent_id: str,
+        course_id: int,
+        user_id: int
+    ) -> Dict[str, Any]:
+        """
+        Complete hybrid payment: confirm Stripe, finalize TeoCoin deduction, enroll user.
+        """
+        def _process_hybrid():
+            try:
+                import stripe
+                stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+            except ImportError:
+                raise PaymentServiceException("Stripe not installed", "STRIPE_NOT_INSTALLED", 500)
+
+            # Validate user and course
+            try:
+                user = User.objects.get(pk=user_id)
+                course = Course.objects.get(id=course_id)
+            except User.DoesNotExist:
+                raise UserNotFoundError(user_id)
+            except Course.DoesNotExist:
+                raise CourseNotFoundError(course_id)
+
+            # Verify payment with Stripe
+            try:
+                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            except stripe.error.StripeError as e:
+                raise PaymentServiceException(f"Payment verification error: {str(e)}", "STRIPE_VERIFICATION_ERROR", 400)
+
+            if intent.status != 'succeeded':
+                raise PaymentServiceException(f"Payment not successful. Status: {intent.status}", "PAYMENT_NOT_SUCCESSFUL", 400)
+
+            # Find pending hybrid discount transaction
+            pending_tx = BlockchainTransaction.objects.filter(
+                user=user,
+                transaction_type='hybrid_discount_pending',
+                related_object_id=str(course.id),
+                status='pending'
+            ).order_by('-created_at').first()
+            if not pending_tx:
+                raise PaymentServiceException("No pending TeoCoin discount found for this payment", "NO_PENDING_DISCOUNT", 400)
+
+            # Mark TeoCoin deduction as completed
+            pending_tx.status = 'completed'
+            pending_tx.transaction_type = 'hybrid_discount'
+            pending_tx.save()
+
+            # Enroll user
+            from courses.models import CourseEnrollment
+            if CourseEnrollment.objects.filter(student=user, course=course).exists():
+                raise PaymentServiceException("Already enrolled in this course", "ALREADY_ENROLLED", 400)
+
+            enrollment = CourseEnrollment.objects.create(
+                student=user,
+                course=course,
+                payment_method='hybrid',
+                amount_paid_eur=Decimal(intent.amount) / 100,
+                amount_paid_teocoin=abs(pending_tx.amount),
+                stripe_payment_intent_id=payment_intent_id,
+                teocoin_reward_given=course.teocoin_reward,
+                enrolled_at=__import__('django.utils.timezone').utils.timezone.now()
+            )
+
+            # Award TeoCoin reward if configured (reuse logic from fiat)
+            teocoin_reward_given = Decimal('0')
+            reward_status = 'none'
+            if course.teocoin_reward > 0:
+                try:
+                    from blockchain.views import teocoin_service
+                    if user.wallet_address:
+                        try:
+                            mint_result = teocoin_service.mint_tokens(
+                                user.wallet_address,
+                                float(course.teocoin_reward)
+                            )
+                            if mint_result:
+                                teocoin_reward_given = course.teocoin_reward
+                                reward_status = 'distributed'
+                                BlockchainTransaction.objects.create(
+                                    user=user,
+                                    transaction_type='reward',
+                                    amount=course.teocoin_reward,
+                                    status='completed',
+                                    transaction_hash=mint_result,
+                                    related_object_id=str(course.id),
+                                    notes=f"Hybrid payment reward for course: {course.title}"
+                                )
+                        except Exception as mint_error:
+                            teocoin_reward_given = course.teocoin_reward
+                            reward_status = 'pending'
+                            BlockchainTransaction.objects.create(
+                                user=user,
+                                transaction_type='reward',
+                                amount=course.teocoin_reward,
+                                status='pending',
+                                related_object_id=str(course.id),
+                                notes=f"Pending hybrid payment reward for course: {course.title} (Mint error: {str(mint_error)})"
+                            )
+                    else:
+                        teocoin_reward_given = course.teocoin_reward
+                        reward_status = 'pending_wallet'
+                        BlockchainTransaction.objects.create(
+                            user=user,
+                            transaction_type='reward',
+                            amount=course.teocoin_reward,
+                            status='pending',
+                            related_object_id=str(course.id),
+                            notes=f"Pending hybrid payment reward for course: {course.title} (No wallet connected)"
+                        )
+                except Exception as blockchain_error:
+                    teocoin_reward_given = course.teocoin_reward
+                    reward_status = 'failed'
+                    BlockchainTransaction.objects.create(
+                        user=user,
+                        transaction_type='reward',
+                        amount=course.teocoin_reward,
+                        status='failed',
+                        related_object_id=str(course.id),
+                        notes=f"Failed hybrid payment reward for course: {course.title} (Error: {str(blockchain_error)})"
+                    )
+
+            # Send notifications (reuse logic)
+            try:
+                from notifications.models import Notification
+                if reward_status == 'distributed':
+                    message = f"🎉 Successfully enrolled in '{course.title}' via hybrid payment! Received {teocoin_reward_given} TEO reward in your wallet."
+                elif reward_status == 'pending_wallet':
+                    message = f"✅ Successfully enrolled in '{course.title}' via hybrid payment! {teocoin_reward_given} TEO reward pending - connect your wallet to claim."
+                elif reward_status == 'pending':
+                    message = f"✅ Successfully enrolled in '{course.title}' via hybrid payment! {teocoin_reward_given} TEO reward will be processed shortly."
+                elif reward_status == 'failed':
+                    message = f"✅ Successfully enrolled in '{course.title}' via hybrid payment! {teocoin_reward_given} TEO reward pending (technical issue)."
+                else:
+                    message = f"✅ Successfully enrolled in '{course.title}' via hybrid payment!"
+                Notification.objects.create(
+                    user=user,
+                    message=message,
+                    notification_type='course_purchased'
+                )
+                if course.teacher != user:
+                    Notification.objects.create(
+                        user=course.teacher,
+                        message=f"New student {user.get_full_name() or user.username} enrolled in your course '{course.title}' (€{enrollment.amount_paid_eur} + {enrollment.amount_paid_teocoin} TEO)",
+                        notification_type='course_enrollment'
+                    )
+            except Exception as notification_error:
+                self.log_error(f"Notification failed: {notification_error}")
+
+            return {
+                'success': True,
+                'enrollment': {
+                    'id': enrollment.id,
+                    'course_title': course.title,
+                    'payment_method': enrollment.payment_method,
+                    'amount_paid_eur': enrollment.amount_paid_eur,
+                    'amount_paid_teocoin': enrollment.amount_paid_teocoin,
+                    'enrolled_at': enrollment.enrolled_at
+                },
+                'teocoin_reward': {
+                    'amount': teocoin_reward_given,
+                    'status': reward_status
+                },
+                'amount_paid': enrollment.amount_paid_eur,
+                'message': message
+            }
+
+        try:
+            return self.execute_in_transaction(_process_hybrid)
+        except Exception as e:
+            self.log_error(f"Failed to process hybrid payment: {str(e)}")
+            raise
     """
     Service for handling payment operations.
     
@@ -65,7 +348,7 @@ class PaymentService(TransactionalService):
         def _initiate_operation():
             # Validate user
             try:
-                user = User.objects.get(id=user_id)
+                user = User.objects.get(pk=user_id)
             except User.DoesNotExist:
                 raise UserNotFoundError(user_id)
             
@@ -114,21 +397,19 @@ class PaymentService(TransactionalService):
             
             # Check balance
             balance = self._get_user_balance(wallet_address)
-            if balance < course.price:
+            if balance < course.price_eur:
                 raise InsufficientTeoCoinsError(
-                    required=float(course.price),
+                    required=float(course.price_eur),
                     available=float(balance)
                 )
-            
             # Calculate payment breakdown
-            commission_amount = course.price * self.PLATFORM_COMMISSION_RATE
-            teacher_amount = course.price - commission_amount
-            
+            commission_amount = course.price_eur * self.PLATFORM_COMMISSION_RATE
+            teacher_amount = course.price_eur - commission_amount
             return {
                 'payment_required': True,
-                'course_id': course.id,
+                'course_id': course.pk,
                 'course_title': course.title,
-                'course_price': float(course.price),
+                'course_price': float(course.price_eur),
                 'teacher_amount': float(teacher_amount),
                 'commission_amount': float(commission_amount),
                 'commission_rate': f"{float(self.PLATFORM_COMMISSION_RATE * 100)}%",
@@ -136,7 +417,7 @@ class PaymentService(TransactionalService):
                 'student_address': wallet_address,
                 'student_balance': float(balance),
                 'payment_breakdown': {
-                    'total_price': float(course.price),
+                    'total_price': float(course.price_eur),
                     'teacher_receives': float(teacher_amount),
                     'platform_commission': float(commission_amount),
                     'commission_percentage': float(self.PLATFORM_COMMISSION_RATE * 100)
@@ -164,7 +445,7 @@ class PaymentService(TransactionalService):
         def _complete_operation():
             # Validate user
             try:
-                user = User.objects.get(id=user_id)
+                user = User.objects.get(pk=user_id)
             except User.DoesNotExist:
                 raise UserNotFoundError(user_id)
             
@@ -187,7 +468,7 @@ class PaymentService(TransactionalService):
                 transaction_hash, 
                 wallet_address, 
                 course.teacher.wallet_address,
-                course.price
+                course.price_eur
             ):
                 raise PaymentServiceException(
                     "Blockchain transaction verification failed",
@@ -196,8 +477,8 @@ class PaymentService(TransactionalService):
                 )
             
             # Calculate amounts
-            commission_amount = course.price * self.PLATFORM_COMMISSION_RATE
-            teacher_amount = course.price - commission_amount
+            commission_amount = course.price_eur * self.PLATFORM_COMMISSION_RATE
+            teacher_amount = course.price_eur - commission_amount
             
             # Enroll student in course
             course.students.add(user)
@@ -205,13 +486,13 @@ class PaymentService(TransactionalService):
             # Record purchase transaction
             purchase_tx = BlockchainTransaction.objects.create(
                 user=user,
-                amount=-course.price,
+                amount=-course.price_eur,
                 transaction_type='course_purchase',
                 status='completed',
                 transaction_hash=transaction_hash,
                 from_address=wallet_address,
                 to_address=course.teacher.wallet_address,
-                related_object_id=str(course.id),
+                related_object_id=str(course.pk),
                 notes=f"Course purchase: {course.title}"
             )
             
@@ -224,7 +505,7 @@ class PaymentService(TransactionalService):
                 transaction_hash=transaction_hash,
                 from_address=wallet_address,
                 to_address=course.teacher.wallet_address,
-                related_object_id=str(course.id),
+                related_object_id=str(course.pk),
                 notes=f"Earnings from course sale: {course.title}"
             )
             
@@ -237,7 +518,7 @@ class PaymentService(TransactionalService):
                 transaction_hash=transaction_hash,
                 from_address=wallet_address,
                 to_address=getattr(settings, 'REWARD_POOL_ADDRESS', 'reward_pool'),
-                related_object_id=str(course.id),
+                related_object_id=str(course.pk),
                 notes=f"Platform commission from course purchase: {course.title}"
             )
             
@@ -249,11 +530,11 @@ class PaymentService(TransactionalService):
             return {
                 'success': True,
                 'message': 'Course purchased successfully',
-                'course_id': course.id,
+                'course_id': course.pk,
                 'course_title': course.title,
-                'student_id': user.id,
+                'student_id': user.pk,
                 'student_username': user.username,
-                'total_paid': float(course.price),
+                'total_paid': float(course.price_eur),
                 'teacher_received': float(teacher_amount),
                 'platform_commission': float(commission_amount),
                 'transaction_hash': transaction_hash,
@@ -283,7 +564,7 @@ class PaymentService(TransactionalService):
         try:
             # Validate user
             try:
-                user = User.objects.get(id=user_id)
+                user = User.objects.get(pk=user_id)
             except User.DoesNotExist:
                 raise UserNotFoundError(user_id)
             
@@ -307,7 +588,7 @@ class PaymentService(TransactionalService):
                     try:
                         course = Course.objects.get(id=int(tx.related_object_id))
                         related_course = {
-                            'id': course.id,
+                            'id': course.pk,
                             'title': course.title,
                             'teacher': course.teacher.username
                         }
@@ -315,7 +596,7 @@ class PaymentService(TransactionalService):
                         pass
                 
                 transactions.append({
-                    'id': tx.id,
+                    'id': tx.pk,
                     'amount': float(tx.amount),
                     'transaction_type': tx.transaction_type,
                     'status': tx.status,
@@ -364,9 +645,9 @@ class PaymentService(TransactionalService):
             total_commission = total_revenue - total_teacher_earnings
             
             return {
-                'course_id': course.id,
+                'course_id': course.pk,
                 'course_title': course.title,
-                'teacher_id': course.teacher.id,
+                'teacher_id': course.teacher.pk,
                 'teacher_username': course.teacher.username,
                 'total_sales': total_sales,
                 'total_revenue': float(total_revenue),
@@ -514,7 +795,7 @@ class PaymentService(TransactionalService):
             
             # Validate user
             try:
-                user = User.objects.get(id=user_id)
+                user = User.objects.get(pk=user_id)
             except User.DoesNotExist:
                 raise UserNotFoundError(user_id)
             
@@ -549,7 +830,7 @@ class PaymentService(TransactionalService):
                     payment_method_types=['card'],
                     metadata={
                         'course_id': course.id,
-                        'user_id': user.id,
+                        'user_id': user.pk,
                         'payment_type': 'course_purchase',
                         'teocoin_reward': str(course.teocoin_reward),
                         'course_title': course.title,
@@ -611,7 +892,7 @@ class PaymentService(TransactionalService):
             
             # Validate user and course
             try:
-                user = User.objects.get(id=user_id)
+                user = User.objects.get(pk=user_id)
                 course = Course.objects.get(id=course_id)
             except User.DoesNotExist:
                 raise UserNotFoundError(user_id)
@@ -830,7 +1111,7 @@ class PaymentService(TransactionalService):
             dict: Payment options and user eligibility
         """
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(pk=user_id)
             course = Course.objects.get(id=course_id)
         except User.DoesNotExist:
             raise UserNotFoundError(user_id)
@@ -851,9 +1132,37 @@ class PaymentService(TransactionalService):
                 }
             }
         
-        # Get pricing options
-        pricing_options = course.get_pricing_options()
-        
+        # Always return both payment options for frontend compatibility
+        pricing_options = []
+        # Fiat option
+        pricing_options.append({
+            'method': 'fiat',
+            'price': course.price_eur,
+            'currency': 'EUR',
+            'reward': course.teocoin_reward,
+            'description': f'€{course.price_eur} + {course.teocoin_reward} TEO reward',
+            'disabled': course.price_eur == 0
+        })
+        # TeoCoin option
+        teocoin_price = course.get_teocoin_price() if course.price_eur > 0 else 0
+        pricing_options.append({
+            'method': 'teocoin',
+            'price': teocoin_price,
+            'currency': 'TEO',
+            'discount': course.teocoin_discount_percent if course.price_eur > 0 else 0,
+            'description': f'{teocoin_price} TEO ({course.teocoin_discount_percent}% discount)' if course.price_eur > 0 else 'Not available for free courses',
+            'disabled': course.price_eur == 0
+        })
+        # Free option (for clarity, but mark as disabled for paid courses)
+        pricing_options.append({
+            'method': 'free',
+            'price': 0,
+            'currency': 'FREE',
+            'reward': course.teocoin_reward,
+            'description': f'Free + {course.teocoin_reward} TEO reward',
+            'disabled': course.price_eur > 0
+        })
+
         # Check TeoCoin balance if applicable
         teocoin_balance = Decimal('0')
         if user.wallet_address:
@@ -862,12 +1171,16 @@ class PaymentService(TransactionalService):
                 teocoin_balance = Decimal(str(balance))
             except:
                 pass
-        
+
+        can_pay_with_teocoin = False
+        if course.price_eur > 0 and course.get_teocoin_price() > 0:
+            can_pay_with_teocoin = bool(user.wallet_address) and teocoin_balance >= course.get_teocoin_price()
+
         return {
             'already_enrolled': False,
             'pricing_options': pricing_options,
             'user_teocoin_balance': teocoin_balance,
-            'can_pay_with_teocoin': teocoin_balance >= course.get_teocoin_price() if course.get_teocoin_price() > 0 else False,
+            'can_pay_with_teocoin': can_pay_with_teocoin,
             'wallet_connected': bool(user.wallet_address),
             'course_approved': course.is_approved
         }

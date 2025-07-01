@@ -31,8 +31,10 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
   const fiatPrice = course?.price_eur || 0;
   const teoReward = course?.teocoin_reward || 0;
   const teoDiscount = course?.teocoin_discount_percent || 10;
-  const teoPrice = course?.price || 0;
-  const discountedTeoPrice = teoPrice * (1 - teoDiscount / 100);
+  // Use backend-calculated teocoin_price if available
+  const discountedTeoPrice = course?.teocoin_price || 0;
+  // For strikethrough display, show the original (non-discounted) TEO price
+  const teoPrice = course?.price_eur ? course.price_eur * 10 : 0;
 
   // Load balances when modal opens (for TeoCoin tab)
   React.useEffect(() => {

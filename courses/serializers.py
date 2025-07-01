@@ -188,18 +188,21 @@ class CourseSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     student_count = serializers.SerializerMethodField()
     cover_image_url = serializers.SerializerMethodField()
+    teocoin_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
         fields = [
             'id', 'title', 'description', 'category', 'category_display', 'cover_image', 'cover_image_url',
-            'price_eur', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
+            'price_eur', 'teocoin_price', 'teacher', 'lessons', 'total_duration', 'students', 'student_count',
             'created_at', 'updated_at', 'is_enrolled', 'is_approved'
         ]
         read_only_fields = ['teacher', 'students']
         extra_kwargs = {
             'lessons': {'read_only': True}
         }
+    def get_teocoin_price(self, obj):
+        return obj.get_teocoin_price() if hasattr(obj, 'get_teocoin_price') else None
 
     # Removed validate_price since 'price' field is gone
 
