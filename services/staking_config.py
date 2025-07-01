@@ -5,12 +5,12 @@ This file will be updated after contract deployment with the actual contract add
 For now, it contains placeholder values and configuration for local development.
 """
 
-# Contract deployment info (to be updated after deployment)
-STAKING_CONTRACT_ADDRESS = None  # Will be set after deployment
-STAKING_ABI = None  # Will be set after deployment
+# Contract deployment info (LIVE CONTRACTS - July 1, 2025)
+STAKING_CONTRACT_ADDRESS = "0xd74fc566c0c5b83f95fd82e6866d8a7a6eaca7a9"  # Live on Polygon Amoy
+STAKING_ABI = None  # Will be loaded from ThirdWeb artifacts
 
-# Development/Testing Configuration
-DEVELOPMENT_MODE = True
+# Production Configuration - Live Contracts
+DEVELOPMENT_MODE = False
 
 # If no deployed contract, use these settings for simulation
 TIER_CONFIG = {
@@ -69,31 +69,28 @@ SAMPLE_STAKING_ABI = [
 ]
 
 def load_contract_config():
-    """Load contract configuration after deployment"""
+    """Load contract configuration - now using live deployed contracts"""
+    import json
+    import os
+    from django.conf import settings
+    
     try:
-        import json
-        import os
-        
-        # Try to load from deployment_info.json if it exists
-        deployment_file = 'deployment_info.json'
-        if os.path.exists(deployment_file):
-            with open(deployment_file, 'r') as f:
-                deployment_info = json.load(f)
-                
-            global STAKING_CONTRACT_ADDRESS, STAKING_ABI, DEVELOPMENT_MODE
-            STAKING_CONTRACT_ADDRESS = deployment_info.get('contract_address')
-            STAKING_ABI = deployment_info.get('abi')
-            DEVELOPMENT_MODE = False
+        # Load ABI from the extracted file
+        abi_file = os.path.join(settings.BASE_DIR, 'blockchain', 'staking_abi.json')
+        if os.path.exists(abi_file):
+            with open(abi_file, 'r') as f:
+                abi_data = json.load(f)
             
+            # Use live contract configuration
             return {
                 'address': STAKING_CONTRACT_ADDRESS,
-                'abi': STAKING_ABI,
-                'development_mode': False
+                'abi': abi_data,
+                'development_mode': DEVELOPMENT_MODE
             }
     except Exception as e:
-        print(f"Could not load contract config: {e}")
+        print(f"Could not load live contract config: {e}")
     
-    # Return development configuration
+    # Fallback to development configuration
     return {
         'address': None,
         'abi': SAMPLE_STAKING_ABI,

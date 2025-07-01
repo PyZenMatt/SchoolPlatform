@@ -383,14 +383,39 @@ CACHE_MIDDLEWARE_ALIAS = 'default'
 CACHE_MIDDLEWARE_SECONDS = 300
 CACHE_MIDDLEWARE_KEY_PREFIX = 'teoart'
 
+# ========== TEOCOIN STAKING CONTRACT CONFIGURATION ==========
+
+# TeoCoin Staking Contract Configuration  
+TEOCOIN_STAKING_CONTRACT_ADDRESS = os.getenv('TEOCOIN_STAKING_CONTRACT', '0xd74fc566c0c5b83f95fd82e6866d8a7a6eaca7a9')
+
+# Load staking contract ABI
+def load_staking_abi():
+    try:
+        import json
+        abi_path = os.path.join(BASE_DIR, 'blockchain', 'staking_abi.json')
+        with open(abi_path, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+TEOCOIN_STAKING_CONTRACT_ABI = load_staking_abi()
+
 # ========== TEOCOIN DISCOUNT SYSTEM CONFIGURATION ==========
 
 # TeoCoin Discount Contract Configuration
-TEOCOIN_DISCOUNT_CONTRACT_ADDRESS = os.getenv('TEOCOIN_DISCOUNT_CONTRACT_ADDRESS')
-TEOCOIN_DISCOUNT_CONTRACT_ABI = [
-    # This will be populated when we deploy the contract
-    # For now, it's a placeholder that will be updated
-]
+TEOCOIN_DISCOUNT_CONTRACT_ADDRESS = os.getenv('TEOCOIN_DISCOUNT_CONTRACT', '0xd30afec0bc6ac33e14a0114ec7403bbd746e88de')
+
+# Load discount contract ABI
+def load_discount_abi():
+    try:
+        import json
+        abi_path = os.path.join(BASE_DIR, 'blockchain', 'discount_abi.json')
+        with open(abi_path, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+TEOCOIN_DISCOUNT_CONTRACT_ABI = load_discount_abi()
 
 # Platform account private key for gas-free transactions
 PLATFORM_PRIVATE_KEY = os.getenv('PLATFORM_PRIVATE_KEY')

@@ -43,7 +43,7 @@ class TeoCoinStakingService:
         # Initialize contract if deployed
         if self.staking_contract_address and self.staking_abi:
             self.staking_contract = self.web3.eth.contract(
-                address=self.staking_contract_address,
+                address=self.web3.to_checksum_address(self.staking_contract_address),
                 abi=self.staking_abi
             )
             logger.info(f"Staking contract initialized at: {self.staking_contract_address}")
