@@ -505,11 +505,16 @@ class TeoCoinDiscountService:
             raise ValueError(f"Discount percent must be between 5 and {self.MAX_DISCOUNT_PERCENT}")
     
     def _calculate_teo_amounts(self, course_price_cents: int, discount_percent: int) -> Tuple[int, int]:
-        """Calculate TEO cost and teacher bonus in wei"""
+        """
+        Calculate TEO cost and teacher bonus in wei
+        
+        Note: The contract's calculateTeoCost function has a bug where it doesn't
+        multiply by 1e18 to convert to wei. We compensate for this here.
+        """
         discount_value_cents = (course_price_cents * discount_percent) // 100
         teo_cost_float = (discount_value_cents * self.TEO_TO_EUR_RATE) / 100
         
-        # Convert to wei (18 decimals)
+        # Convert to wei (18 decimals) and compensate for contract bug
         teo_cost_wei = int(teo_cost_float * 10**18)
         teacher_bonus_wei = (teo_cost_wei * self.TEACHER_BONUS_PERCENT) // 100
         
