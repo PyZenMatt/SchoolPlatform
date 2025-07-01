@@ -35,6 +35,13 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const [paymentMethod, setPaymentMethod] = useState('fiat');
     const [paymentSummary, setPaymentSummary] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [discountApplied, setDiscountApplied] = useState(false);
+
+    // Check if TeoCoin discount was applied
+    useEffect(() => {
+        const applied = localStorage.getItem('applied_teocoin_discount');
+        setDiscountApplied(!!applied);
+    }, [paymentMethod]);
 
     // ⚡ PERFORMANCE: Memoize cache key
     const cacheKey = useMemo(() => `payment_summary_${course.id}`, [course.id]);
@@ -106,27 +113,40 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
         try {
             console.log('📡 Importing API functions...');
-            // ⚡ PERFORMANCE: Dynamic import only when payment is initiated
-            const { createPaymentIntent, confirmPayment } = await import('../services/api/courses');
             
-            console.log('💳 Creating payment intent for course:', course.id);
-            // Create payment intent using our optimized API
-            const intentResponse = await createPaymentIntent(course.id, {
-                teocoin_discount: 0,  // No discount for Stripe payments
-                payment_method: 'stripe'
-            });
+            // Check if TeoCoin discount was applied
+            const appliedDiscount = localStorage.getItem('applied_teocoin_discount');
+            let client_secret, discountInfo = null;
             
-            console.log('📝 Payment intent response:', intentResponse);
-            
-            if (!intentResponse.data.success) {
-                throw new Error(intentResponse.data.error || 'Failed to create payment intent');
+            if (appliedDiscount) {
+                // Use the discounted payment intent
+                discountInfo = JSON.parse(appliedDiscount);
+                client_secret = discountInfo.client_secret;
+                console.log('💰 Using TeoCoin discounted payment intent:', discountInfo);
+            } else {
+                // Create new payment intent for full price
+                const { createPaymentIntent } = await import('../services/api/courses');
+                
+                console.log('💳 Creating payment intent for course:', course.id);
+                const intentResponse = await createPaymentIntent(course.id, {
+                    teocoin_discount: 0,  // No discount for Stripe payments
+                    payment_method: 'stripe'
+                });
+                
+                console.log('📝 Payment intent response:', intentResponse);
+                
+                if (!intentResponse.data.success) {
+                    throw new Error(intentResponse.data.error || 'Failed to create payment intent');
+                }
+                
+                client_secret = intentResponse.data.client_secret;
             }
 
-            console.log('✅ Payment intent created, confirming with Stripe...');
+            console.log('✅ Payment intent ready, confirming with Stripe...');
             // ⚡ PERFORMANCE: Pre-filled billing details to skip form validation
             const cardElement = elements.getElement(CardElement);
             const { error, paymentIntent } = await stripe.confirmCardPayment(
-                intentResponse.data.client_secret,
+                client_secret,
                 {
                     payment_method: {
                         card: cardElement,
@@ -156,16 +176,24 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             if (paymentIntent.status === 'succeeded') {
                 console.log('✅ Payment succeeded, confirming with backend...');
                 // ⚡ PERFORMANCE: Parallel backend confirmation
+                const { confirmPayment } = await import('../services/api/courses');
                 const confirmResponse = await confirmPayment(course.id, paymentIntent.id);
                 
                 console.log('📋 Backend confirmation response:', confirmResponse);
                 
                 if (confirmResponse.data.success) {
                     console.log('🎉 Payment completed successfully!');
+                    
+                    // Clear discount info after successful payment
+                    if (appliedDiscount) {
+                        localStorage.removeItem('applied_teocoin_discount');
+                    }
+                    
                     onSuccess({
-                        method: 'fiat',
+                        method: discountInfo ? 'hybrid' : 'fiat',
                         amount: paymentIntent.amount,
                         teocoinReward: confirmResponse.data.teocoin_reward,
+                        teocoinDiscount: discountInfo,
                         enrollment: confirmResponse.data.enrollment
                     });
                 } else {
@@ -216,40 +244,47 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             
             console.log('🔍 Debug: walletAddress being used:', walletAddress);
 
-            // Use the new discount-based payment intent creation
+            // Use the new discount-based payment intent creation for discounted amount
             const { createPaymentIntent } = await import('../services/api/courses');
             
             console.log('🪙 Processing TeoCoin discount payment...');
             const intentResponse = await createPaymentIntent(course.id, {
                 teocoin_discount: teoOption.discount,
-                payment_method: 'teocoin',
+                payment_method: 'hybrid', // Use hybrid to get discounted Stripe payment
                 wallet_address: walletAddress
             });
             
-            console.log('📝 TeoCoin payment response:', intentResponse);
+            console.log('📝 TeoCoin discount response:', intentResponse);
             
             if (!intentResponse.data.success) {
-                throw new Error(intentResponse.data.error || 'Failed to process TeoCoin payment');
+                throw new Error(intentResponse.data.error || 'Failed to process TeoCoin discount');
             }
 
             const data = intentResponse.data;
             
-            // Show success with discount details and automatically complete enrollment
-            const message = `✅ Discount applied! You saved €${data.discount_applied} using ${data.teo_cost} TEO. Course enrollment complete!`;
+            // Show success message and switch to card payment for discounted amount
+            const discountMessage = `✅ TeoCoin discount applied! You saved €${data.discount_applied} using ${data.teo_cost} TEO. Now pay the remaining €${data.final_amount} with your card.`;
             
-            onSuccess({
-                method: 'teocoin_discount',
+            // Show notification about discount applied
+            console.log(discountMessage);
+            
+            // Switch to fiat payment method to complete purchase with discounted amount
+            setPaymentMethod('fiat');
+            
+            // Store the discount information for the card payment
+            localStorage.setItem('applied_teocoin_discount', JSON.stringify({
                 discount: teoOption.discount,
-                final_amount: data.final_amount,
                 discount_applied: data.discount_applied,
                 teo_cost: data.teo_cost,
-                teacher_bonus: data.teacher_bonus,
-                message: message,
-                enrollment: true  // Automatically enrolled
-            });
+                final_amount: data.final_amount,
+                client_secret: data.client_secret // Use discounted payment intent
+            }));
+            
+            // Show success message without closing modal
+            alert(discountMessage);
             
         } catch (error) {
-            console.error('TeoCoin payment error:', error);
+            console.error('TeoCoin discount error:', error);
             onError(error.message);
         } finally {
             setProcessing(false);
@@ -382,7 +417,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             disabled={processing || !stripe}
                             className="btn-primary"
                         >
-                            {processing ? '⏳ Processing...' : '💳 Pay with Card'}
+                            {processing ? '⏳ Processing...' : 
+                             discountApplied ? '💳 Pay Discounted Amount' : '💳 Pay with Card'}
                         </button>
                     )}
                     {paymentMethod === 'teocoin' && (
@@ -391,7 +427,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             disabled={processing}
                             className="btn-crypto"
                         >
-                            {processing ? '⏳ Processing...' : '🪙 Apply Discount & Pay'}
+                            {processing ? '⏳ Processing...' : '🪙 Apply Discount'}
                         </button>
                     )}
                     <button onClick={onClose} className="btn-secondary">
@@ -401,7 +437,13 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
                 {paymentMethod === 'teocoin' && (
                     <div className="teocoin-info">
-                        ℹ️ This will automatically deduct the required TEO for the discount and complete your enrollment.
+                        ℹ️ This will apply your TeoCoin discount. You'll then pay the reduced amount with your card.
+                    </div>
+                )}
+
+                {discountApplied && paymentMethod === 'fiat' && (
+                    <div className="discount-applied-info">
+                        ✅ TeoCoin discount applied! Complete your purchase at the reduced price.
                     </div>
                 )}
             </div>

@@ -55,8 +55,8 @@ class CreatePaymentIntentView(APIView):
                     'error': 'Course does not have EUR pricing configured'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Handle TeoCoin discount payments
-            if payment_method == 'teocoin' and teocoin_discount > 0:
+            # Handle TeoCoin discount payments and hybrid payments
+            if payment_method in ['teocoin', 'hybrid'] and teocoin_discount > 0:
                 # Use the gas-free TeoCoin discount service
                 from services.teocoin_discount_service import teocoin_discount_service
                 from courses.models import Course
@@ -102,35 +102,64 @@ class CreatePaymentIntentView(APIView):
                         'error': 'Insufficient reward pool balance for teacher bonus'
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                # For now, return the calculation (we'll implement the actual discount request later)
+                # Calculate final price after discount
                 final_price = amount_eur - discount_value_eur
                 
-                # TODO: Implement actual TeoCoin transfer via discount contract
-                # For now, we'll simulate successful enrollment
-                from courses.models import Course, CourseEnrollment
+                # If hybrid payment, create Stripe payment intent for remaining amount
+                if payment_method == 'hybrid':
+                    # Create Stripe payment intent for the discounted amount
+                    result = cached_payment_service.create_payment_intent_optimized(
+                        user_id=request.user.id,
+                        course_id=course_id,
+                        amount_eur=Decimal(str(final_price))
+                    )
+                    
+                    if result.get('success'):
+                        return Response({
+                            'success': True,
+                            'payment_method': 'hybrid',
+                            'client_secret': result['client_secret'],
+                            'payment_intent_id': result['payment_intent_id'],
+                            'final_amount': float(final_price),
+                            'discount_applied': float(discount_value_eur),
+                            'teo_cost': float(required_teo),
+                            'teacher_bonus': float(required_bonus),
+                            'message': f'TeoCoin discount applied. Pay remaining €{final_price:.2f} with card'
+                        }, status=status.HTTP_200_OK)
+                    else:
+                        return Response({
+                            'success': False,
+                            'error': result.get('error', 'Failed to create discounted payment intent')
+                        }, status=status.HTTP_400_BAD_REQUEST)
                 
-                # Create enrollment for the user
-                course_obj = Course.objects.get(id=course_id)
-                enrollment, created = CourseEnrollment.objects.get_or_create(
-                    student=request.user,
-                    course=course_obj,
-                    defaults={
+                # Full TeoCoin payment (only when payment_method == 'teocoin')
+                else:
+                    # TODO: Implement actual TeoCoin transfer via discount contract
+                    # For now, we'll simulate successful enrollment
+                    from courses.models import CourseEnrollment
+                    
+                    # Create enrollment for the user
+                    course_obj = Course.objects.get(id=course_id)
+                    enrollment, created = CourseEnrollment.objects.get_or_create(
+                        student=request.user,
+                        course=course_obj,
+                        defaults={
+                            'payment_method': 'teocoin_discount',
+                            'amount_paid_eur': final_price
+                        }
+                    )
+                    
+                    return Response({
+                        'success': True,
                         'payment_method': 'teocoin_discount',
-                        'amount_paid_eur': final_price
-                    }
-                )
-                
-                return Response({
-                    'success': True,
-                    'payment_method': 'teocoin_discount',
-                    'final_amount': float(final_price),
-                    'discount_applied': float(discount_value_eur),
-                    'teo_cost': float(required_teo),
-                    'teacher_bonus': float(required_bonus),
-                    'enrollment_created': created,
-                    'enrollment_id': enrollment.id,
-                    'message': f'Successfully enrolled! Applied {teocoin_discount}% discount using {required_teo:.2f} TEO'
-                }, status=status.HTTP_200_OK)
+                        'final_amount': float(final_price),
+                        'discount_applied': float(discount_value_eur),
+                        'teo_cost': float(required_teo),
+                        'teacher_bonus': float(required_bonus),
+                        'enrollment_created': created,
+                        'enrollment_id': enrollment.id,
+                        'message': f'Successfully enrolled! Applied {teocoin_discount}% discount using {required_teo:.2f} TEO'
+                    }, status=status.HTTP_200_OK)
             
             # ⚡ PERFORMANCE: Create payment intent using optimized service
             result = cached_payment_service.create_payment_intent_optimized(
