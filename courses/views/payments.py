@@ -35,6 +35,10 @@ class CreatePaymentIntentView(APIView):
     @method_decorator(payment_rate_limit(max_requests=5, window=60))
     def post(self, request, course_id):
         try:
+            # Get request data
+            teocoin_discount = request.data.get('teocoin_discount', 0)
+            payment_method = request.data.get('payment_method', 'stripe')
+            
             # ⚡ PERFORMANCE: Get cached course data first
             course_data = cached_payment_service.get_course_pricing_cached(course_id)
             if 'error' in course_data:
@@ -50,6 +54,37 @@ class CreatePaymentIntentView(APIView):
                     'success': False,
                     'error': 'Course does not have EUR pricing configured'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Handle TeoCoin discount payments
+            if payment_method == 'teocoin' and teocoin_discount > 0:
+                # Use the TeoCoin discount service
+                from services.teo_discount_service import teo_discount_service
+                from courses.models import Course
+                
+                course = Course.objects.get(id=course_id)
+                teocoin_to_spend = Decimal(str(teocoin_discount * amount_eur / 100))  # Convert percentage to amount
+                
+                result = teo_discount_service.apply_teocoin_discount(
+                    user=request.user,
+                    course=course,
+                    teocoin_to_spend=teocoin_to_spend
+                )
+                
+                if result['success']:
+                    return Response({
+                        'success': True,
+                        'payment_method': 'teocoin_discount',
+                        'final_amount': result['final_price_eur'],
+                        'discount_applied': result['discount_applied_eur'],
+                        'teocoin_spent': result['teocoin_spent'],
+                        'enrollment': True,  # TeoCoin payments are instant
+                        'message': result['message']
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'success': False,
+                        'error': result['error']
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
             # ⚡ PERFORMANCE: Create payment intent using optimized service
             result = cached_payment_service.create_payment_intent_optimized(
