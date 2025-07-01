@@ -202,7 +202,10 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             
             console.log('💳 Creating payment intent for course:', course.id);
             // Create payment intent using our optimized API
-            const intentResponse = await createPaymentIntent(course.id);
+            const intentResponse = await createPaymentIntent(course.id, {
+                teocoin_discount: 0,  // No discount for Stripe payments
+                payment_method: 'stripe'
+            });
             
             console.log('📝 Payment intent response:', intentResponse);
             
@@ -277,26 +280,35 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const handleTeoCoinPayment = async () => {
         setProcessing(true);
         try {
-            // Use the purchaseCourse API helper which posts to /courses/${courseId}/purchase/
-            const { purchaseCourse } = await import('../services/api/courses');
-            // Get wallet address (assume from user profile or context)
-            const walletAddress = localStorage.getItem('wallet_address');
-            if (!walletAddress) {
-                onError('Connect your wallet to pay with TeoCoin');
-                setProcessing(false);
-                return;
+            // Find the TeoCoin pricing option to get discount amount
+            const teoOption = pricingOptions.find(opt => opt.method === 'teocoin');
+            if (!teoOption || !teoOption.discount) {
+                throw new Error('TeoCoin discount not available');
             }
-            const response = await purchaseCourse(course.id, walletAddress, { payment_method: 'teocoin' });
-            const data = response.data;
-            if (data.success) {
-                onSuccess({
-                    method: 'teocoin',
-                    amount: course.teocoin_price,
-                    enrollment: data.enrollment
-                });
-            } else {
-                throw new Error(data.error || 'TeoCoin payment failed');
+
+            // Use the new discount-based payment intent creation
+            const { createPaymentIntent } = await import('../services/api/courses');
+            
+            console.log('🪙 Creating TeoCoin discount payment intent...');
+            const intentResponse = await createPaymentIntent(course.id, {
+                teocoin_discount: teoOption.discount,
+                payment_method: 'teocoin'
+            });
+            
+            console.log('📝 TeoCoin payment intent response:', intentResponse);
+            
+            if (!intentResponse.data.success) {
+                throw new Error(intentResponse.data.error || 'Failed to create TeoCoin payment intent');
             }
+
+            // For TeoCoin payments, the backend should handle the discount automatically
+            onSuccess({
+                method: 'teocoin',
+                discount: teoOption.discount,
+                amount: intentResponse.data.final_amount,
+                enrollment: intentResponse.data.enrollment
+            });
+            
         } catch (error) {
             onError(error.message);
         } finally {

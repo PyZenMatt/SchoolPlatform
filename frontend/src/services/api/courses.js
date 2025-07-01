@@ -105,9 +105,13 @@ export const fetchExerciseDetail = async (exerciseId) => {
 };
 
 // ⚡ OPTIMIZED Payment endpoints with caching and performance improvements
-export const createPaymentIntent = async (courseId) => {
+export const createPaymentIntent = async (courseId, options = {}) => {
   // No caching for payment intents (security)
-  return api.post(`courses/${courseId}/create-payment-intent/`);
+  const payload = {
+    teocoin_discount: options.teocoin_discount || 0,
+    payment_method: options.payment_method || 'stripe'
+  };
+  return api.post(`courses/${courseId}/create-payment-intent/`, payload);
 };
 
 export const confirmPayment = async (courseId, paymentIntentId) => {
