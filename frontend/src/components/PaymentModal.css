@@ -143,6 +143,20 @@
   transform: translateY(-2px) translateZ(0); /* ⚡ Enhanced selection feedback */
 }
 
+.payment-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.payment-option.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e2e8f0;
+}
+
 .option-header {
   display: flex;
   align-items: flex-start;
@@ -493,6 +507,54 @@
   /* ⚡ Ensure content is optimized for first paint */
   contain: layout style paint;
   will-change: transform;
+}
+
+/* Discount state styles */
+.discount-applied-info {
+  background: #d1fae5;
+  border: 1px solid #065f46;
+  border-radius: 8px;
+  padding: 12px;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.discount-locked {
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  border-left: 3px solid #d1d5db;
+}
+
+.payment-option.insufficient-balance {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.payment-option.insufficient-balance:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #fecaca;
+}
+
+.insufficient-balance-warning {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #fef2f2;
+  border-radius: 4px;
+  border-left: 3px solid #ef4444;
 }
 
 /* ⚡ Performance hint for hardware acceleration */

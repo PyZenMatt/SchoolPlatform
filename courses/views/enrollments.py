@@ -89,7 +89,7 @@ class PurchaseCourseView(APIView):
                         "student_paid": result['total_paid'],
                         "teacher_received": result['teacher_received'],
                         "platform_commission": result['platform_commission'],
-                        "commission_rate": "15%"
+                        "commission_rate": "50%"  # Updated to new business model
                     },
                     "enrollment_confirmed": result['enrollment_confirmed']
                 }, status=status.HTTP_200_OK)
@@ -137,8 +137,8 @@ class PurchaseCourseView(APIView):
                 )
                 
                 # Calcola commissione e importo netto teacher
-                commission_amount = course.price * Decimal('0.15')  # 15% di commissione
-                teacher_net_amount = course.price - commission_amount  # 85% rimane al teacher
+                commission_amount = course.price * Decimal('0.50')  # 50% di commissione (base rate)
+                teacher_net_amount = course.price - commission_amount  # 50% rimane al teacher (75% with staking)
                 
                 # Record teacher earnings transaction (teacher riceve)
                 teacher_earning_transaction = BlockchainTransaction.objects.create(
@@ -188,7 +188,7 @@ class PurchaseCourseView(APIView):
                         "student_paid": str(course.price),
                         "teacher_received": str(teacher_net_amount),
                         "platform_commission": str(commission_amount),
-                        "commission_rate": "15%"
+                        "commission_rate": "50%"  # Updated to new business model
                     },
                     "commission_status": "completed"  # Ora le commissioni sono gestite automaticamente
                 }, status=status.HTTP_200_OK)
