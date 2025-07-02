@@ -1,58 +1,90 @@
-# Documentazione SchoolPlatform
+# 📚 SchoolPlatform Documentation
 
-Benvenuto nella documentazione completa della piattaforma scolastica con integrazione blockchain.
+Welcome to the complete documentation for SchoolPlatform - an innovative hybrid Web2/Web3 educational marketplace specializing in art and creative education with TeoCoin tokenomics.
 
-## 📁 Struttura Documentazione
+## 📁 Documentation Structure
 
-### 📂 `/blockchain/`
-Documentazione relativa all'integrazione blockchain e TeoCoin:
-- [`implementing_teo_coin.md`](blockchain/implementing_teo_coin.md) - Guida completa implementazione TeoCoin
+### 💼 `/business/`
+**Business strategy, economics, and market analysis**
+- [`BUSINESS_PLAN.md`](business/BUSINESS_PLAN.md) - Complete business plan and investment deck
+- [`ECONOMIC_MODEL.md`](business/ECONOMIC_MODEL.md) - Platform economics and revenue model
+- [`UDEMY_COMPARISON.md`](business/UDEMY_COMPARISON.md) - Competitive analysis vs major platforms
 
-### 📂 `/improvements/`
-Documentazione sui miglioramenti e ottimizzazioni:
-- [`FRONTEND_IMPROVEMENTS_SUMMARY.md`](improvements/FRONTEND_IMPROVEMENTS_SUMMARY.md) - Riassunto miglioramenti frontend
-- [`LANDING_PAGE_IMPROVEMENTS.md`](improvements/LANDING_PAGE_IMPROVEMENTS.md) - Miglioramenti landing page
-- [`OPTIMIZATION_COMPLETE_SUMMARY.md`](improvements/OPTIMIZATION_COMPLETE_SUMMARY.md) - Riassunto ottimizzazioni complete
-- [`PERFORMANCE_OPTIMIZATION_GUIDE.md`](improvements/PERFORMANCE_OPTIMIZATION_GUIDE.md) - Guida ottimizzazione performance
-- [`PROFILE_ENHANCEMENT_SUMMARY.md`](improvements/PROFILE_ENHANCEMENT_SUMMARY.md) - Miglioramenti profilo utente
-- [`REACT_BUILD_OPTIMIZATION_COMPLETE.md`](improvements/REACT_BUILD_OPTIMIZATION_COMPLETE.md) - Ottimizzazioni build React
-- [`REDESIGN_COMPLETION_SUMMARY.md`](improvements/REDESIGN_COMPLETION_SUMMARY.md) - Riassunto redesign completo
-- [`REFACTORING_PROGRESS_SUMMARY.md`](improvements/REFACTORING_PROGRESS_SUMMARY.md) - Progresso refactoring
-- [`SKILLSHARE_REDESIGN_COMPLETION.md`](improvements/SKILLSHARE_REDESIGN_COMPLETION.md) - Completamento redesign Skillshare
+### � `/technical/`
+**Architecture, APIs, and technical implementation**
+- [`README.md`](technical/README.md) - Main project documentation
+- [`architecture.md`](technical/architecture.md) - System architecture overview
+- [`api.md`](technical/api.md) - API documentation and endpoints
+- [`database.md`](technical/database.md) - Database schema and management
+- [`blockchain/`](technical/blockchain/) - Blockchain integration documentation
+  - [`teocoin_discount_system.md`](technical/blockchain/teocoin_discount_system.md) - TeoCoin discount implementation
+  - [`teocoin_staking_system.md`](technical/blockchain/teocoin_staking_system.md) - TeoCoin staking implementation
 
-### 📂 `/` (Root docs)
-Documentazione generale:
-- [`README.md`](README.md) - Documentazione principale del progetto
-- [`api.md`](api.md) - Documentazione API
-- [`architecture.md`](architecture.md) - Architettura del sistema
-- [`business-logic.md`](business-logic.md) - Logica di business
-- [`database.md`](database.md) - Schema e gestione database
-- [`context.md`](context.md) - Contesto del progetto
-- [`README_NEW.md`](README_NEW.md) - Nuovo README aggiornato
+### � `/user-guides/`
+**User journeys and step-by-step guides**
+- [`GUIDA_UTENTE_ACQUISTO_CORSI.md`](user-guides/GUIDA_UTENTE_ACQUISTO_CORSI.md) - Course purchase user guide (Italian)
+- [`COMPLETE_TEACHER_JOURNEY.md`](user-guides/COMPLETE_TEACHER_JOURNEY.md) - Complete teacher onboarding journey
+- [`STUDENT_TEOCOIN_JOURNEY.md`](user-guides/STUDENT_TEOCOIN_JOURNEY.md) - Student TeoCoin usage guide
+- [`TEACHER_TEO_JOURNEY.md`](user-guides/TEACHER_TEO_JOURNEY.md) - Teacher TeoCoin earning guide
+- [`TEACHER_TEO_EARNING_GUIDE.md`](user-guides/TEACHER_TEO_EARNING_GUIDE.md) - Detailed TEO earning strategies
+
+### ⚡ `/features/`
+**Platform features and systems documentation**
+- [`HYBRID_TEOCOIN_SYSTEM.md`](features/HYBRID_TEOCOIN_SYSTEM.md) - Hybrid Web2/Web3 TeoCoin implementation
+- [`TEACHER_DISCOUNT_CHOICE_SYSTEM.md`](features/TEACHER_DISCOUNT_CHOICE_SYSTEM.md) - Teacher discount acceptance system
+- [`TEOCOIN_MARKETING_SYSTEM.md`](features/TEOCOIN_MARKETING_SYSTEM.md) - TeoCoin-powered marketing features
+- [`TEOCOIN_STAKING_PROGRAM.md`](features/TEOCOIN_STAKING_PROGRAM.md) - Staking program and benefits
+- [`INSTRUCTOR_REVENUE_SHARE.md`](features/INSTRUCTOR_REVENUE_SHARE.md) - Revenue sharing model
+
+### 🔄 `/needs-update/`
+**Files requiring updates after recent changes**
+- [`Miglioramenteo_sviluppo.md`](needs-update/Miglioramenteo_sviluppo.md) - Development improvements (needs review)
+- [`business-logic.md`](needs-update/business-logic.md) - Business logic (needs commission update)
+- [`context.md`](needs-update/context.md) - Project context (needs update)
+- [`service_layers.md`](needs-update/service_layers.md) - Service layers documentation (needs review)
+
+### 📖 `/reference/`
+**Reference materials and recommendations**
+- [`FINAL_RECOMMENDATIONS.md`](reference/FINAL_RECOMMENDATIONS.md) - Final project recommendations
+- [`AI_ASSISTANT_COMPLETE_PROJECT_REFERENCE.md`](reference/AI_ASSISTANT_COMPLETE_PROJECT_REFERENCE.md) - Complete project reference
+
+---
 
 ## 🚀 Quick Start
 
-1. **Setup del progetto**: Leggi [`README.md`](README.md)
-2. **Architettura**: Consulta [`architecture.md`](architecture.md)
-3. **API**: Riferimenti in [`api.md`](api.md)
-4. **Blockchain**: Implementazione in [`blockchain/implementing_teo_coin.md`](blockchain/implementing_teo_coin.md)
+### For Developers
+1. Start with [`technical/README.md`](technical/README.md) for project setup
+2. Review [`technical/architecture.md`](technical/architecture.md) for system overview
+3. Check [`technical/api.md`](technical/api.md) for API integration
 
-## 🔧 Scripts e Testing
+### For Business Stakeholders
+1. Read [`business/BUSINESS_PLAN.md`](business/BUSINESS_PLAN.md) for complete overview
+2. Review [`business/ECONOMIC_MODEL.md`](business/ECONOMIC_MODEL.md) for financial details
+3. Compare with [`business/UDEMY_COMPARISON.md`](business/UDEMY_COMPARISON.md) for market position
 
-Per script e testing, consulta:
-- [`../scripts/`](../scripts/) - Script di deployment e setup
-- [`../blockchain/tests/`](../blockchain/tests/) - Test blockchain specifici
+### For Teachers
+1. Follow [`user-guides/COMPLETE_TEACHER_JOURNEY.md`](user-guides/COMPLETE_TEACHER_JOURNEY.md)
+2. Learn about [`user-guides/TEACHER_TEO_EARNING_GUIDE.md`](user-guides/TEACHER_TEO_EARNING_GUIDE.md)
+3. Understand [`features/TEACHER_DISCOUNT_CHOICE_SYSTEM.md`](features/TEACHER_DISCOUNT_CHOICE_SYSTEM.md)
 
-## 📊 Performance e Ottimizzazioni
-
-Consulta la cartella [`improvements/`](improvements/) per tutte le guide di ottimizzazione e miglioramenti implementati.
-
-## 🔗 Collegamenti Utili
-
-- **Frontend**: [`../frontend/`](../frontend/)
-- **Backend Django**: [`../`](../)
-- **Blockchain**: [`../blockchain/`](../blockchain/)
-- **Scripts**: [`../scripts/`](../scripts/)
+### For Students
+1. Check [`user-guides/GUIDA_UTENTE_ACQUISTO_CORSI.md`](user-guides/GUIDA_UTENTE_ACQUISTO_CORSI.md) for purchasing
+2. Learn about [`user-guides/STUDENT_TEOCOIN_JOURNEY.md`](user-guides/STUDENT_TEOCOIN_JOURNEY.md)
 
 ---
-*Documentazione aggiornata al: Giugno 2025*
+
+## � Current Status
+
+**Platform Commission Structure**: 50% platform / 50% teacher (up to 75% with staking)
+**TeoCoin Discount System**: Hybrid payment with teacher choice mechanism
+**Blockchain Integration**: Layer 2 gas-free operations on Polygon Amoy
+**Payment Processing**: Stripe integration with TeoCoin discount flow
+
+---
+
+## � Support
+
+For technical questions, refer to the relevant documentation sections above.
+For business inquiries, review the business documentation first.
+
+*Last updated: July 1, 2025*
