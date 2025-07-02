@@ -557,6 +557,18 @@
   border-left: 3px solid #ef4444;
 }
 
+.discount-summary {
+  background: #d1fae5;
+  border: 1px solid #34d399;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+  text-align: center;
+}
+
 /* ⚡ Performance hint for hardware acceleration */
 .payment-modal *,
 .payment-modal *::before,

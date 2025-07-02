@@ -37,11 +37,13 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const [loading, setLoading] = useState(true);
     const [discountApplied, setDiscountApplied] = useState(false);
 
-    // Check if TeoCoin discount was applied
+    // Check if TeoCoin discount was applied (clear any stale data first)
     useEffect(() => {
-        const applied = localStorage.getItem('applied_teocoin_discount');
-        setDiscountApplied(!!applied);
-    }, [paymentMethod]);
+        // Clear any stale discount data when modal opens
+        localStorage.removeItem('applied_teocoin_discount');
+        setDiscountApplied(false);
+        console.log('🧹 Cleared stale discount data on modal open');
+    }, []);
 
     // ⚡ PERFORMANCE: Memoize cache key
     const cacheKey = useMemo(() => `payment_summary_${course.id}`, [course.id]);
@@ -84,6 +86,19 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     useEffect(() => {
         fetchPaymentSummary();
     }, [fetchPaymentSummary]);
+
+    // Debug logging for payment summary
+    useEffect(() => {
+        if (paymentSummary) {
+            console.log('🔍 DEBUG Payment Summary:', {
+                user_teocoin_balance: paymentSummary.user_teocoin_balance,
+                can_pay_with_teocoin: paymentSummary.can_pay_with_teocoin,
+                wallet_connected: paymentSummary.wallet_connected,
+                pricing_options: paymentSummary.pricing_options,
+                already_enrolled: paymentSummary.already_enrolled
+            });
+        }
+    }, [paymentSummary]);
 
     // ⚡ PERFORMANCE: Handle ESC key with useCallback to prevent re-renders
     const handleEscKey = useCallback((event) => {
@@ -318,8 +333,8 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     }
 
     const pricingOptions = paymentSummary?.pricing_options || [];
-    // Remove hybrid option - only show fiat and teocoin
-    const cleanedOptions = pricingOptions.filter(opt => opt.method !== 'hybrid');
+    // Remove disabled options (free for paid courses, disabled teocoin options)
+    const cleanedOptions = pricingOptions.filter(opt => !opt.disabled);
 
     return (
         <div className="payment-modal-overlay" onClick={onClose}>
@@ -332,6 +347,11 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 <div className="course-info">
                     <h4>{course.title}</h4>
                     <p>Complete this course and earn crypto rewards!</p>
+                    {discountApplied && (
+                        <div className="discount-summary">
+                            🎉 TeoCoin discount applied! Check browser console for details.
+                        </div>
+                    )}
                 </div>
 
                 <div className="payment-options">
@@ -340,8 +360,6 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             key={option.method}
                             className={`payment-option ${paymentMethod === option.method ? 'selected' : ''} ${
                                 discountApplied && option.method === 'teocoin' ? 'disabled' : ''
-                            } ${
-                                option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin ? 'insufficient-balance' : ''
                             }`}
                             onClick={() => {
                                 // Prevent switching to TeoCoin if discount already applied
@@ -352,10 +370,10 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                 if (discountApplied && paymentMethod === 'fiat') {
                                     return;
                                 }
-                                // Prevent selecting TeoCoin if insufficient balance
-                                if (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin) {
-                                    return;
-                                }
+                                // TODO: Re-enable balance check after debugging
+                                // if (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin) {
+                                //     return;
+                                // }
                                 setPaymentMethod(option.method);
                             }}
                         >
@@ -365,13 +383,15 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                     name="payment"
                                     checked={paymentMethod === option.method}
                                     disabled={
-                                        discountApplied && ((option.method === 'teocoin') || (paymentMethod === 'fiat')) ||
-                                        (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin)
+                                        discountApplied && ((option.method === 'teocoin') || (paymentMethod === 'fiat'))
+                                        // TODO: Re-enable balance check after debugging
+                                        // || (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin)
                                     }
                                     onChange={() => {
                                         if (discountApplied && option.method === 'teocoin') return;
                                         if (discountApplied && paymentMethod === 'fiat') return;
-                                        if (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin) return;
+                                        // TODO: Re-enable balance check after debugging
+                                        // if (option.method === 'teocoin' && !paymentSummary?.can_pay_with_teocoin) return;
                                         setPaymentMethod(option.method);
                                     }}
                                 />
@@ -405,7 +425,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                     </div>
                                     {!paymentSummary?.can_pay_with_teocoin && (
                                         <div className="insufficient-balance-warning">
-                                            ⚠️ Insufficient balance. Need {option.price} TEO for discount.
+                                            ⚠️ Debug: can_pay_with_teocoin = {String(paymentSummary?.can_pay_with_teocoin)} | Balance: {paymentSummary?.user_teocoin_balance} | Need: {option.price}
                                         </div>
                                     )}
                                     {discountApplied && (
@@ -461,11 +481,11 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                     {paymentMethod === 'teocoin' && (
                         <button
                             onClick={handleTeoCoinPayment}
-                            disabled={processing || !paymentSummary?.can_pay_with_teocoin}
+                            disabled={processing} // TODO: Re-enable balance check: || !paymentSummary?.can_pay_with_teocoin
                             className="btn-crypto"
                         >
                             {processing ? '⏳ Processing...' : 
-                             !paymentSummary?.can_pay_with_teocoin ? '🚫 Insufficient Balance' : '🪙 Apply Discount'}
+                             !paymentSummary?.can_pay_with_teocoin ? `� Debug Mode (Balance: ${paymentSummary?.user_teocoin_balance})` : '🪙 Apply Discount'}
                         </button>
                     )}
                     <button onClick={onClose} className="btn-secondary">

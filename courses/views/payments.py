@@ -107,6 +107,41 @@ class CreatePaymentIntentView(APIView):
                 
                 # If hybrid payment, create Stripe payment intent for remaining amount
                 if payment_method == 'hybrid':
+                    # ⚡ CRITICAL: Actually transfer TEO tokens from student
+                    try:
+                        print(f"🪙 Transferring {required_teo:.2f} TEO from student {wallet_address}")
+                        
+                        # Transfer TEO from student to reward pool for discount
+                        from django.conf import settings
+                        reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
+                        
+                        if not reward_pool_address:
+                            return Response({
+                                'success': False,
+                                'error': 'Reward pool not configured'
+                            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        
+                        transfer_result = teo_service.transfer_with_reward_pool_gas(
+                            wallet_address,  # from_address
+                            reward_pool_address,  # to_address (reward pool)
+                            Decimal(str(required_teo))  # Amount of TEO to transfer
+                        )
+                        
+                        if not transfer_result:
+                            return Response({
+                                'success': False,
+                                'error': 'Failed to transfer TEO tokens for discount'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                            
+                        print(f"✅ TEO transfer successful: {transfer_result}")
+                        
+                    except Exception as e:
+                        print(f"❌ TEO transfer failed: {str(e)}")
+                        return Response({
+                            'success': False,
+                            'error': f'TEO transfer failed: {str(e)}'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
                     # Create Stripe payment intent for the discounted amount
                     result = cached_payment_service.create_payment_intent_optimized(
                         user_id=request.user.id,

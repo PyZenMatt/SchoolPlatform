@@ -1153,15 +1153,17 @@ class PaymentService(TransactionalService):
             'description': f'{teocoin_price} TEO ({course.teocoin_discount_percent}% discount)' if course.price_eur > 0 else 'Not available for free courses',
             'disabled': course.price_eur == 0
         })
-        # Free option (for clarity, but mark as disabled for paid courses)
-        pricing_options.append({
-            'method': 'free',
-            'price': 0,
-            'currency': 'FREE',
-            'reward': course.teocoin_reward,
-            'description': f'Free + {course.teocoin_reward} TEO reward',
-            'disabled': course.price_eur > 0
-        })
+        
+        # Only add free option for actually free courses
+        if course.price_eur == 0:
+            pricing_options.append({
+                'method': 'free',
+                'price': 0,
+                'currency': 'FREE',
+                'reward': course.teocoin_reward,
+                'description': f'Free + {course.teocoin_reward} TEO reward',
+                'disabled': False
+            })
 
         # Check TeoCoin balance if applicable
         teocoin_balance = Decimal('0')
