@@ -280,8 +280,7 @@ const AllCourses = () => {
                             <small className="text-success">+{course.teocoin_reward} TEO</small>
                           </div>
                           <div className="d-flex justify-content-between align-items-center">
-                            <span className="text-success">🪙 {course.get_teocoin_price || (course.price_eur * 10 * 0.8).toFixed(0)} TEO</span>
-                            <small className="text-muted">{course.teocoin_discount_percent || 20}% sconto</small>
+                            <span className="text-success">🪙 Use {Math.floor((course.price_eur * course.teocoin_discount_percent / 100) * 10)} TEO for {course.teocoin_discount_percent}% discount</span>
                           </div>
                         </>
                       ) : (

@@ -45,11 +45,11 @@
 
 | Tier | Min Stake | Commission Rate | Max Stakers* |
 |------|-----------|----------------|--------------|
-| 🥉 **Bronze** | 0 TEO | 25% | ∞ |
-| 🥈 **Silver** | 100 TEO | 22% | 100 |
-| 🥇 **Gold** | 300 TEO | 19% | 33 |
-| 💎 **Platinum** | 600 TEO | 16% | 16 |
-| 🔸 **Diamond** | 1,000 TEO | 15% | 10 |
+| 🥉 **Bronze** | 0 TEO | 50% | ∞ |
+| 🥈 **Silver** | 100 TEO | 44% | 100 |
+| 🥇 **Gold** | 300 TEO | 38% | 33 |
+| 💎 **Platinum** | 600 TEO | 31% | 16 |
+| 🔸 **Diamond** | 1,000 TEO | 25% | 10 |
 
 *Maximum theoretical stakers if all staked at minimum tier requirement
 

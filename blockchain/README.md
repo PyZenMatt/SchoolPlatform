@@ -30,37 +30,42 @@ This module implements:
 - **Audit Logging**: Complete transaction history
 - **Error Handling**: Comprehensive exception management
 
-## Course Payment Process (NEW DIRECT SYSTEM)
+## Course Payment Process (HYBRID SYSTEM)
 
-The course payment system has been completely refactored to implement a direct payment flow where **students pay both TEO tokens and gas fees directly from their wallet**.
+The course payment system implements a hybrid flow where **students pay via Stripe (fiat) with optional TeoCoin discounts using Layer 2 gas-free technology**.
 
 ### Payment Flow
 
-1. **Student** pays **Teacher** directly (net amount after 15% commission)
-2. **Student** pays **Platform Commission** directly to reward pool (15% of course price)  
-3. **Student** pays **all gas fees** with MATIC from their wallet
-4. **No involvement** of reward pool as payer/intermediary
+1. **Primary Payment**: Student pays via **Stripe** (credit card/fiat currency)
+2. **Optional Discount**: Student can apply **TeoCoin discount** (5%, 10%, or 15%)
+3. **Teacher Choice**: When discount applied, teacher chooses:
+   - **Option A**: Receive TeoCoin from student (helps with staking for better future rates)
+   - **Option B**: Receive full fiat payment (platform absorbs discount cost)
+4. **Platform Commission**: 50% default, reducible to 25% when teacher stakes TeoCoin
 
-### Example: 15 TEO Course Purchase
+### Example: €100 Course with 15% TeoCoin Discount
 
 ```
-Course Price: 15 TEO
-├── Teacher receives: 12.75 TEO (85%)
-├── Platform commission: 2.25 TEO (15%)
-└── Gas fees: Paid by student with MATIC
+Course Price: €100
+Student TeoCoin Cost: 150 TEO (15% discount value)
+Student Pays: €85 via Stripe + 150 TEO
 
-Transactions on blockchain:
-1. transfer(teacher_address, 12.75 TEO) - Student → Teacher
-2. transfer(reward_pool_address, 2.25 TEO) - Student → Commission
+Teacher Choice:
+├── Option A: €85 fiat + 150 TEO (good for staking)
+└── Option B: €100 fiat + 0 TEO (platform absorbs 150 TEO cost)
+
+Platform Commission (based on teacher's staking tier):
+├── No staking: 50% commission
+└── With staking: 25% commission (more profitable for teacher)
 ```
 
-### Security & Transparency Benefits
+### Layer 2 Discount System Benefits
 
-- **Full Control**: Student maintains complete control of their funds
-- **Transparency**: All payments visible on blockchain
-- **No Intermediary**: Direct wallet-to-wallet transfers
-- **Immediate Payment**: Teacher receives funds instantly
-- **No Pool Risk**: No dependency on reward pool balance for payments
+- **Gas-Free**: Students don't pay gas fees for discount requests
+- **Instant UX**: Immediate discount application via signatures
+- **Teacher Control**: Teachers approve/decline discount requests
+- **Platform Covers Gas**: Seamless blockchain operations
+- **Hybrid Flexibility**: Best of fiat stability + crypto benefits
 
 ### API Endpoints
 
@@ -90,18 +95,20 @@ Link external wallet to user account.
 }
 ```
 
-### Course Payment System
+### TeoCoin Discount System (Layer 2)
 
-#### `POST /blockchain/process-course-payment-direct/`
-Initialize direct course payment process (NEW).
+#### `POST /api/v1/services/discount/create-request/`
+Create gas-free discount request (Layer 2).
 
 **Request:**
 ```json
 {
   "student_address": "0x742d35Cc6634C0532925a3b8D...",
   "teacher_address": "0xE2fA8AfbF1B795f5dEd1a33aa...",
-  "course_price": "15.0",
-  "course_id": 1
+  "course_id": 1,
+  "course_price": "100.0",
+  "discount_percent": 15,
+  "student_signature": "0x..."
 }
 ```
 
@@ -109,26 +116,26 @@ Initialize direct course payment process (NEW).
 ```json
 {
   "success": true,
-  "reward_pool_address": "0x3b72a4E942CF1467134510cA...",
-  "message": "Direct payment process initialized"
+  "request_id": 123,
+  "teo_cost": "150000000000000000000",
+  "teacher_bonus": "37500000000000000000",
+  "deadline": "2025-07-04T16:00:00Z"
 }
 ```
 
-#### `POST /blockchain/confirm-course-payment/`
-Confirm successful direct course payment (NEW).
+#### `POST /api/v1/services/discount/approve/`
+Teacher approves discount request (platform pays gas).
 
-**Request:**
-```json
-{
-  "student_address": "0x742d35Cc6634C0532925a3b8D...",
-  "teacher_address": "0xE2fA8AfbF1B795f5dEd1a33aa...",
-  "course_price": "15.0",
-  "course_id": 1,
-  "teacher_tx_hash": "0xf601f2ef824002fca633d7a54...",
-  "commission_tx_hash": "0xb37205cbc73f151f9e1a42a49...",
-  "teacher_amount": "12.75",
-  "commission_amount": "2.25"
-}
+#### `POST /api/v1/services/discount/decline/`
+Teacher declines discount request.
+
+### Teacher Staking System
+
+#### `POST /api/v1/services/staking/stake/`
+Stake TeoCoin to reduce platform commission (50% → 25%).
+
+#### `GET /api/v1/services/staking/info/`
+Get current staking tier and commission rate.
 ```
 
 ### Token Operations

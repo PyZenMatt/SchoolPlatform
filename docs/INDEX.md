@@ -13,6 +13,7 @@ Welcome to the complete documentation for SchoolPlatform - an innovative hybrid 
 ### � `/technical/`
 **Architecture, APIs, and technical implementation**
 - [`README.md`](technical/README.md) - Main project documentation
+- [`LAYER2_PAYMENT_SYSTEM.md`](technical/LAYER2_PAYMENT_SYSTEM.md) - **Complete Layer 2 payment system specification**
 - [`architecture.md`](technical/architecture.md) - System architecture overview
 - [`api.md`](technical/api.md) - API documentation and endpoints
 - [`database.md`](technical/database.md) - Database schema and management
@@ -34,7 +35,6 @@ Welcome to the complete documentation for SchoolPlatform - an innovative hybrid 
 - [`TEACHER_DISCOUNT_CHOICE_SYSTEM.md`](features/TEACHER_DISCOUNT_CHOICE_SYSTEM.md) - Teacher discount acceptance system
 - [`TEOCOIN_MARKETING_SYSTEM.md`](features/TEOCOIN_MARKETING_SYSTEM.md) - TeoCoin-powered marketing features
 - [`TEOCOIN_STAKING_PROGRAM.md`](features/TEOCOIN_STAKING_PROGRAM.md) - Staking program and benefits
-- [`INSTRUCTOR_REVENUE_SHARE.md`](features/INSTRUCTOR_REVENUE_SHARE.md) - Revenue sharing model
 
 ### 🔄 `/needs-update/`
 **Files requiring updates after recent changes**
@@ -45,7 +45,6 @@ Welcome to the complete documentation for SchoolPlatform - an innovative hybrid 
 
 ### 📖 `/reference/`
 **Reference materials and recommendations**
-- [`FINAL_RECOMMENDATIONS.md`](reference/FINAL_RECOMMENDATIONS.md) - Final project recommendations
 - [`AI_ASSISTANT_COMPLETE_PROJECT_REFERENCE.md`](reference/AI_ASSISTANT_COMPLETE_PROJECT_REFERENCE.md) - Complete project reference
 
 ---
@@ -58,7 +57,7 @@ Welcome to the complete documentation for SchoolPlatform - an innovative hybrid 
 3. Check [`technical/api.md`](technical/api.md) for API integration
 
 ### For Business Stakeholders
-1. Read [`business/BUSINESS_PLAN.md`](business/BUSINESS_PLAN.md) for complete overview
+1. Read [`technical/LAYER2_PAYMENT_SYSTEM.md`](technical/LAYER2_PAYMENT_SYSTEM.md) for **complete system overview**
 2. Review [`business/ECONOMIC_MODEL.md`](business/ECONOMIC_MODEL.md) for financial details
 3. Compare with [`business/UDEMY_COMPARISON.md`](business/UDEMY_COMPARISON.md) for market position
 
@@ -75,10 +74,10 @@ Welcome to the complete documentation for SchoolPlatform - an innovative hybrid 
 
 ## � Current Status
 
-**Platform Commission Structure**: 50% platform / 50% teacher (up to 75% with staking)
-**TeoCoin Discount System**: Hybrid payment with teacher choice mechanism
-**Blockchain Integration**: Layer 2 gas-free operations on Polygon Amoy
-**Payment Processing**: Stripe integration with TeoCoin discount flow
+**Platform Commission Structure**: 50% platform / 50% teacher (reducible to 25% with staking)
+**TeoCoin Discount System**: Layer 2 gas-free discount requests with teacher choice mechanism
+**Blockchain Integration**: Polygon Amoy with gas-free student operations
+**Payment Processing**: Stripe primary + optional TeoCoin discounts
 
 ---
 

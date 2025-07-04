@@ -4,8 +4,9 @@
 
 ### **Base Commission Structure (IMPROVED)**
 ```
-Standard Rate: 25% platform / 75% teacher
-Staking Benefits: Reduce platform fees down to 15%
+Standard Rate: 50% platform / 50% teacher
+Maximum Rate: 25% platform / 75% teacher (Diamond tier)
+Staking Benefits: Reduce platform fees down to 25%
 Maximum Teacher Earnings: 85% (best in industry!)
 ```
 

@@ -11,23 +11,24 @@ SchoolPlatform operates as a **hybrid Web2/Web3 educational marketplace** with c
 ### Core Economics
 | Component | Percentage | Notes |
 |-----------|------------|-------|
-| **Platform Commission** | **25%** | Competitive with industry standards |
-| **Teacher Payout** | **75%** | Higher than Udemy (50%) and Skillshare (30%) |
+| **Platform Commission** | **25-50%** | Variable based on teacher staking tier |
+| **Teacher Payout** | **50-75%** | Progressive rewards through TeoCoin staking |
 | **Payment Processing** | ~3% | Stripe fees (deducted from platform share) |
 | **TeoCoin Rewards Pool** | 5% of platform commission | Funds student rewards |
-| **Platform Net Margin** | ~17% | After processing fees and rewards |
+| **Platform Net Margin** | ~20-45% | After processing fees and rewards |
 
-### Example: €100 Course Sale
+### Example: €100 Course Sale (Diamond Teacher)
 ```
 Course Price: €100
-├── Teacher Receives: €75.00 (75%)
-├── Platform Commission: €25.00 (25%)
+├── Teacher Receives: €75.00 (75% with Diamond staking)
+├── Platform Commission: €25.00 (25% with Diamond staking)
     ├── Stripe Fee: €3.00 (3%)
     ├── TeoCoin Rewards: €1.25 (5% of commission)
     └── Platform Net: €20.75 (20.75%)
 
 Student pays: €100
 Platform keeps: €20.75 net
+Teacher progression: Bronze (50%) → Diamond (75%)
 ```
 
 ---

@@ -1,4 +1,7 @@
-# 🎉 PHASE 1: PRACTICAL IMPROVEMENTS COMPLETED
+ps aux
+teo         5464  0.2  0.7 128620 93584 pts/4    S+   09:09   0:01 python manage.py runserver
+teo         5650  3.6  0.9 369128 119852 pts/4   Sl+  09:09   0:13 /home/teo/Project/school/venv/bin/python manage.
+py runserver                                                                                                       # 🎉 PHASE 1: PRACTICAL IMPROVEMENTS COMPLETED
 
 **Date:** 2025-01-27  
 **Total Time:** 3.5 hours  

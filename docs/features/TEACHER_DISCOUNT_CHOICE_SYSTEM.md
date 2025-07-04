@@ -9,16 +9,24 @@ When a student wants to use TeoCoin discount, the teacher gets **real-time notif
 📱 DISCOUNT REQUEST NOTIFICATION:
 Student: Maria wants to buy "Digital Painting Basics" 
 Original Price: €100
-Student Discount: €15 (using 30 TEO)
+Student Discount: €15 (using 150 TEO)
+Your Commission: 50% (Bronze tier) or 25% (Diamond tier)
+
 Your Options:
 ┌─────────────────────────────────────┐
-│ ✅ ABSORB DISCOUNT (Recommended)    │
-│ • You receive: €85 now             │
-│ • TEO bonus: 38 TEO (125% of 30)   │
+│ ✅ RECEIVE TEOCOIN (Recommended)    │
+│ • You receive: €85 fiat + 150 TEO  │
+│ • TEO for staking: Build toward    │
+│   next commission tier             │
 │ • Student saves: €15               │
-│ • Build your TEO stake!            │
 └─────────────────────────────────────┘
 ┌─────────────────────────────────────┐
+│ 💰 RECEIVE FULL FIAT               │
+│ • You receive: €100 fiat           │
+│ • Platform absorbs: 150 TEO cost   │
+│ • No TeoCoin management needed     │
+└─────────────────────────────────────┘
+```
 │ ❌ DECLINE DISCOUNT                 │
 │ • Student pays full: €100          │
 │ • You receive: €75 (normal 75%)    │

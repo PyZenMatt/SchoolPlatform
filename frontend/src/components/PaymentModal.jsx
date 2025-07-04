@@ -1,8 +1,8 @@
 /**
- * PaymentModal.jsx - Fiat Payment Integration Component
- * Handles Stripe payment flow for course purchases
- * VERSION: 2.2 - Fixed Italian postal code (20121 Milano)
- * LAST UPDATED: 2025-06-22 10:00
+ * PaymentModal.jsx - Enhanced Payment Integration with MetaMask TeoCoin Support
+ * Handles Stripe payment flow + TeoCoin discount with MetaMask Web3 integration
+ * VERSION: 3.0 - Added MetaMask integration for TeoCoin transfers
+ * LAST UPDATED: 2025-06-22 12:00
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -14,6 +14,44 @@ import {
     useElements
 } from '@stripe/react-stripe-js';
 import './PaymentModal.css';
+
+// Web3 imports for MetaMask integration
+import { ethers } from 'ethers';
+
+// TeoCoin contract configuration
+const TEOCOIN_CONTRACT_ADDRESS = '0x20D6656A31297ab3b8A87291Ed562D4228Be9ff8'; // From settings
+const REWARD_POOL_ADDRESS = '0x3b72a4E942CF1467134510cA3952F01b63005044'; // From settings
+
+// Minimal ERC-20 ABI for TeoCoin operations
+const TEOCOIN_ABI = [
+    {
+        "inputs": [
+            {"internalType": "address", "name": "spender", "type": "address"},
+            {"internalType": "uint256", "name": "amount", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "owner", "type": "address"},
+            {"internalType": "address", "name": "spender", "type": "address"}
+        ],
+        "name": "allowance",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
 
 // ⚡ PERFORMANCE: Pre-load and cache Stripe instance
 let stripeInstance = null;
@@ -36,6 +74,14 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const [paymentSummary, setPaymentSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [discountApplied, setDiscountApplied] = useState(false);
+    
+    // Web3 state for MetaMask integration
+    const [web3Provider, setWeb3Provider] = useState(null);
+    const [walletConnected, setWalletConnected] = useState(false);
+    const [walletAddress, setWalletAddress] = useState('');
+    const [teoBalance, setTeoBalance] = useState(0);
+    const [teoAllowance, setTeoAllowance] = useState(0);
+    const [approvalStatus, setApprovalStatus] = useState('none'); // none, pending, completed, failed
 
     // Check if TeoCoin discount was applied (clear any stale data first)
     useEffect(() => {
@@ -113,6 +159,257 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             document.removeEventListener('keydown', handleEscKey);
         };
     }, [handleEscKey]);
+
+    // ====== WEB3 METAMASK INTEGRATION ======
+    
+    // Switch to Polygon Amoy network
+    const switchToPolygonAmoy = async () => {
+        try {
+            // Try switching to existing network
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x13882' }], // 80002 in hex
+            });
+        } catch (switchError) {
+            // If network doesn't exist, add it
+            if (switchError.code === 4902) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x13882',
+                            chainName: 'Polygon Amoy Testnet',
+                            nativeCurrency: {
+                                name: 'MATIC',
+                                symbol: 'MATIC',
+                                decimals: 18,
+                            },
+                            rpcUrls: ['https://rpc-amoy.polygon.technology/'],
+                            blockExplorerUrls: ['https://amoy.polygonscan.com/'],
+                        }],
+                    });
+                } catch (addError) {
+                    throw new Error('Failed to add Polygon Amoy network to MetaMask');
+                }
+            } else {
+                throw switchError;
+            }
+        }
+    };
+    
+    // Check MetaMask connection on component mount
+    useEffect(() => {
+        const checkWalletConnection = async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.listAccounts();
+                    
+                    if (accounts.length > 0) {
+                        console.log('🔍 Checking network and RPC connectivity...');
+                        
+                        // Test network connectivity
+                        const network = await provider.getNetwork();
+                        console.log('🌐 Connected to network:', network.chainId, network.name);
+                        
+                        // Test if we can make basic RPC calls
+                        const blockNumber = await provider.getBlockNumber();
+                        console.log('📦 Latest block:', blockNumber);
+                        
+                        setWeb3Provider(provider);
+                        setWalletConnected(true);
+                        setWalletAddress(accounts[0].address);
+                        await updateTeoInfo(provider, accounts[0].address);
+                        console.log('✅ Wallet already connected:', accounts[0].address);
+                    }
+                } catch (error) {
+                    console.log('❌ MetaMask connection issue:', error.message);
+                }
+            } else {
+                console.log('❌ MetaMask not installed');
+            }
+        };
+        
+        checkWalletConnection();
+    }, []);
+
+    // Connect to MetaMask wallet
+    const connectWallet = async () => {
+        try {
+            if (typeof window.ethereum === 'undefined') {
+                throw new Error('MetaMask is not installed. Please install MetaMask to use TeoCoin payments.');
+            }
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            
+            // Check network first
+            const network = await provider.getNetwork();
+            if (network.chainId !== 80002n) {
+                console.log('🔄 Wrong network detected, switching to Polygon Amoy...');
+                await switchToPolygonAmoy();
+                // Recreate provider after network switch
+                const newProvider = new ethers.BrowserProvider(window.ethereum);
+                setWeb3Provider(newProvider);
+            } else {
+                setWeb3Provider(provider);
+            }
+            
+            await provider.send("eth_requestAccounts", []);
+            const signer = await provider.getSigner();
+            const address = await signer.getAddress();
+
+            setWalletConnected(true);
+            setWalletAddress(address);
+            
+            // Update TEO balance and allowance
+            await updateTeoInfo(provider, address);
+            
+            console.log('✅ Wallet connected:', address);
+            console.log('🌐 Network:', await provider.getNetwork());
+        } catch (error) {
+            console.error('Failed to connect wallet:', error);
+            onError(error.message);
+        }
+    };
+
+    // Update TEO balance and allowance information
+    const updateTeoInfo = async (provider, address) => {
+        try {
+            const contract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, TEOCOIN_ABI, provider);
+            
+            // Get balance
+            const balanceWei = await contract.balanceOf(address);
+            const balance = Number(ethers.formatEther(balanceWei));
+            
+            // Get allowance for reward pool
+            const allowanceWei = await contract.allowance(address, REWARD_POOL_ADDRESS);
+            const allowance = Number(ethers.formatEther(allowanceWei));
+            
+            // Check MATIC balance for gas fees
+            const maticBalance = await provider.getBalance(address);
+            const maticFormatted = Number(ethers.formatEther(maticBalance));
+            
+            setTeoBalance(balance);
+            setTeoAllowance(allowance);
+            
+            console.log('💰 TEO Balance:', balance);
+            console.log('🔑 TEO Allowance:', allowance);
+            console.log('⛽ MATIC Balance:', maticFormatted);
+            
+            // Warn if MATIC is low
+            if (maticFormatted < 0.01) {
+                console.warn('⚠️ Low MATIC balance - may not be able to pay gas fees');
+            }
+        } catch (error) {
+            console.error('Failed to update TEO info:', error);
+        }
+    };
+
+    // Approve TeoCoin spending with fallback methods
+    const approveTeoCoin = async (amount) => {
+        try {
+            setApprovalStatus('pending');
+            
+            const signer = await web3Provider.getSigner();
+            const contract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, TEOCOIN_ABI, signer);
+            
+            // Convert amount to Wei (18 decimals)
+            const amountWei = ethers.parseEther(amount.toString());
+            
+            console.log('🔑 Requesting approval for', amount, 'TEO to', REWARD_POOL_ADDRESS);
+            console.log('🔍 Network check - Current chain ID:', await web3Provider.getNetwork());
+            
+            // Check current network - should be Polygon Amoy (80002)
+            const network = await web3Provider.getNetwork();
+            if (network.chainId !== 80002n) {
+                throw new Error(`Wrong network! Please switch to Polygon Amoy testnet (Chain ID: 80002). Current: ${network.chainId}`);
+            }
+            
+            // Try multiple approval methods to bypass MetaMask RPC issues
+            let tx;
+            const gasLimit = 60000n;
+            
+            console.log('🚀 Attempting approval with method 1 (direct call)...');
+            
+            try {
+                // Method 1: Direct contract call (what we've been trying)
+                tx = await contract.approve(REWARD_POOL_ADDRESS, amountWei, {
+                    gasLimit: gasLimit
+                });
+                console.log('✅ Method 1 succeeded:', tx.hash);
+            } catch (method1Error) {
+                console.log('❌ Method 1 failed, trying Method 2 (manual transaction)...');
+                
+                // Method 2: Manual transaction construction
+                try {
+                    const nonce = await signer.getNonce();
+                    const gasPrice = await web3Provider.getFeeData();
+                    
+                    // Build transaction manually
+                    const txRequest = {
+                        to: TEOCOIN_CONTRACT_ADDRESS,
+                        data: contract.interface.encodeFunctionData('approve', [REWARD_POOL_ADDRESS, amountWei]),
+                        gasLimit: gasLimit,
+                        gasPrice: gasPrice.gasPrice,
+                        nonce: nonce,
+                    };
+                    
+                    console.log('� Manual transaction:', txRequest);
+                    tx = await signer.sendTransaction(txRequest);
+                    console.log('✅ Method 2 succeeded:', tx.hash);
+                } catch (method2Error) {
+                    console.log('❌ Method 2 failed, trying Method 3 (populateTransaction)...');
+                    
+                    // Method 3: Use populateTransaction
+                    try {
+                        const populatedTx = await contract.approve.populateTransaction(REWARD_POOL_ADDRESS, amountWei);
+                        populatedTx.gasLimit = gasLimit;
+                        
+                        console.log('📝 Populated transaction:', populatedTx);
+                        tx = await signer.sendTransaction(populatedTx);
+                        console.log('✅ Method 3 succeeded:', tx.hash);
+                    } catch (method3Error) {
+                        console.error('❌ All methods failed:');
+                        console.error('Method 1:', method1Error.message);
+                        console.error('Method 2:', method2Error.message);
+                        console.error('Method 3:', method3Error.message);
+                        throw new Error('All approval methods failed. This appears to be a MetaMask RPC connectivity issue with Polygon Amoy testnet.');
+                    }
+                }
+            }
+            
+            console.log('⏳ Waiting for approval confirmation...');
+            
+            // Wait for confirmation
+            const receipt = await tx.wait();
+            console.log('✅ Approval confirmed in block:', receipt.blockNumber);
+            console.log('💰 Gas used:', receipt.gasUsed.toString());
+            
+            setApprovalStatus('completed');
+            
+            // Update allowance
+            await updateTeoInfo(web3Provider, walletAddress);
+            
+        } catch (error) {
+            console.error('Approval failed:', error);
+            setApprovalStatus('failed');
+            
+            // Provide more specific error messages
+            if (error.message.includes('user rejected')) {
+                throw new Error('Transaction was cancelled by user');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient MATIC for gas fees. Please add some MATIC to your wallet.');
+            } else if (error.message.includes('Wrong network')) {
+                throw error; // Re-throw network error as-is
+            } else if (error.message.includes('Internal JSON-RPC error')) {
+                throw new Error('Persistent MetaMask RPC issue. Try: 1) Different browser 2) Reset MetaMask 3) Use WalletConnect instead');
+            } else if (error.message.includes('All approval methods failed')) {
+                throw error; // Re-throw our detailed error
+            } else {
+                throw new Error(`Approval failed: ${error.message}`);
+            }
+        }
+    };
 
     // ⚡ PERFORMANCE: Optimized fiat payment with pre-loaded data
     const handleFiatPayment = useCallback(async () => {
@@ -232,41 +529,73 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
     const handleTeoCoinPayment = async () => {
         setProcessing(true);
         try {
+            // Check wallet connection first
+            if (!walletConnected) {
+                throw new Error('Please connect your MetaMask wallet first');
+            }
+
             // Debug logging
             console.log('🔍 Debug: paymentSummary:', paymentSummary);
             console.log('🔍 Debug: pricing_options:', paymentSummary?.pricing_options);
             
-            // Find the TeoCoin pricing option to get discount amount from original pricing options
+            // Find the TeoCoin pricing option to get discount amount
             const teoOption = (paymentSummary?.pricing_options || []).find(opt => opt.method === 'teocoin');
             console.log('🔍 Debug: teoOption found:', teoOption);
             
             if (!teoOption || !teoOption.discount) {
                 console.error('❌ TeoCoin option not found or no discount available');
-                console.log('🔍 Available options:', paymentSummary?.pricing_options?.map(opt => opt.method));
                 throw new Error('TeoCoin discount not available');
             }
 
-            // Get wallet address from Web3 context or localStorage
-            let walletAddress = localStorage.getItem('wallet_address') || 
-                               localStorage.getItem('connectedWalletAddress');
+            // Calculate required TEO amount (discount amount in EUR * 10 = TEO needed)
+            const coursePrice = parseFloat(course.price_eur || course.price || 0);
+            const discountAmountEur = coursePrice * teoOption.discount / 100;
+            const requiredTeo = discountAmountEur * 10; // 1 EUR = 10 TEO
             
-            // For testing purposes, use the admin test wallet if no wallet is connected
-            if (!walletAddress) {
-                console.log('🔧 No wallet found in localStorage, using test wallet for development');
-                walletAddress = '0x17051AB7603B0F7263BC86bF1b0ce137EFfdEcc1'; // Admin test wallet
-                localStorage.setItem('wallet_address', walletAddress);
-            }
-            
-            console.log('🔍 Debug: walletAddress being used:', walletAddress);
+            console.log('💰 Required TEO for discount:', requiredTeo);
+            console.log(' Current balance:', teoBalance);
+            console.log('🔑 Current allowance:', teoAllowance);
 
-            // Use the new discount-based payment intent creation for discounted amount
+            // Check if user has sufficient balance for discount
+            if (teoBalance < requiredTeo) {
+                throw new Error(`Insufficient TEO balance. Required: ${requiredTeo} TEO, Available: ${teoBalance} TEO`);
+            }
+
+            // Check if approval is needed
+            if (teoAllowance < requiredTeo) {
+                console.log('🔑 Approval needed. Requesting approval for', requiredTeo, 'TEO');
+                
+                // Request approval from user
+                const userConfirmed = confirm(
+                    `To use TeoCoin discount, you need to approve ${requiredTeo} TEO spending.\n\n` +
+                    `This will:\n` +
+                    `• Allow the reward pool to spend ${requiredTeo} TEO from your wallet\n` +
+                    `• Apply ${teoOption.discount}% discount (€${discountAmountEur.toFixed(2)} off)\n` +
+                    `• Reduce final price to €${(coursePrice - discountAmountEur).toFixed(2)}\n\n` +
+                    `Click OK to approve in MetaMask.`
+                );
+
+                if (!userConfirmed) {
+                    throw new Error('Approval cancelled by user');
+                }
+
+                // Request approval transaction
+                await approveTeoCoin(requiredTeo);
+                
+                console.log('✅ Approval completed, proceeding with payment...');
+            } else {
+                console.log('✅ Sufficient allowance available, proceeding with payment...');
+            }
+
+            // Now create the payment intent with TeoCoin discount (hybrid payment)
             const { createPaymentIntent } = await import('../services/api/courses');
             
             console.log('🪙 Processing TeoCoin discount payment...');
             const intentResponse = await createPaymentIntent(course.id, {
                 teocoin_discount: teoOption.discount,
-                payment_method: 'hybrid', // Use hybrid to get discounted Stripe payment
-                wallet_address: walletAddress
+                payment_method: 'hybrid', // Always use hybrid for TeoCoin discounts
+                wallet_address: walletAddress,
+                approval_tx_hash: 'frontend_approved' // Add approval reference
             });
             
             console.log('📝 TeoCoin discount response:', intentResponse);
@@ -277,30 +606,45 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
 
             const data = intentResponse.data;
             
-            // Show success message and switch to card payment for discounted amount
-            const discountMessage = `✅ TeoCoin discount applied! You saved €${data.discount_applied} using ${data.teo_cost} TEO. Now pay the remaining €${data.final_amount} with your card.`;
-            
-            // Show notification about discount applied
-            console.log(discountMessage);
-            
-            // Switch to fiat payment method to complete purchase with discounted amount
-            setPaymentMethod('fiat');
-            
-            // Store the discount information for the card payment
-            localStorage.setItem('applied_teocoin_discount', JSON.stringify({
+            // Create discount info object from the response data
+            const discountInfo = {
                 discount: teoOption.discount,
                 discount_applied: data.discount_applied,
                 teo_cost: data.teo_cost,
                 final_amount: data.final_amount,
-                client_secret: data.client_secret // Use discounted payment intent
-            }));
+                client_secret: data.client_secret,
+                approval_completed: true
+            };
             
-            // Show success message without closing modal
+            // Show success message and switch to card payment for discounted amount
+            const discountMessage = `✅ TeoCoin discount applied successfully!
+            
+💰 Original price: €${coursePrice.toFixed(2)}
+🪙 TEO used: ${discountInfo.teo_cost}  
+💸 Discount: €${discountInfo.discount_applied}
+💳 Final price: €${discountInfo.final_amount}
+
+Your MetaMask approval allows the system to transfer ${discountInfo.teo_cost} TEO.
+Now complete your purchase with the discounted amount.`;
+            
+            // Show notification about discount applied
+            console.log(discountMessage);
             alert(discountMessage);
+            
+            // Switch to fiat payment method to complete purchase with discounted amount
+            setPaymentMethod('fiat');
+            setDiscountApplied(true);
+            
+            // Store the discount information for the card payment
+            localStorage.setItem('applied_teocoin_discount', JSON.stringify(discountInfo));
+            
+            // Update TEO info to reflect new allowance state
+            await updateTeoInfo(web3Provider, walletAddress);
             
         } catch (error) {
             console.error('TeoCoin discount error:', error);
             onError(error.message);
+            setApprovalStatus('failed');
         } finally {
             setProcessing(false);
         }
@@ -418,10 +762,11 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                             )}
                             {option.method === 'teocoin' && (
                                 <div className="teocoin-benefits">
-                                    <div className="benefit">🪙 Pay with TeoCoin</div>
-                                    <div className="benefit">💰 Save {option.discount}%</div>
+                                    <div className="benefit">🪙 Use {option.price} TEO for {option.discount}% discount</div>
+                                    <div className="benefit">💰 Save €{((course.price || paymentSummary?.pricing_options?.find(opt => opt.method === 'fiat')?.price || 0) * option.discount / 100).toFixed(2)} on this course</div>
+                                    <div className="benefit">💳 Then pay remaining amount with card</div>
                                     <div className="balance">
-                                        Balance: {paymentSummary?.user_teocoin_balance || 0} TEO
+                                        Your balance: {paymentSummary?.user_teocoin_balance || 0} TEO
                                     </div>
                                     {!paymentSummary?.can_pay_with_teocoin && (
                                         <div className="insufficient-balance-warning">
@@ -433,6 +778,48 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                                             🔒 Discount already applied - complete with card payment
                                         </div>
                                     )}
+                                    
+                                    {/* Web3 Connection Status */}
+                                    <div className="web3-status">
+                                        {!walletConnected ? (
+                                            <div className="wallet-required">
+                                                <button onClick={connectWallet} className="connect-wallet-btn">
+                                                    🦊 Connect MetaMask Wallet
+                                                </button>
+                                                <small>Required for TeoCoin transactions</small>
+                                            </div>
+                                        ) : (
+                                            <div className="wallet-connected">
+                                                <div className="wallet-info">
+                                                    ✅ Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                                                </div>
+                                                <div className="network-info">
+                                                    🌐 Network: Polygon Amoy
+                                                </div>
+                                                <div className="teo-info">
+                                                    💰 TEO Balance: {teoBalance}
+                                                </div>
+                                                <div className="approval-info">
+                                                    🔑 Approved: {teoAllowance} TEO
+                                                    {approvalStatus === 'pending' && <span> (⏳ Pending...)</span>}
+                                                    {approvalStatus === 'completed' && <span> (✅ Ready)</span>}
+                                                    {approvalStatus === 'failed' && <span> (❌ Failed - Try again)</span>}
+                                                </div>
+                                                {approvalStatus === 'failed' && (
+                                                    <div className="approval-help">
+                                                        <small>� <strong>MetaMask RPC Issue Detected</strong></small><br/>
+                                                        <small>📋 <strong>Try these solutions:</strong></small><br/>
+                                                        <small>1. 🔄 Reset MetaMask: Settings → Advanced → Reset Account</small><br/>
+                                                        <small>2. 🌐 Different browser/incognito window</small><br/>
+                                                        <small>3. 📱 Use MetaMask mobile app instead</small><br/>
+                                                        <small>4. 🔗 Try WalletConnect-compatible wallet</small><br/>
+                                                        <small>5. ⚙️ Add backup RPC: https://polygon-amoy.drpc.org</small><br/>
+                                                        <small><strong>Note:</strong> This is a known Polygon Amoy testnet issue</small>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -480,12 +867,15 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                     )}
                     {paymentMethod === 'teocoin' && (
                         <button
-                            onClick={handleTeoCoinPayment}
-                            disabled={processing} // TODO: Re-enable balance check: || !paymentSummary?.can_pay_with_teocoin
+                            onClick={walletConnected ? handleTeoCoinPayment : connectWallet}
+                            disabled={processing || (walletConnected && discountApplied)}
                             className="btn-crypto"
                         >
                             {processing ? '⏳ Processing...' : 
-                             !paymentSummary?.can_pay_with_teocoin ? `� Debug Mode (Balance: ${paymentSummary?.user_teocoin_balance})` : '🪙 Apply Discount'}
+                             !walletConnected ? '🦊 Connect MetaMask First' :
+                             discountApplied ? '✅ Discount Applied' :
+                             approvalStatus === 'pending' ? '⏳ Approving...' :
+                             '🪙 Apply TeoCoin Discount'}
                         </button>
                     )}
                     <button onClick={onClose} className="btn-secondary">

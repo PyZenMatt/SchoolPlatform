@@ -85,9 +85,9 @@ Platform Share: €4,500
 
 ### **SchoolPlatform's TeoCoin Solution:**
 - Students get discounts through earned TeoCoin
-- **Teachers always get full 75%** regardless of discounts
-- **Platform absorbs discount cost**
-- Creates student loyalty without hurting teacher revenue
+- **Teachers can choose**: Get TeoCoin for staking OR full fiat payment
+- **Flexible commission**: 50% base, up to 75% with staking
+- Creates student loyalty while giving teachers staking incentives
 
 ---
 

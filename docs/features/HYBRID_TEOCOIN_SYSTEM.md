@@ -1,54 +1,66 @@
-# 🔄 Hybrid TeoCoin System: Virtual + Real Blockchain Balance
+# 🔄 Hybrid Payment System: Stripe + TeoCoin Layer 2 Discounts
 
-## 🎯 **THE METAMASK BALANCE PROBLEM**
+## 🎯 **THE HYBRID PAYMENT APPROACH**
 
-### **Current Issue:**
-- **Virtual transactions** = great UX, zero gas fees
-- **But**: MetaMask doesn't show real TeoCoin balance
-- **Teachers/Students** want to see their actual TEO holdings
-- **Trust issue**: "Is my TEO real or just database numbers?"
-
----
-
-## 💡 **HYBRID SOLUTION: DUAL-LAYER SYSTEM**
-
-### **Layer 1: Real TeoCoin (ERC-20 on Polygon)**
-- **Actual blockchain tokens** visible in MetaMask
-- **Real ownership** and transferability
-- **Low gas fees** on Polygon network
-- **DeFi integration** possible
-
-### **Layer 2: Virtual Credit System**
-- **Platform credits** for instant transactions
-- **Zero gas fees** for discounts/staking
-- **Instant operations** for great UX
-- **Backed by real TeoCoin** reserves
+### **Current System:**
+- **Primary Payment**: Stripe (fiat) - always the main payment method
+- **Optional Discount**: TeoCoin discount system using Layer 2 gas-free technology
+- **Teacher Choice**: Receive TeoCoin from student OR get full fiat payment
+- **Platform Commission**: 50% default, reducible to 25% with staking
 
 ---
 
-## 🔄 **HOW THE HYBRID SYSTEM WORKS**
+## 💡 **HOW THE HYBRID SYSTEM WORKS**
 
-### **TeoCoin Earning Process:**
+### **Course Purchase Flow:**
 ```
-1. Teacher completes activity (exercise review, sales, etc.)
-2. Platform mints REAL TeoCoin to teacher's wallet
-3. Teacher sees balance increase in MetaMask
-4. Teacher can:
-   ├── Keep in wallet (full ownership)
-   ├── Deposit to platform (for virtual operations)
-   └── Use in external DeFi (future feature)
+1. Student browses courses (prices shown in EUR)
+2. Student can apply TeoCoin discount (5%, 10%, or 15%)
+3. If discount applied:
+   ├── Student pays reduced EUR amount via Stripe
+   ├── Student pays TeoCoin amount via Layer 2 (gas-free)
+   └── Teacher chooses: receive TeoCoin OR full fiat payment
+4. If no discount: Student pays full EUR amount via Stripe
 ```
 
-### **Virtual Operations Process:**
+### **Teacher Choice Mechanism:**
 ```
-1. Teacher deposits TeoCoin from wallet to platform
-2. Platform credits virtual TEO balance (1:1 ratio)
-3. Teacher uses virtual TEO for:
-   ├── Staking (instant tier changes)
-   ├── Marketing campaigns (instant activation)
-   └── Student discount approvals (instant processing)
-4. Teacher can withdraw virtual TEO to wallet anytime
+When student applies 15% discount on €100 course:
+
+Option A - Receive TeoCoin:
+├── Student: €85 Stripe + 150 TEO
+├── Teacher: €42.5 fiat + 150 TEO (good for staking)
+└── Platform: €42.5
+
+Option B - Full Fiat Payment:
+├── Student: 100 Stripe 
+├── Teacher: €50 fiat 
+└── Platform: 50€(based on the bronze staking)
 ```
+
+---
+
+## ⚡ **LAYER 2 DISCOUNT SYSTEM**
+
+### **Gas-Free Student Experience:**
+✅ **Zero Gas Fees**: Students don't pay gas for discount requests
+✅ **Instant Approval**: Teachers approve/decline via platform  
+✅ **Platform Covers Gas**: Seamless blockchain operations
+✅ **Real TeoCoin**: Actual ERC-20 tokens transferred
+✅ **2-Hour Timeout**: Requests auto-expire if not acted upon
+
+### **Teacher Staking Benefits:**
+✅ **Commission Reduction**: 50% → 25% platform commission
+✅ **TeoCoin Accumulation**: Receive student TeoCoin for staking
+✅ **Tier Progression**: Bronze → Silver → Gold → Platinum → Diamond
+✅ **Immediate Benefits**: Instant commission rate changes
+✅ **Real Ownership**: Stake actual TeoCoin in MetaMask wallet
+
+### **Platform Economics:**
+✅ **Sustainable Model**: Flexible teacher choice mechanism
+✅ **Growth Incentive**: Teachers benefit from accumulating TeoCoin
+✅ **User Adoption**: Gas-free experience for students
+✅ **Trust Building**: Real blockchain tokens, not database credits
 
 ---
 

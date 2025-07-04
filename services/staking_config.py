@@ -1,5 +1,9 @@
 """
-Staking Contract Configuration
+Staking Cont    0: {'min_stake': 0, 'commission_rate': 5000, 'name': 'Bronze'},      # 50%
+    1: {'min_stake': 100, 'commission_rate': 4400, 'name': 'Silver'},    # 44%
+    2: {'min_stake': 300, 'commission_rate': 3800, 'name': 'Gold'},      # 38%
+    3: {'min_stake': 600, 'commission_rate': 3100, 'name': 'Platinum'},  # 31%
+    4: {'min_stake': 1000, 'commission_rate': 2500, 'name': 'Diamond'},  # 25%Configuration
 
 This file will be updated after contract deployment with the actual contract address and ABI.
 For now, it contains placeholder values and configuration for local development.

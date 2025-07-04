@@ -109,7 +109,9 @@ export const createPaymentIntent = async (courseId, options = {}) => {
   // No caching for payment intents (security)
   const payload = {
     teocoin_discount: options.teocoin_discount || 0,
-    payment_method: options.payment_method || 'stripe'
+    payment_method: options.payment_method || 'stripe',
+    wallet_address: options.wallet_address, // Include wallet address for TeoCoin payments
+    approval_tx_hash: options.approval_tx_hash // Include approval hash if available
   };
   return api.post(`courses/${courseId}/create-payment-intent/`, payload);
 };

@@ -10,11 +10,11 @@
 ### 2. Smart Contract Ready
 - ✅ `TeoCoinStaking.sol` contract completed
 - ✅ Realistic staking tiers for 10K TEO supply:
-  - Bronze (0 TEO): 25% platform commission
-  - Silver (100 TEO): 22% platform commission  
-  - Gold (300 TEO): 19% platform commission
-  - Platinum (600 TEO): 16% platform commission
-  - Diamond (1,000 TEO): 15% platform commission
+  - Bronze (0 TEO): 50% platform commission
+  - Silver (100 TEO): 44% platform commission  
+  - Gold (300 TEO): 38% platform commission
+  - Platinum (600 TEO): 31% platform commission
+  - Diamond (1,000 TEO): 25% platform commission
 
 ### 3. Deployment Scripts Ready
 - ✅ `deploy_staking_contract.py` - Main deployment script

@@ -582,3 +582,149 @@
   font-display: swap;
   text-rendering: optimizeSpeed;
 }
+
+/* ====== WEB3 METAMASK INTEGRATION STYLES ====== */
+
+.web3-status {
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.wallet-required {
+  text-align: center;
+}
+
+.connect-wallet-btn {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.connect-wallet-btn:hover {
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.wallet-connected {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.wallet-info {
+  font-size: 13px;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.teo-info {
+  font-size: 13px;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.approval-info {
+  font-size: 12px;
+  color: #065f46;
+}
+
+.wallet-required small {
+  color: #64748b;
+  font-size: 12px;
+  display: block;
+  margin-top: 5px;
+}
+
+/* TeoCoin benefits updated styles */
+.teocoin-benefits .benefit {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.teocoin-benefits .balance {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.discount-locked {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Enhanced Web3 MetaMask Integration Styles */
+.web3-status {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.wallet-required {
+    text-align: center;
+}
+
+.connect-wallet-btn {
+    background: #f6851b;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+}
+
+.connect-wallet-btn:hover {
+    background: #e2761b;
+}
+
+.wallet-connected {
+    font-size: 0.9em;
+}
+
+.wallet-info, .network-info, .teo-info, .approval-info {
+    margin: 5px 0;
+    font-size: 0.85em;
+}
+
+.approval-help {
+    margin-top: 8px;
+    padding: 6px 8px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+}
+
+.approval-help small {
+    color: #856404;
+    font-size: 0.75em;
+    line-height: 1.3;
+}

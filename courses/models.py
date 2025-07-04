@@ -94,10 +94,18 @@ class Course(models.Model):
     def get_teocoin_price(self):
         """Calculate TeoCoin price with discount"""
         if self.price_eur > 0:
-            # Convert EUR to TEO (example rate: 1 EUR = 10 TEO)
+            # Convert EUR to TEO (1 EUR = 10 TEO)
             base_teo_price = self.price_eur * Decimal('10')
             discount = base_teo_price * (self.teocoin_discount_percent / Decimal('100'))
             return base_teo_price - discount
+        return Decimal('0')
+    
+    def get_teocoin_discount_amount(self):
+        """Calculate how much TEO is needed for the discount (consistent with payment views)"""
+        if self.price_eur > 0 and self.teocoin_discount_percent > 0:
+            # This is the TEO amount needed to get the discount
+            discount_value_eur = (self.price_eur * self.teocoin_discount_percent) / Decimal('100')
+            return discount_value_eur * Decimal('10')  # Convert EUR discount to TEO (1 EUR = 10 TEO)
         return Decimal('0')
     
     def get_pricing_options(self):

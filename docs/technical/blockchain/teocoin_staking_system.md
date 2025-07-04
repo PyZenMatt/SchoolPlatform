@@ -26,11 +26,11 @@ Tier Determined By	Staked amount in TEO
 Core Benefit	Reduced platform commission rate
 🧱 Staking Tiers
 
-tiers[0] = Bronze:   0 TEO     → 25% fee
-tiers[1] = Silver:   100 TEO   → 22% fee
-tiers[2] = Gold:     300 TEO   → 19% fee
-tiers[3] = Platinum: 600 TEO   → 16% fee
-tiers[4] = Diamond:  1000 TEO  → 15% fee
+tiers[0] = Bronze:   0 TEO     → 50% fee
+tiers[1] = Silver:   100 TEO   → 44% fee
+tiers[2] = Gold:     300 TEO   → 38% fee
+tiers[3] = Platinum: 600 TEO   → 31% fee
+tiers[4] = Diamond:  1000 TEO  → 25% fee
 
 📌 Note: All amounts are in wei, so 100 TEO = 100 * 10^18
 🔁 Staking Lifecycle

@@ -4,11 +4,12 @@
 
 ### Platform Commission Structure
 ```
-Platform Commission: 25%
-Teacher Payout: 75%
+Base Platform Commission: 50%
+Base Teacher Payout: 50%
+With Staking: Up to 75% teacher (25% platform minimum)
 Payment Processing: ~3% (from platform share)
 TeoCoin Rewards Pool: 5% of commission
-Net Platform Margin: ~17%
+Net Platform Margin: ~42% base, ~17% with max staking
 ```
 
 ### TeoCoin Discount Parameters
@@ -47,19 +48,19 @@ Implementation: Virtual (database-only)
 
 ### €100 Course Sale with 20% TeoCoin Discount
 
-#### Without TeoCoin:
+#### Without TeoCoin (Base Commission):
 ```
 Student Pays: €100.00
-Teacher Gets: €75.00 (75%)
-Platform Gets: €20.75 (after fees)
+Teacher Gets: €50.00 (50%)
+Platform Gets: €47.00 (after fees)
 ```
 
-#### With Maximum TeoCoin Discount:
+#### With Maximum TeoCoin Discount (Diamond Staker):
 ```
 Student Pays: €80.00 (used 40 TEO)
-Teacher Gets: €75.00 (still full 75%!)
+Teacher Gets: €60.00 (75% of €80)
 Platform Covers: €20.00 discount
-Platform Gets: €0.75 (minimal but sustainable)
+Platform Gets: €20.00 (25% of €80)
 ```
 
 ### Why This Works:
@@ -91,19 +92,19 @@ MIN_TEOCOIN_FOR_DISCOUNT = Decimal('2.0')      # 2 TEO minimum
 
 ---
 
-## 📈 COMPETITIVE ANALYSIS: WHY 25% COMMISSION WORKS
+## 📈 COMPETITIVE ANALYSIS: WHY 50% BASE + STAKING WORKS
 
 ### Industry Comparison:
 | Platform | Commission | Teacher Payout | Student Benefits |
 |----------|------------|----------------|------------------|
 | Udemy | 50% | 50% | Frequent sales |
 | Skillshare | 70% | 30% | Subscription model |
-| **SchoolPlatform** | **25%** | **75%** | **TeoCoin discounts** |
+| **SchoolPlatform** | **50% → 25%** | **50% → 75%** | **TeoCoin discounts** |
 
 ### Our Competitive Advantages:
-1. **Best teacher terms** in the industry (75% vs 30-50%)
+1. **Staking incentive** allows teachers to earn up to 75% vs industry 30-50%
 2. **Innovative token rewards** create stickiness  
-3. **Sustainable discount system** vs unsustainable price wars
+3. **Sustainable base rate** (50%) ensures platform viability
 4. **Art education focus** reduces direct competition
 
 ---

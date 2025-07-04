@@ -328,7 +328,7 @@ class PaymentService(TransactionalService):
     """
     
     # Payment configuration
-    PLATFORM_COMMISSION_RATE = Decimal('0.15')  # 15%
+    PLATFORM_COMMISSION_RATE = Decimal('0.50')  # 50% base rate
     
     def __init__(self):
         super().__init__()
@@ -941,6 +941,74 @@ class PaymentService(TransactionalService):
                 enrolled_at=timezone.now()
             )
             
+            # ✅ EXECUTE TEOCOIN TRANSFER FOR HYBRID PAYMENTS
+            teocoin_transfer_result = None
+            if intent.metadata and intent.metadata.get('teocoin_discount_applied'):
+                try:
+                    # Check if this was a hybrid payment with TeoCoin discount
+                    discount_percent = float(intent.metadata.get('teocoin_discount_percent', 0))
+                    student_wallet = intent.metadata.get('student_wallet_address')
+                    teacher_wallet = intent.metadata.get('teacher_wallet_address')
+                    
+                    if discount_percent > 0 and student_wallet and teacher_wallet:
+                        self.log_info(f"🪙 Executing TeoCoin transfer for hybrid payment: {discount_percent}% discount")
+                        
+                        # Calculate TEO amounts
+                        course_price_eur = float(course.price_eur or course.price or 0)
+                        discount_amount_eur = course_price_eur * discount_percent / 100
+                        teo_required = discount_amount_eur * 10  # 1 EUR = 10 TEO
+                        
+                        # Execute the blockchain transfer via API call
+                        import requests
+                        from django.conf import settings
+                        
+                        transfer_data = {
+                            'student_address': student_wallet,
+                            'teacher_address': teacher_wallet,
+                            'course_price': str(teo_required),
+                            'course_id': course_id,
+                            'teacher_amount': str(teo_required * 0.85),  # 85% to teacher
+                            'commission_amount': str(teo_required * 0.15),  # 15% commission
+                            'approval_tx_hash': f'payment_intent_{payment_intent_id}'
+                        }
+                        
+                        # Make internal API call to execute blockchain transfer
+                        blockchain_response = requests.post(
+                            f"http://localhost:8000/api/v1/blockchain/execute-course-payment/",
+                            json=transfer_data,
+                            headers={'Authorization': f'Bearer {intent.metadata.get("auth_token", "")}'},
+                            timeout=30
+                        )
+                        
+                        if blockchain_response.status_code == 200:
+                            blockchain_result = blockchain_response.json()
+                            teocoin_transfer_result = blockchain_result.get('teacher_payment_tx')
+                            
+                            # Update enrollment with TeoCoin transfer details
+                            enrollment.payment_method = 'hybrid'
+                            enrollment.transaction_hash = teocoin_transfer_result
+                            enrollment.save()
+                            
+                            self.log_info(f"✅ TeoCoin transfer completed: {teo_required} TEO transferred")
+                            
+                            # Record the TeoCoin transfer transaction
+                            BlockchainTransaction.objects.create(
+                                user=user,
+                                transaction_type='payment_discount',
+                                amount=Decimal(str(teo_required)),
+                                status='completed',
+                                transaction_hash=teocoin_transfer_result,
+                                related_object_id=str(course.id),
+                                notes=f"TeoCoin discount payment for course: {course.title} ({discount_percent}% discount)"
+                            )
+                        else:
+                            self.log_error(f"❌ TeoCoin transfer failed: {blockchain_response.text}")
+                            
+                except Exception as e:
+                    self.log_error(f"❌ TeoCoin transfer execution failed: {str(e)}")
+                    # Don't fail the entire payment process if TeoCoin transfer fails
+                    # The Stripe payment already succeeded
+            
             # Award TeoCoin reward if configured
             teocoin_reward_given = Decimal('0')
             reward_status = 'none'
@@ -1144,13 +1212,13 @@ class PaymentService(TransactionalService):
             'disabled': course.price_eur == 0
         })
         # TeoCoin option
-        teocoin_price = course.get_teocoin_price() if course.price_eur > 0 else 0
+        teocoin_discount_amount = course.get_teocoin_discount_amount() if course.price_eur > 0 else 0
         pricing_options.append({
             'method': 'teocoin',
-            'price': teocoin_price,
+            'price': teocoin_discount_amount,  # TEO needed for discount (not discounted price)
             'currency': 'TEO',
             'discount': course.teocoin_discount_percent if course.price_eur > 0 else 0,
-            'description': f'{teocoin_price} TEO ({course.teocoin_discount_percent}% discount)' if course.price_eur > 0 else 'Not available for free courses',
+            'description': f'{teocoin_discount_amount} TEO for {course.teocoin_discount_percent}% discount' if course.price_eur > 0 else 'Not available for free courses',
             'disabled': course.price_eur == 0
         })
         
@@ -1175,8 +1243,8 @@ class PaymentService(TransactionalService):
                 pass
 
         can_pay_with_teocoin = False
-        if course.price_eur > 0 and course.get_teocoin_price() > 0:
-            can_pay_with_teocoin = bool(user.wallet_address) and teocoin_balance >= course.get_teocoin_price()
+        if course.price_eur > 0 and course.get_teocoin_discount_amount() > 0:
+            can_pay_with_teocoin = bool(user.wallet_address) and teocoin_balance >= course.get_teocoin_discount_amount()
 
         return {
             'already_enrolled': False,
