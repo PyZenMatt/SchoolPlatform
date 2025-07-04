@@ -879,6 +879,9 @@ class PaymentService(TransactionalService):
             dict: Success status, enrollment, teocoin_reward or error
         """
         def _process_payment():
+            # Import Django settings for Stripe configuration
+            from django.conf import settings
+            
             # Import Stripe
             try:
                 import stripe
@@ -960,7 +963,6 @@ class PaymentService(TransactionalService):
                         
                         # Execute the blockchain transfer via API call
                         import requests
-                        from django.conf import settings
                         
                         # Calculate commission using PLATFORM_COMMISSION_RATE
                         teacher_percentage = Decimal('1.00') - self.PLATFORM_COMMISSION_RATE  # 50%

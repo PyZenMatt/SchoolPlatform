@@ -39,6 +39,7 @@ class CreatePaymentIntentView(APIView):
             # Get request data
             teocoin_discount = request.data.get('teocoin_discount', 0)
             payment_method = request.data.get('payment_method', 'stripe')
+            approval_tx_hash = request.data.get('approval_tx_hash')
             
             # ⚡ PERFORMANCE: Get cached course data first
             course_data = cached_payment_service.get_course_pricing_cached(course_id)
@@ -153,6 +154,24 @@ class CreatePaymentIntentView(APIView):
                                     
                                     if result:
                                         print(f"✅ TeoCoin transfer successful: {result}")
+                                        
+                                        # Record the discount transaction in blockchain history
+                                        from rewards.models import BlockchainTransaction
+                                        try:
+                                            BlockchainTransaction.objects.create(
+                                                user=request.user,
+                                                transaction_type='discount_applied',
+                                                amount=-Decimal(str(required_teo)),  # Negative amount for discount
+                                                from_address=wallet_address,
+                                                to_address=reward_pool_address,
+                                                tx_hash=approval_tx_hash if approval_tx_hash and approval_tx_hash != 'frontend_approved' else None,
+                                                status='confirmed',
+                                                related_object_id=str(course_id),
+                                                notes=f'TeoCoin discount ({teocoin_discount}%) applied for course: {course.title}'
+                                            )
+                                            print(f"📝 Discount transaction recorded in history")
+                                        except Exception as tx_error:
+                                            print(f"⚠️ Failed to record discount transaction: {tx_error}")
                                         
                                         # Award teacher bonus
                                         teacher_bonus_teo = teacher_bonus_wei / 10**18

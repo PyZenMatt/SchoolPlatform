@@ -571,21 +571,24 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
             let approvalTxHash = null;
             if (teoAllowance < teoRequired) {
                 console.log('🔑 Approval needed. Requesting approval for', teoRequired, 'TEO');
-                
-                // Get approval transaction hash
                 approvalTxHash = await handleApproval(teoRequired);
                 console.log('✅ Approval completed with tx:', approvalTxHash);
             } else {
                 console.log('✅ Sufficient allowance available');
             }
 
-            // Step 3: Create payment intent with approval hash
+            // Step 3: Execute actual TeoCoin transfer transaction
+            console.log('💰 Executing TeoCoin transfer transaction...');
+            const transferTxHash = await executeTeoCoinTransfer(teoRequired);
+            console.log('✅ Transfer completed with tx:', transferTxHash);
+
+            // Step 4: Create payment intent with transfer hash
             const { createPaymentIntent } = await import('../services/api/courses');
             const response = await createPaymentIntent(course.id, {
                 teocoin_discount: teoOption.discount,
                 payment_method: 'hybrid',
                 wallet_address: walletAddress,
-                approval_tx_hash: approvalTxHash || 'sufficient_allowance'
+                approval_tx_hash: transferTxHash // Use transfer hash instead of approval hash
             });
 
             console.log('📝 Payment intent response:', response);
@@ -695,6 +698,81 @@ Complete your purchase with the discounted amount.`);
                 throw new Error('Insufficient MATIC for gas fees');
             } else {
                 throw new Error(`Approval failed: ${error.message}`);
+            }
+        }
+    };
+
+    // Execute actual TeoCoin transfer transaction
+    const executeTeoCoinTransfer = async (amount) => {
+        try {
+            const signer = await web3Provider.getSigner();
+            const contract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, TEOCOIN_ABI, signer);
+            
+            // Convert amount to Wei (18 decimals)
+            const amountWei = ethers.parseEther(amount.toString());
+            
+            console.log('💰 Executing TeoCoin transfer:', amount, 'TEO to', REWARD_POOL_ADDRESS);
+            
+            // Show user confirmation for transfer
+            const userConfirmed = confirm(
+                `Transfer ${amount} TEO for discount?\n\n` +
+                `This will transfer ${amount} TEO from your wallet to apply the course discount.\n` +
+                `Click OK to proceed with the transfer.`
+            );
+
+            if (!userConfirmed) {
+                throw new Error('Transfer cancelled by user');
+            }
+
+            // Execute transfer using transferFrom (since we have approval)
+            // Note: We need to extend the ABI to include transferFrom
+            const transferAbi = [
+                {
+                    "inputs": [
+                        {"internalType": "address", "name": "from", "type": "address"},
+                        {"internalType": "address", "name": "to", "type": "address"},
+                        {"internalType": "uint256", "name": "amount", "type": "uint256"}
+                    ],
+                    "name": "transferFrom",
+                    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ];
+            
+            // Create contract with extended ABI
+            const extendedContract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, [...TEOCOIN_ABI, ...transferAbi], signer);
+            
+            // Execute transferFrom: from user wallet to reward pool
+            const transferTx = await extendedContract.transferFrom(
+                walletAddress,
+                REWARD_POOL_ADDRESS,
+                amountWei,
+                { gasLimit: 80000n }
+            );
+            
+            console.log('⏳ Waiting for transfer confirmation...');
+            const receipt = await transferTx.wait();
+            
+            console.log('✅ Transfer confirmed in block:', receipt.blockNumber);
+            console.log('💰 Gas used:', receipt.gasUsed.toString());
+            
+            // Update balance
+            await updateTeoInfo(web3Provider, walletAddress);
+            
+            return transferTx.hash;
+            
+        } catch (error) {
+            console.error('Transfer failed:', error);
+            
+            if (error.message.includes('user rejected')) {
+                throw new Error('Transfer was cancelled by user');
+            } else if (error.message.includes('insufficient funds')) {
+                throw new Error('Insufficient MATIC for gas fees');
+            } else if (error.message.includes('insufficient allowance')) {
+                throw new Error('Insufficient TeoCoin allowance. Please approve spending first.');
+            } else {
+                throw new Error(`Transfer failed: ${error.message}`);
             }
         }
     };

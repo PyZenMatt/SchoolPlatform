@@ -18,6 +18,7 @@ class BlockchainTransaction(models.Model):
         ('reward', 'Reward - Premio per attività'),
         ('exercise_reward', 'Exercise Reward - Premio per esercizio completato'),
         ('review_reward', 'Review Reward - Premio per review completata'),
+        ('discount_applied', 'Discount Applied - Sconto TeoCoin applicato'),
     )
     
     STATUS_CHOICES = (
