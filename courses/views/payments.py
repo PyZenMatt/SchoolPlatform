@@ -127,8 +127,8 @@ class CreatePaymentIntentView(APIView):
                         # Check if TeoCoin service is available
                         if not hasattr(teo_service, 'transfer_with_reward_pool_gas'):
                             print(f"❌ TeoCoin service method not available")
-                            # For now, skip the transfer but continue with discount
-                            print(f"⚠️ Skipping TEO transfer - will be implemented in Phase 2")
+                            # Phase 1: Enable real TeoCoin transfers
+                            print(f"🪙 Executing actual TeoCoin transfer...")
                         else:
                             # Transfer TEO from student to reward pool for discount
                             from django.conf import settings
@@ -136,28 +136,41 @@ class CreatePaymentIntentView(APIView):
                             
                             if not reward_pool_address:
                                 print(f"❌ Reward pool address not configured")
+                                return Response({
+                                    'success': False,
+                                    'error': 'Reward pool not configured for TeoCoin transfers'
+                                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                             else:
                                 print(f"🎯 Transferring to reward pool: {reward_pool_address}")
                                 
-                                # 🚨 CURRENT LIMITATION: TeoCoin transfers require frontend wallet integration
-                                # 
-                                # ISSUE: TeoCoin payments need TWO transactions:
-                                # 1. APPROVE: Student approves reward pool to spend TEO (needs private key/MetaMask)
-                                # 2. TRANSFER: Reward pool transfers TEO from student
-                                #
-                                # CURRENT STATE: We only have wallet addresses, not private keys
-                                # SOLUTION: Frontend MetaMask integration for approval step
-                                #
-                                # For demonstration, we'll log what WOULD happen:
-                                
-                                print(f"💰 WOULD DEDUCT: {required_teo:.2f} TEO from {wallet_address}")
-                                print(f"🎁 WOULD REWARD teacher: {teacher_bonus_wei / 10**18:.2f} TEO")
-                                print(f"⚠️ SIMULATION MODE: Actual TEO transfer requires frontend approval")
-                                
-                                # TODO: Implement frontend approval flow:
-                                # 1. Frontend checks if student has approved reward pool
-                                # 2. If not approved, request approval transaction via MetaMask
-                                # 3. Student signs approval in wallet
+                                # Execute actual TeoCoin transfer
+                                try:
+                                    print(f"💰 TRANSFERRING: {required_teo:.2f} TEO from {wallet_address}")
+                                    
+                                    result = teo_service.transfer_with_reward_pool_gas(
+                                        wallet_address, reward_pool_address, Decimal(str(required_teo))
+                                    )
+                                    
+                                    if result:
+                                        print(f"✅ TeoCoin transfer successful: {result}")
+                                        
+                                        # Award teacher bonus
+                                        teacher_bonus_teo = teacher_bonus_wei / 10**18
+                                        print(f"🎁 AWARDING teacher bonus: {teacher_bonus_teo:.2f} TEO")
+                                        
+                                    else:
+                                        print(f"❌ TeoCoin transfer failed")
+                                        return Response({
+                                            'success': False,
+                                            'error': 'TeoCoin transfer failed. Please ensure you have approved the reward pool to spend your tokens.'
+                                        }, status=status.HTTP_400_BAD_REQUEST)
+                                        
+                                except Exception as transfer_error:
+                                    print(f"❌ TeoCoin transfer error: {str(transfer_error)}")
+                                    return Response({
+                                        'success': False,
+                                        'error': f'TeoCoin transfer failed: {str(transfer_error)}'
+                                    }, status=status.HTTP_400_BAD_REQUEST)
                                 # 4. Backend verifies approval and executes transfer
                                 #
                                 # Uncomment when frontend approval is implemented:

@@ -1,12 +1,8 @@
 """
-Staking Cont    0: {'min_stake': 0, 'commission_rate': 5000, 'name': 'Bronze'},      # 50%
-    1: {'min_stake': 100, 'commission_rate': 4400, 'name': 'Silver'},    # 44%
-    2: {'min_stake': 300, 'commission_rate': 3800, 'name': 'Gold'},      # 38%
-    3: {'min_stake': 600, 'commission_rate': 3100, 'name': 'Platinum'},  # 31%
-    4: {'min_stake': 1000, 'commission_rate': 2500, 'name': 'Diamond'},  # 25%Configuration
+Staking Contract Configuration
 
-This file will be updated after contract deployment with the actual contract address and ABI.
-For now, it contains placeholder values and configuration for local development.
+This file contains the TeoCoin staking configuration with progressive commission rates.
+Updated with correct 50% → 25% commission structure.
 """
 
 # Contract deployment info (LIVE CONTRACTS - July 1, 2025)
@@ -16,13 +12,13 @@ STAKING_ABI = None  # Will be loaded from ThirdWeb artifacts
 # Production Configuration - Live Contracts
 DEVELOPMENT_MODE = False
 
-# If no deployed contract, use these settings for simulation
+# Correct staking tier configuration (50% → 25% progressive commission reduction)
 TIER_CONFIG = {
-    0: {'min_stake': 0, 'commission_rate': 2500, 'name': 'Bronze'},      # 25%
-    1: {'min_stake': 100, 'commission_rate': 2200, 'name': 'Silver'},    # 22%
-    2: {'min_stake': 300, 'commission_rate': 1900, 'name': 'Gold'},      # 19%
-    3: {'min_stake': 600, 'commission_rate': 1600, 'name': 'Platinum'},  # 16%
-    4: {'min_stake': 1000, 'commission_rate': 1500, 'name': 'Diamond'}   # 15%
+    0: {'min_stake': 0, 'commission_rate': 5000, 'name': 'Bronze'},      # 50%
+    1: {'min_stake': 100, 'commission_rate': 4400, 'name': 'Silver'},    # 44%
+    2: {'min_stake': 300, 'commission_rate': 3800, 'name': 'Gold'},      # 38%
+    3: {'min_stake': 600, 'commission_rate': 3100, 'name': 'Platinum'},  # 31%
+    4: {'min_stake': 1000, 'commission_rate': 2500, 'name': 'Diamond'},  # 25%
 }
 
 # Sample ABI for reference (will be replaced with actual after compilation)

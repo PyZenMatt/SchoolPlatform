@@ -962,13 +962,17 @@ class PaymentService(TransactionalService):
                         import requests
                         from django.conf import settings
                         
+                        # Calculate commission using PLATFORM_COMMISSION_RATE
+                        teacher_percentage = Decimal('1.00') - self.PLATFORM_COMMISSION_RATE  # 50%
+                        teo_required_decimal = Decimal(str(teo_required))
+                        
                         transfer_data = {
                             'student_address': student_wallet,
                             'teacher_address': teacher_wallet,
-                            'course_price': str(teo_required),
+                            'course_price': str(teo_required_decimal),
                             'course_id': course_id,
-                            'teacher_amount': str(teo_required * 0.85),  # 85% to teacher
-                            'commission_amount': str(teo_required * 0.15),  # 15% commission
+                            'teacher_amount': str(teo_required_decimal * teacher_percentage),  # 50% to teacher
+                            'commission_amount': str(teo_required_decimal * self.PLATFORM_COMMISSION_RATE),  # 50% commission
                             'approval_tx_hash': f'payment_intent_{payment_intent_id}'
                         }
                         
