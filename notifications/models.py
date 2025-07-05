@@ -29,6 +29,12 @@ class Notification(models.Model):
         ('reward_earned', 'Premio Ottenuto'),
         ('bonus_received', 'Bonus Ricevuto'),
         
+        # TeoCoin Escrow System
+        ('teocoin_discount_pending', 'TeoCoin Discount - Teacher Decision Required'),
+        ('teocoin_discount_accepted', 'TeoCoin Discount - Accepted by Teacher'),
+        ('teocoin_discount_rejected', 'TeoCoin Discount - Rejected by Teacher'),
+        ('teocoin_discount_expired', 'TeoCoin Discount - Expired (Auto-Rejected)'),
+        
         # Nuovi Contenuti
         ('new_course_published', 'Nuovo Corso Pubblicato'),
         ('new_lesson_added', 'Nuova Lezione Aggiunta'),
