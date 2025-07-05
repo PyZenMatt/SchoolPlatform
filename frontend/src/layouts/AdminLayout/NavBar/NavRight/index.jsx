@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Card, ListGroup, Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 
 import ChatList from './ChatList';
+import { TeacherEscrowNotification } from '../../../../components/escrow';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 import avatar1 from '../../../../assets/images/user/avatar-1.jpg';
 import avatar2 from '../../../../assets/images/user/avatar-2.jpg';
@@ -12,6 +14,10 @@ import avatar4 from '../../../../assets/images/user/avatar-4.jpg';
 
 const NavRight = () => {
   const [listOpen, setListOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Check if user is a teacher
+  const isTeacher = user?.user_type === 'teacher' || user?.role === 'teacher';
 
   const notiData = [
     {
@@ -37,6 +43,13 @@ const NavRight = () => {
   return (
     <React.Fragment>
       <ListGroup as="ul" bsPrefix=" " className="navbar-nav ml-auto" id="navbar-right">
+        {/* TeoCoin Escrow Notification - Only for Teachers */}
+        {isTeacher && (
+          <ListGroup.Item as="li" bsPrefix=" ">
+            <TeacherEscrowNotification />
+          </ListGroup.Item>
+        )}
+        
         <ListGroup.Item as="li" bsPrefix=" ">
           <Dropdown align="end">
             <Dropdown.Toggle as={Link} variant="link" to="#" id="dropdown-basic">
