@@ -1,5 +1,5 @@
 """
-URL patterns for services app including TEO earning, staking, and teacher escrow endpoints
+URL patterns for services app including TEO earning, staking, and TeoCoin discount endpoints
 """
 
 from django.urls import path, include
@@ -16,6 +16,6 @@ urlpatterns = [
     path('staking/tiers/', api_views.staking_tiers, name='staking_tiers'),
     path('staking/calculator/', api_views.commission_calculator, name='commission_calculator'),
     
-    # Teacher Escrow endpoints
-    path('teacher/', include('api.teacher_escrow_urls')),
+    # TeoCoin Discount endpoints
+    path('discount/', include('api.discount_urls')),
 ]

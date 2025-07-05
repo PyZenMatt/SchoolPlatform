@@ -539,7 +539,7 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
         }
     };
 
-    // Enhanced TeoCoin payment flow with complete integration
+    // Enhanced TeoCoin payment flow with correct business logic
     const handleTeoCoinPayment = async () => {
         try {
             if (!walletConnected || !web3Provider) {
@@ -554,83 +554,65 @@ const PaymentForm = ({ course, onSuccess, onClose, onError }) => {
                 throw new Error('TeoCoin discount not available');
             }
 
-            // Calculate required TEO amount from payment summary
-            const teoRequired = parseFloat(teoOption.price || 0);
+            const discountPercent = teoOption.discount_percent || 10; // Default 10% if not specified
+            const discountAmount = teoOption.discount || (course.price * discountPercent / 100);
+            const finalPrice = course.price - discountAmount;
             
-            console.log('💰 TeoCoin Payment Flow Started');
-            console.log('� Required TEO:', teoRequired);
-            console.log('💰 Current balance:', teoBalance);
-            console.log('🔑 Current allowance:', teoAllowance);
+            console.log('💰 TeoCoin Payment Flow Started (Correct Business Logic)');
+            console.log('� Original price:', course.price);
+            console.log('💸 Discount amount:', discountAmount);
+            console.log('💳 Student pays immediately:', finalPrice);
+            console.log('🔔 Creating teacher notification for EUR vs TEO choice');
 
-            // Step 1: Check TeoCoin balance
-            if (teoBalance < teoRequired) {
-                throw new Error(`Insufficient TeoCoin balance. Required: ${teoRequired} TEO, Available: ${teoBalance} TEO`);
-            }
+            // Step 1: Create discount request (generates teacher notification)
+            console.log('� Creating discount request for teacher...');
+            const discountRequest = await createDiscountRequest(discountAmount, discountPercent);
+            console.log('✅ Discount request created:', discountRequest.requestId);
 
-            // Step 2: Handle approval if needed
-            let approvalTxHash = null;
-            if (teoAllowance < teoRequired) {
-                console.log('🔑 Approval needed. Requesting approval for', teoRequired, 'TEO');
-                approvalTxHash = await handleApproval(teoRequired);
-                console.log('✅ Approval completed with tx:', approvalTxHash);
-            } else {
-                console.log('✅ Sufficient allowance available');
-            }
-
-            // Step 3: Execute actual TeoCoin transfer transaction
-            console.log('💰 Executing TeoCoin transfer transaction...');
-            const transferTxHash = await executeTeoCoinTransfer(teoRequired);
-            console.log('✅ Transfer completed with tx:', transferTxHash);
-
-            // Step 4: Create payment intent with transfer hash
+            // Step 2: Create payment intent for the DISCOUNTED amount (student pays immediately)
             const { createPaymentIntent } = await import('../services/api/courses');
             const response = await createPaymentIntent(course.id, {
-                teocoin_discount: teoOption.discount,
-                payment_method: 'hybrid',
+                teocoin_discount_request_id: discountRequest.requestId,
+                discount_amount: discountAmount,
+                final_amount: finalPrice,
+                payment_method: 'fiat_with_teocoin_discount',
                 wallet_address: walletAddress,
-                approval_tx_hash: transferTxHash // Use transfer hash instead of approval hash
+                teacher_wallet: course.teacher.wallet_address
             });
 
             console.log('📝 Payment intent response:', response);
 
             if (response.data.success) {
-                // Step 4: Complete payment flow
-                if (response.data.final_amount > 0) {
-                    // Hybrid payment - store discount info and switch to card payment
-                    const discountInfo = {
-                        discount: teoOption.discount,
-                        discount_applied: response.data.discount_applied,
-                        teo_cost: response.data.teo_cost,
-                        final_amount: response.data.final_amount,
-                        client_secret: response.data.client_secret,
-                        approval_completed: true
-                    };
-                    
-                    localStorage.setItem('applied_teocoin_discount', JSON.stringify(discountInfo));
-                    setDiscountApplied(true);
-                    setPaymentMethod('fiat');
-                    
-                    // Show success message
-                    const coursePrice = parseFloat(course.price_eur || course.price || 0);
-                    alert(`✅ TeoCoin discount applied successfully!
-                    
-💰 Original price: €${coursePrice.toFixed(2)}
-🪙 TEO used: ${discountInfo.teo_cost}  
-💸 Discount: €${discountInfo.discount_applied}
-💳 Final price: €${discountInfo.final_amount}
+                // Store discount info for payment completion
+                const discountInfo = {
+                    discount_request_id: discountRequest.requestId,
+                    discount_amount: discountAmount,
+                    discount_percent: discountPercent,
+                    final_amount: finalPrice,
+                    client_secret: response.data.client_secret,
+                    student_gets_discount: true, // Student ALWAYS gets discount
+                    teacher_chooses_eur_vs_teo: true // Teacher will choose EUR vs TEO
+                };
+                
+                localStorage.setItem('applied_teocoin_discount', JSON.stringify(discountInfo));
+                setDiscountApplied(true);
+                setPaymentMethod('fiat');
+                
+                // Show success message explaining the correct business logic
+                alert(`✅ TeoCoin discount applied successfully!
+                
+💰 Original price: €${course.price.toFixed(2)}
+💸 Your discount: €${discountAmount.toFixed(2)} (${discountPercent}%)
+💳 You pay now: €${finalPrice.toFixed(2)}
 
-Complete your purchase with the discounted amount.`);
-                } else {
-                    // Full TeoCoin payment completed
-                    onSuccess({
-                        method: 'teocoin',
-                        amount: 0,
-                        teocoinDiscount: response.data,
-                        enrollment: response.data.enrollment
-                    });
-                }
+🎓 You will be enrolled immediately!
+🔔 Your teacher will be notified to choose:
+   💶 Keep €${discountAmount.toFixed(2)} (safe option)
+   🪙 Accept TEO staking (earn bonus)
+
+Complete your discounted payment now.`);
             } else {
-                throw new Error(response.data.error || 'TeoCoin payment failed');
+                throw new Error(response.data.error || 'TeoCoin discount payment failed');
             }
             
         } catch (error) {
@@ -702,77 +684,69 @@ Complete your purchase with the discounted amount.`);
         }
     };
 
-    // Execute actual TeoCoin transfer transaction
-    const executeTeoCoinTransfer = async (amount) => {
+    // Create discount request via backend API (no MetaMask transactions needed)
+    const createDiscountRequest = async (amount, discountPercent) => {
         try {
-            const signer = await web3Provider.getSigner();
-            const contract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, TEOCOIN_ABI, signer);
+            // Import the TeoCoin discount API service
+            const { createDiscountRequest: createRequest, generateSignatureData } = await import('../services/api/teocoinDiscount');
             
-            // Convert amount to Wei (18 decimals)
-            const amountWei = ethers.parseEther(amount.toString());
+            console.log('💰 Creating discount request for course:', course.id);
+            console.log('📋 Student:', walletAddress, 'Teacher:', course.teacher.wallet_address);
             
-            console.log('💰 Executing TeoCoin transfer:', amount, 'TEO to', REWARD_POOL_ADDRESS);
+            // Generate signature data for student approval
+            const signatureData = await generateSignatureData(
+                walletAddress,
+                course.id,
+                course.price,
+                discountPercent
+            );
             
-            // Show user confirmation for transfer
+            // Show user confirmation for signature
             const userConfirmed = confirm(
-                `Transfer ${amount} TEO for discount?\n\n` +
-                `This will transfer ${amount} TEO from your wallet to apply the course discount.\n` +
-                `Click OK to proceed with the transfer.`
+                `Sign TeoCoin discount request?\n\n` +
+                `Course: ${course.title}\n` +
+                `Discount: ${discountPercent}% (€${(course.price * discountPercent / 100).toFixed(2)})\n` +
+                `TEO Cost: ${signatureData.teo_cost / Math.pow(10, 18)} TEO\n\n` +
+                `You will pay the discounted price now. Your teacher will then choose between EUR or TEO.`
             );
 
             if (!userConfirmed) {
-                throw new Error('Transfer cancelled by user');
+                throw new Error('Signature cancelled by user');
             }
 
-            // Execute transfer using transferFrom (since we have approval)
-            // Note: We need to extend the ABI to include transferFrom
-            const transferAbi = [
-                {
-                    "inputs": [
-                        {"internalType": "address", "name": "from", "type": "address"},
-                        {"internalType": "address", "name": "to", "type": "address"},
-                        {"internalType": "uint256", "name": "amount", "type": "uint256"}
-                    ],
-                    "name": "transferFrom",
-                    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                }
-            ];
+            // Get user signature (this doesn't cost gas - just signs a message)
+            const signer = await web3Provider.getSigner();
+            const signature = await signer.signMessage(signatureData.signable_message);
             
-            // Create contract with extended ABI
-            const extendedContract = new ethers.Contract(TEOCOIN_CONTRACT_ADDRESS, [...TEOCOIN_ABI, ...transferAbi], signer);
+            console.log('✅ Student signed discount request');
             
-            // Execute transferFrom: from user wallet to reward pool
-            const transferTx = await extendedContract.transferFrom(
-                walletAddress,
-                REWARD_POOL_ADDRESS,
-                amountWei,
-                { gasLimit: 80000n }
-            );
+            // Create the discount request via backend
+            const discountRequest = await createRequest({
+                studentAddress: walletAddress,
+                teacherAddress: course.teacher.wallet_address,
+                courseId: course.id,
+                coursePrice: course.price,
+                discountPercent: discountPercent,
+                studentSignature: signature
+            });
             
-            console.log('⏳ Waiting for transfer confirmation...');
-            const receipt = await transferTx.wait();
+            console.log('✅ Discount request created:', discountRequest.request_id);
             
-            console.log('✅ Transfer confirmed in block:', receipt.blockNumber);
-            console.log('💰 Gas used:', receipt.gasUsed.toString());
-            
-            // Update balance
-            await updateTeoInfo(web3Provider, walletAddress);
-            
-            return transferTx.hash;
+            return {
+                requestId: discountRequest.request_id,
+                transactionHash: discountRequest.transaction_hash,
+                discountAmount: course.price * discountPercent / 100
+            };
             
         } catch (error) {
-            console.error('Transfer failed:', error);
+            console.error('Discount request failed:', error);
             
-            if (error.message.includes('user rejected')) {
-                throw new Error('Transfer was cancelled by user');
-            } else if (error.message.includes('insufficient funds')) {
-                throw new Error('Insufficient MATIC for gas fees');
-            } else if (error.message.includes('insufficient allowance')) {
-                throw new Error('Insufficient TeoCoin allowance. Please approve spending first.');
+            if (error.message.includes('user rejected') || error.message.includes('cancelled')) {
+                throw new Error('Discount request was cancelled by user');
+            } else if (error.message.includes('Insufficient TEO balance')) {
+                throw new Error('Insufficient TEO balance for discount request');
             } else {
-                throw new Error(`Transfer failed: ${error.message}`);
+                throw new Error(`Discount request failed: ${error.message}`);
             }
         }
     };
@@ -990,9 +964,9 @@ Complete your purchase with the discounted amount.`);
                     >
                         {processing ? '⏳ Processing...' : 
                          paymentMethod === 'teocoin' && !walletConnected ? '🦊 Connect MetaMask First' :
-                         paymentMethod === 'teocoin' && discountApplied ? '✅ Discount Applied' :
-                         paymentMethod === 'teocoin' && approvalStatus === 'pending' ? '⏳ Approving...' :
-                         paymentMethod === 'teocoin' ? '🪙 Apply TeoCoin Discount' :
+                         paymentMethod === 'teocoin' && discountApplied ? '✅ Discount Ready' :
+                         paymentMethod === 'teocoin' && approvalStatus === 'pending' ? '⏳ Signing Request...' :
+                         paymentMethod === 'teocoin' ? '🪙 Get TeoCoin Discount' :
                          discountApplied ? '💳 Pay Discounted Amount' : '💳 Pay with Card'}
                     </button>
                     <button onClick={onClose} className="btn-secondary">
@@ -1002,13 +976,13 @@ Complete your purchase with the discounted amount.`);
 
                 {paymentMethod === 'teocoin' && (
                     <div className="teocoin-info">
-                        ℹ️ This will apply your TeoCoin discount. You'll then pay the reduced amount with your card.
+                        ℹ️ You'll pay the discounted price immediately. Your teacher will then choose EUR vs TEO staking.
                     </div>
                 )}
 
                 {discountApplied && paymentMethod === 'fiat' && (
                     <div className="discount-applied-info">
-                        ✅ TeoCoin discount applied! Complete your purchase at the reduced price.
+                        ✅ TeoCoin discount ready! Complete your purchase at the reduced price.
                     </div>
                 )}
             </div>

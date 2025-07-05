@@ -12,7 +12,7 @@ import { fetchLessonsForCourse, fetchExercisesForLesson } from '../../services/a
 import CourseCreateModal from '../../components/CourseCreateModal';
 import LessonCreateModal from '../../components/LessonCreateModal';
 import ExerciseCreateModal from '../../components/ExerciseCreateModal';
-import { TeacherEscrowManager } from '../../components/escrow';
+import { TeacherDiscountDashboard } from '../../components/discount';
 
 // Import dashboard styles
 import './dashboard-styles.css';
@@ -328,7 +328,7 @@ const TeacherDashboard = () => {
           {/* TeoCoin Escrow Manager */}
           <Row className="mb-4">
             <Col lg={12}>
-              <TeacherEscrowManager />
+              <TeacherDiscountDashboard />
             </Col>
           </Row>
 

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 
 import ChatList from './ChatList';
-import { TeacherEscrowNotification } from '../../../../components/escrow';
+// import { TeacherDiscountNotification } from '../../../../components/discount'; // TODO: Implement discount notifications
 import { useAuth } from '../../../../contexts/AuthContext';
 
 import avatar1 from '../../../../assets/images/user/avatar-1.jpg';
@@ -43,12 +43,14 @@ const NavRight = () => {
   return (
     <React.Fragment>
       <ListGroup as="ul" bsPrefix=" " className="navbar-nav ml-auto" id="navbar-right">
-        {/* TeoCoin Escrow Notification - Only for Teachers */}
+        {/* TeoCoin Discount Notification - Only for Teachers */}
+        {/* TODO: Implement TeacherDiscountNotification component
         {isTeacher && (
           <ListGroup.Item as="li" bsPrefix=" ">
-            <TeacherEscrowNotification />
+            <TeacherDiscountNotification />
           </ListGroup.Item>
         )}
+        */}
         
         <ListGroup.Item as="li" bsPrefix=" ">
           <Dropdown align="end">

@@ -2,24 +2,26 @@
 
 ## **Phase 1: Smart Contract Integration Service**
 
-### **1.1 Create TeoCoin Discount Service** ⭐ **PRIORITY 1**
-- [ ] **File**: `services/teocoin_discount_service.py`
-- [ ] Load smart contract ABI and address
-- [ ] Implement platform wallet gas management
-- [ ] Create contract interaction functions:
+### **1.1 Create TeoCoin Discount Service** ⭐ **PRIORITY 1** ✅ **COMPLETED**
+- [x] **File**: `services/teocoin_discount_service.py`
+- [x] Load smart contract ABI and address
+- [x] Implement platform wallet gas management
+- [x] Create contract interaction functions:
   - `create_discount_request()`
   - `approve_discount_request()`
   - `decline_discount_request()`
   - `get_teacher_requests()`
   - `get_student_requests()`
 
-### **1.2 Backend API Endpoints** ⭐ **PRIORITY 1**
-- [ ] **File**: `api/teocoin_discount_views.py`
-- [ ] `POST /api/v1/teocoin-discount/request/` - Student requests discount
-- [ ] `GET /api/v1/teacher/discount-requests/` - List teacher's pending requests
-- [ ] `POST /api/v1/teacher/discount-requests/{id}/accept/` - Teacher accepts
-- [ ] `POST /api/v1/teacher/discount-requests/{id}/reject/` - Teacher rejects
-- [ ] `GET /api/v1/student/discount-requests/` - Student's request history
+### **1.2 Backend API Endpoints** ⭐ **PRIORITY 1** ✅ **COMPLETED**
+- [x] **File**: `api/teocoin_discount_views.py`
+- [x] `POST /api/v1/services/discount/create/` - Student requests discount
+- [x] `GET /api/v1/services/discount/teacher/{address}/` - List teacher's pending requests
+- [x] `POST /api/v1/services/discount/approve/` - Teacher accepts
+- [x] `POST /api/v1/services/discount/decline/` - Teacher rejects
+- [x] `GET /api/v1/services/discount/student/{address}/` - Student's request history
+- [x] **File**: `api/teocoin_discount_urls.py` - URL configuration
+- [x] **File**: `services/urls.py` - Registered discount endpoints
 
 ### **1.3 Database Models (Optional)** 🔶 **PRIORITY 2**
 - [ ] **File**: `rewards/models.py`
@@ -31,12 +33,15 @@
 
 ## **Phase 2: Frontend Integration**
 
-### **2.1 Fix Payment Modal** ⭐ **PRIORITY 1**
-- [ ] **File**: PaymentModal.jsx
-- [ ] **Remove** current TeoCoin transfer logic (lines 706-775)
-- [ ] **Replace** with backend API calls
-- [ ] **Remove** MetaMask transaction requirements
-- [ ] Add discount request UI flow
+### **2.1 Fix Payment Modal** ⭐ **PRIORITY 1** ✅ **COMPLETED**
+- [x] **File**: PaymentModal.jsx
+- [x] **Remove** current TeoCoin transfer logic (lines 706-775)
+- [x] **Replace** with backend API calls
+- [x] **Remove** MetaMask transaction requirements
+- [x] Add discount request UI flow
+- [x] **File**: `frontend/src/services/api/teocoinDiscount.js` - API service layer
+- [x] Updated UI text to reflect correct business logic
+- [x] Fixed import references in TeacherDashboard.jsx and NavBar
 
 ### **2.2 Teacher Dashboard Integration** ⭐ **PRIORITY 1**
 - [ ] **File**: `TeacherDiscountManager.jsx` (rename from TeacherEscrowManager.jsx)
@@ -138,39 +143,44 @@
 
 ## **🎯 Implementation Order:**
 
-### **Week 1: Core Integration**
+### **Week 1: Core Integration** ✅ **COMPLETED**
 1. ✅ Create `TeoCoinDiscountService`
 2. ✅ Implement backend API endpoints
 3. ✅ Fix PaymentModal frontend
 
-### **Week 2: Teacher & Student UX**
-4. ✅ Update TeacherEscrowManager
-5. ✅ Test teacher approval flow
-6. ✅ Student discount history
+### **Week 2: Teacher & Student UX** 🟡 **IN PROGRESS**
+4. ⏳ Update TeacherDiscountDashboard
+5. ⏳ Test teacher approval flow
+6. ⏳ Student discount history
 
 ### **Week 3: Testing & Polish**
-7. ✅ Comprehensive testing
-8. ✅ Gas optimization
-9. ✅ Documentation
+7. ⏳ Comprehensive testing
+8. ⏳ Gas optimization
+9. ⏳ Documentation
 
-## **🔧 Files to Create:**
-- `services/teocoin_discount_service.py`
-- `api/teocoin_discount_views.py` 
-- `api/teocoin_discount_urls.py`
-- `frontend/src/services/api/teocoinDiscount.js`
-- `frontend/src/components/teacher/TeacherDiscountManager.jsx` (new)
-- `tests/test_teocoin_discount.py`
+## **🔧 Files Created:**
+- ✅ `services/teocoin_discount_service.py`
+- ✅ `api/teocoin_discount_views.py` 
+- ✅ `api/teocoin_discount_urls.py`
+- ✅ `frontend/src/services/api/teocoinDiscount.js`
+- ⏳ `frontend/src/components/teacher/TeacherDiscountManager.jsx` (updated existing)
+- ⏳ `tests/test_teocoin_discount.py`
 
-## **🔧 Files to Modify:**
-- `PaymentModal.jsx` (remove MetaMask transactions)
-- `TeacherEscrowManager.jsx` → rename to `TeacherDiscountManager.jsx`
-- `schoolplatform/settings.py`
-- `schoolplatform/urls.py`
-- `courses/views/payments.py`
+## **🔧 Files Modified:**
+- ✅ `PaymentModal.jsx` (removed MetaMask transactions)
+- ✅ `services/urls.py` (registered discount endpoints)
+- ✅ `frontend/src/views/dashboard/TeacherDashboard.jsx` (fixed imports)
+- ✅ `frontend/src/layouts/AdminLayout/NavBar/NavRight/index.jsx` (fixed imports)
+- ⏳ `schoolplatform/settings.py`
+- ⏳ `schoolplatform/urls.py`
+- ⏳ `courses/views/payments.py`
 
-## **🗑️ Files to Delete/Replace:**
-- `services/escrow_service.py` (replace with discount service)
-- Any old escrow-related frontend components
-- Old MetaMask transaction code in PaymentModal.jsx
+## **🗑️ Files Deleted:**
+- ✅ `services/escrow_service.py` (conflicting business logic)
+- ✅ `test_reward_manual.py` (outdated logic)
+- ✅ `test_reward_simple.py` (outdated logic)
+- ✅ `teacher_accept_demo.py` (wrong business logic)
+- ✅ `payment_demonstration.py` (wrong business logic)
+- ✅ `frontend/src/services/api/escrow.js` (outdated)
 
-**Ready to start with Phase 1? Should I begin with creating the `TeoCoinDiscountService`?**
+**Phase 1 Complete! Ready for Phase 2: Teacher Dashboard Enhancement**

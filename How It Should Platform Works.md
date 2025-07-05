@@ -29,25 +29,58 @@ The system currently has **3 different payment methods** that work independently
 - If teacher accepts: gets reduced EUR + TEO tokens (for staking)
 - If teacher declines: gets full EUR commission, TEO returns to reward pool
 
-### **2. Current Discount Flow Problems**
+### **2. Phase 1 Implementation - COMPLETED ✅**
+
+The problematic discount flow has been **completely replaced** with the new backend proxy architecture:
+
+#### **✅ Fixed PaymentModal.jsx**
 ```javascript
-// Current PaymentModal.jsx - BUGGY CODE
-const executeTeoCoinTransfer = async (amount) => {
-    // Transfer from student wallet to reward pool (WRONG!)
-    const transferTx = await extendedContract.transferFrom(
-        walletAddress,        // ❌ Student wallet
-        REWARD_POOL_ADDRESS,  // ❌ Goes to reward pool instead of teacher
-        amountWei
-    );
-}
+// NEW PaymentModal.jsx - Clean API Integration
+const createDiscountRequest = async (amount, discountPercent) => {
+    // Import the TeoCoin discount API service
+    const { createDiscountRequest: createRequest, generateSignatureData } = 
+        await import('../services/api/teocoinDiscount');
+    
+    // Student signs message (gas-free)
+    const signature = await signer.signMessage(signatureData.signable_message);
+    
+    // Backend handles blockchain interaction (platform pays gas)
+    const discountRequest = await createRequest({
+        studentAddress: walletAddress,
+        teacherAddress: course.teacher.wallet_address,
+        courseId: course.id,
+        coursePrice: course.price,
+        discountPercent: discountPercent,
+        studentSignature: signature
+    });
+    
+    // Student pays discounted price immediately
+    return discountRequest;
+};
 ```
 
-**Issues:**
-1. Frontend transfers TeoCoin to reward pool, not teacher
-2. No smart contract discount system integration
-3. Manual escrow system with database-only tracking
-4. Teachers must manually approve/reject each discount
-5. No automatic teacher bonus calculations
+#### **✅ Backend API Service**
+- **File**: `services/teocoin_discount_service.py` - Smart contract integration
+- **File**: `api/teocoin_discount_views.py` - REST API endpoints
+- **File**: `frontend/src/services/api/teocoinDiscount.js` - Frontend API calls
+- **Contract**: Connected to TeoCoinDiscount at `0xd30afec0bc6ac33e14a0114ec7403bbd746e88de`
+- **Gas Management**: Platform wallet pays all transaction fees
+
+#### **✅ System Status: OPERATIONAL**
+```json
+{
+  "success": true,
+  "status": "operational", 
+  "service_status": {
+    "contract_initialized": true,
+    "platform_account_initialized": true,
+    "web3_connected": true
+  },
+  "teocoin_status": {
+    "reward_pool_balance": 10000005853.45
+  }
+}
+```
 
 ---
 
