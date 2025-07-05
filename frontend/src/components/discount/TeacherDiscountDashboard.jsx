@@ -33,6 +33,13 @@ import {
 } from '@mui/icons-material';
 import { useWeb3Context } from '../../contexts/Web3Context';
 import { useNotification } from '../../contexts/NotificationContext';
+import { 
+  getTeacherRequests, 
+  approveDiscountRequest, 
+  declineDiscountRequest,
+  formatTeoAmount,
+  getDiscountStatusName
+} from '../../services/api/teocoinDiscount';
 
 /**
  * TeacherDiscountDashboard - Manage student discount requests
@@ -82,14 +89,9 @@ const TeacherDiscountDashboard = () => {
   const loadTeacherRequests = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/discount/teacher/${account}/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
+      const data = await getTeacherRequests(account);
       
-      if (response.ok) {
-        const data = await response.json();
+      if (data.success) {
         const requests = data.requests || [];
         setTeacherRequests(requests);
         
@@ -101,9 +103,11 @@ const TeacherDiscountDashboard = () => {
         setCompletedRequests(completed);
       } else {
         console.error('Failed to load teacher requests');
+        showNotification('Failed to load discount requests', 'error');
       }
     } catch (error) {
       console.error('Error loading teacher requests:', error);
+      showNotification('Error loading discount requests', 'error');
     } finally {
       setLoading(false);
     }
@@ -145,23 +149,12 @@ const TeacherDiscountDashboard = () => {
     try {
       setActionLoading({ ...actionLoading, [selectedRequest.request_id]: true });
 
-      const response = await fetch('/api/discount/approve/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify({
-          request_id: selectedRequest.request_id,
-          approver_address: account,
-        }),
-      });
+      const result = await approveDiscountRequest(selectedRequest.request_id, account);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (result.success) {
         showNotification(
-          `Discount request approved! You earned ${(selectedRequest.teacher_bonus / 10**18).toFixed(2)} TEO bonus.`,
+          `✅ TEO Tokens Accepted! You earned ${formatTeoAmount(selectedRequest.teacher_bonus)} TEO bonus. 
+          Total received: ${formatTeoAmount(selectedRequest.teo_cost + selectedRequest.teacher_bonus)} TEO for staking.`,
           'success'
         );
         
@@ -184,31 +177,20 @@ const TeacherDiscountDashboard = () => {
   };
 
   const confirmDecline = async () => {
-    if (!selectedRequest || !declineReason.trim()) {
-      showNotification('Please provide a reason for declining', 'error');
-      return;
-    }
+    if (!selectedRequest) return;
 
     try {
       setActionLoading({ ...actionLoading, [selectedRequest.request_id]: true });
 
-      const response = await fetch('/api/discount/decline/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify({
-          request_id: selectedRequest.request_id,
-          decliner_address: account,
-          reason: declineReason.trim(),
-        }),
-      });
+      const reason = declineReason.trim() || 'Teacher chose full EUR commission';
+      const result = await declineDiscountRequest(selectedRequest.request_id, account, reason);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        showNotification('Discount request declined.', 'info');
+      if (result.success) {
+        showNotification(
+          `💰 Full EUR Commission Chosen! You will receive your full commission. 
+          Student keeps the discount (platform absorbed the cost).`, 
+          'info'
+        );
         
         // Refresh data
         await loadTeacherRequests();
@@ -337,16 +319,16 @@ const TeacherDiscountDashboard = () => {
             disabled={actionLoading[request.request_id]}
             startIcon={actionLoading[request.request_id] ? <CircularProgress size={20} /> : <CheckCircle />}
           >
-            Approve
+            🪙 Accept TEO
           </Button>
           <Button
             variant="outlined"
-            color="error"
+            color="warning"
             onClick={() => handleDecline(request)}
             disabled={actionLoading[request.request_id]}
             startIcon={<Cancel />}
           >
-            Decline
+            💰 Keep EUR
           </Button>
         </Box>
       )}
@@ -493,13 +475,20 @@ const TeacherDiscountDashboard = () => {
         <DialogContent>
           {selectedRequest && (
             <Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                ✅ <strong>Student already received {selectedRequest.discount_percent}% discount and enrolled!</strong>
+              </Alert>
+              
               <Alert severity="success" sx={{ mb: 2 }}>
-                You're about to approve this discount request. The platform will automatically:
+                <strong>🪙 Accept TEO Tokens (Staking Strategy):</strong>
                 <ul>
-                  <li>Transfer {(selectedRequest.teo_cost / 10**18).toFixed(2)} TEO from student to you</li>
-                  <li>Give you a {(selectedRequest.teacher_bonus / 10**18).toFixed(2)} TEO bonus from the reward pool</li>
-                  <li>Pay all gas fees for the transaction</li>
+                  <li>You'll receive: {formatTeoAmount(selectedRequest.teo_cost)} TEO from student</li>
+                  <li>Plus 25% bonus: {formatTeoAmount(selectedRequest.teacher_bonus)} TEO from reward pool</li>
+                  <li>Total TEO: {formatTeoAmount(selectedRequest.teo_cost + selectedRequest.teacher_bonus)} TEO for staking</li>
+                  <li>Your EUR commission will be reduced to absorb the discount cost</li>
+                  <li>Stake TEO to increase your future commission rates!</li>
                 </ul>
+                <em>Platform pays all gas fees automatically.</em>
               </Alert>
               
               <Typography variant="body1">
@@ -512,7 +501,7 @@ const TeacherDiscountDashboard = () => {
                 <strong>Discount:</strong> {selectedRequest.discount_percent}%
               </Typography>
               <Typography variant="body1" color="success.main">
-                <strong>Total you'll receive:</strong> {((selectedRequest.teo_cost + selectedRequest.teacher_bonus) / 10**18).toFixed(2)} TEO
+                <strong>🎯 Choose TEO for Staking:</strong> {formatTeoAmount(selectedRequest.teo_cost + selectedRequest.teacher_bonus)} TEO total
               </Typography>
             </Box>
           )}
@@ -527,17 +516,31 @@ const TeacherDiscountDashboard = () => {
             color="success"
             startIcon={<CheckCircle />}
           >
-            Confirm Approval
+            🪙 Accept TEO Tokens
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Decline Dialog */}
       <Dialog open={declineDialog} onClose={() => setDeclineDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Decline Discount Request</DialogTitle>
+        <DialogTitle>💰 Keep Full EUR Commission</DialogTitle>
         <DialogContent>
           {selectedRequest && (
             <Box>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                ✅ <strong>Student already received {selectedRequest.discount_percent}% discount and enrolled!</strong>
+              </Alert>
+              
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <strong>💰 Keep Full EUR Commission (Safe Strategy):</strong>
+                <ul>
+                  <li>You'll receive your full EUR commission</li>
+                  <li>Student keeps the discount (platform absorbs the cost)</li>
+                  <li>TEO tokens return to reward pool</li>
+                  <li>No staking opportunity, but guaranteed EUR payment</li>
+                </ul>
+              </Alert>
+              
               <Typography variant="body1" gutterBottom>
                 <strong>Course:</strong> #{selectedRequest.course_id}
               </Typography>
@@ -546,15 +549,14 @@ const TeacherDiscountDashboard = () => {
               </Typography>
               
               <TextField
-                label="Reason for declining"
+                label="Optional note for student"
                 multiline
                 rows={3}
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}
                 fullWidth
-                required
                 sx={{ mt: 2 }}
-                placeholder="Please provide a brief explanation for the student..."
+                placeholder="e.g., 'Preferring EUR payment this time' or leave blank..."
               />
             </Box>
           )}
@@ -566,11 +568,10 @@ const TeacherDiscountDashboard = () => {
           <Button
             onClick={confirmDecline}
             variant="contained"
-            color="error"
+            color="warning"
             startIcon={<Cancel />}
-            disabled={!declineReason.trim()}
           >
-            Confirm Decline
+            💰 Keep Full EUR
           </Button>
         </DialogActions>
       </Dialog>
