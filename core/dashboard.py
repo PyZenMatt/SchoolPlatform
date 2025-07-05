@@ -1,3 +1,4 @@
+import logging
 from notifications.models import Notification 
 from courses.models import Lesson, Exercise, Course
 from rewards.models import BlockchainTransaction
@@ -17,6 +18,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
+from decimal import Decimal
 
 
 class StudentDashboardView(APIView):
@@ -58,8 +60,9 @@ class StudentDashboardView(APIView):
         blockchain_balance = "0"
         if user.wallet_address:
             try:
-                from blockchain.blockchain import teocoin_service
-                blockchain_balance = str(teocoin_service.get_balance(user.wallet_address))
+                from blockchain.blockchain import TeoCoinService
+                teo_service = TeoCoinService()
+                blockchain_balance = str(teo_service.get_balance(user.wallet_address))
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
@@ -97,21 +100,20 @@ class TeacherDashboardAPI(APIView):
         courses = user.courses_created.prefetch_related(
             'students', 'lessons', 'lessons__exercises'
         ).annotate(
-            student_count=Count('students'),
-            total_revenue=Count('students') * F('price_eur')
+            student_count=Count('students')
         )
         
         total_courses = courses.count()
         
         # Calculate aggregated values from annotated queryset
-        total_earnings = 0
+        total_earnings = Decimal('0')
         total_students_set = set()
         
         # Process courses data efficiently 
         for course in courses:
             # Use annotated student_count instead of calling .count() 
             student_count = course.student_count
-            course_earnings = (course.price_eur or 0) * student_count * 0.9
+            course_earnings = (course.price_eur or Decimal('0')) * student_count * Decimal('0.9')
             total_earnings += course_earnings
             # Collect all unique student IDs efficiently
             total_students_set.update(course.students.values_list('id', flat=True))
@@ -141,8 +143,9 @@ class TeacherDashboardAPI(APIView):
         blockchain_balance = "0"
         if user.wallet_address:
             try:
-                from blockchain.blockchain import teocoin_service
-                blockchain_balance = str(teocoin_service.get_balance(user.wallet_address))
+                from blockchain.blockchain import TeoCoinService
+                teo_service = TeoCoinService()
+                blockchain_balance = str(teo_service.get_balance(user.wallet_address))
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
@@ -154,13 +157,13 @@ class TeacherDashboardAPI(APIView):
             "wallet_address": user.wallet_address,
             "stats": {
                 "total_courses": total_courses,
-                "total_earnings": round(total_earnings, 2),
+                "total_earnings": str(total_earnings),  # Convert Decimal to string instead of float
                 "active_students": len(total_students_set),
             },
             "sales": {
-                "daily": round(sales_data['daily'] or 0, 2),
-                "monthly": round(sales_data['monthly'] or 0, 2),
-                "yearly": round(sales_data['yearly'] or 0, 2),
+                "daily": str(sales_data['daily'] or Decimal('0')),  # Keep as Decimal, convert to string
+                "monthly": str(sales_data['monthly'] or Decimal('0')),  # Keep as Decimal, convert to string  
+                "yearly": str(sales_data['yearly'] or Decimal('0')),  # Keep as Decimal, convert to string
             },
             "courses": TeacherCourseSerializer(courses, many=True, context={'request': request}).data,
             "transactions": transactions_data,
@@ -211,8 +214,9 @@ class AdminDashboardAPI(APIView):
         blockchain_balance = "0"
         if user.wallet_address:
             try:
-                from blockchain.blockchain import teocoin_service
-                blockchain_balance = str(teocoin_service.get_balance(user.wallet_address))
+                from blockchain.blockchain import TeoCoinService
+                teo_service = TeoCoinService()
+                blockchain_balance = str(teo_service.get_balance(user.wallet_address))
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)

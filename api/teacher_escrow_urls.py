@@ -1,6 +1,4 @@
 """
-Teacher Escrow API URLs
-
 URL configuration for teacher escrow management endpoints.
 """
 
@@ -21,5 +19,6 @@ urlpatterns = [
     path('escrows/<int:escrow_id>/', TeacherEscrowDetailView.as_view(), name='escrow-detail'),
     path('escrows/<int:escrow_id>/accept/', TeacherEscrowAcceptView.as_view(), name='escrow-accept'),
     path('escrows/<int:escrow_id>/reject/', TeacherEscrowRejectView.as_view(), name='escrow-reject'),
+    path('escrows/stats/', TeacherEscrowStatsView.as_view(), name='escrow-stats-alt'),  # Alternative endpoint
     path('escrow-stats/', TeacherEscrowStatsView.as_view(), name='escrow-stats'),
 ]

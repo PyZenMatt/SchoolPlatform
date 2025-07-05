@@ -19,12 +19,15 @@ from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
+from services.blockchain_service import blockchain_service
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from decimal import Decimal
 from web3 import Web3
 import json
 import logging
+import time
+import hashlib
 
 from .blockchain import TeoCoinService
 
@@ -119,7 +122,6 @@ def get_wallet_balance(request):
     
     try:
         # Use BlockchainService to get wallet balance
-        from services import blockchain_service
         result = blockchain_service.get_user_wallet_balance(user)
         
         response_time = time.time() - start_time
@@ -216,7 +218,6 @@ def link_wallet(request):
     
     try:
         # Use BlockchainService to link wallet
-        from services import blockchain_service
         result = blockchain_service.link_wallet_to_user(user, wallet_address)
         
         return Response(result)
@@ -310,7 +311,6 @@ def reward_user(request):
         target_user = User.objects.get(id=target_user_id)
         
         # Use BlockchainService to mint tokens
-        from services import blockchain_service
         result = blockchain_service.mint_tokens_to_user(target_user, amount, reason)
         
         return Response({
@@ -411,7 +411,6 @@ def get_transaction_history(request):
     
     try:
         # Use BlockchainService to get transaction history
-        from services import blockchain_service
         result = blockchain_service.get_user_transaction_history(user, limit=50)
         
         return Response({

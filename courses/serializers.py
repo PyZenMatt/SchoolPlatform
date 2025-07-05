@@ -89,7 +89,8 @@ class TeacherCourseSerializer(serializers.ModelSerializer):
                   'total_earnings', 'total_students', 'enrolled_students', 'lessons']
 
     def get_total_earnings(self, obj):
-        return obj.price_eur * obj.students.count() * 0.9
+        from decimal import Decimal
+        return str(obj.price_eur * obj.students.count() * Decimal('0.9'))
 
     def get_total_students(self, obj):
         return obj.students.count()
