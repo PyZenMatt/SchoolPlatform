@@ -142,53 +142,48 @@ class CreatePaymentIntentView(APIView):
                                     'error': 'Reward pool not configured for TeoCoin transfers'
                                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                             else:
-                                print(f"🎯 Transferring to reward pool: {reward_pool_address}")
+                                print(f"� Creating TeoCoin escrow instead of direct transfer")
                                 
-                                # Execute actual TeoCoin transfer
+                                # 🆕 CREATE ESCROW instead of direct transfer
                                 try:
-                                    print(f"💰 TRANSFERRING: {required_teo:.2f} TEO from {wallet_address}")
+                                    from services.escrow_service import escrow_service
                                     
-                                    result = teo_service.transfer_with_reward_pool_gas(
-                                        wallet_address, reward_pool_address, Decimal(str(required_teo))
+                                    print(f"💰 CREATING ESCROW: {required_teo:.2f} TEO from {wallet_address}")
+                                    
+                                    # Create escrow for teacher choice
+                                    escrow = escrow_service.create_escrow(
+                                        student=request.user,
+                                        teacher=course.teacher,
+                                        course=course,
+                                        teocoin_amount=Decimal(str(required_teo)),
+                                        discount_data={
+                                            'percentage': teocoin_discount,
+                                            'euro_amount': (teocoin_discount * amount_eur / 100),
+                                            'original_price': amount_eur
+                                        },
+                                        transfer_tx_hash=approval_tx_hash if approval_tx_hash and approval_tx_hash != 'frontend_approved' else None
                                     )
                                     
-                                    if result:
-                                        print(f"✅ TeoCoin transfer successful: {result}")
+                                    if escrow:
+                                        print(f"✅ TeoCoin escrow created: {escrow.id}")
+                                        print(f"� Teacher notification sent for escrow decision")
+                                        print(f"⏰ Escrow expires: {escrow.expires_at}")
                                         
-                                        # Record the discount transaction in blockchain history
-                                        from rewards.models import BlockchainTransaction
-                                        try:
-                                            BlockchainTransaction.objects.create(
-                                                user=request.user,
-                                                transaction_type='discount_applied',
-                                                amount=-Decimal(str(required_teo)),  # Negative amount for discount
-                                                from_address=wallet_address,
-                                                to_address=reward_pool_address,
-                                                tx_hash=approval_tx_hash if approval_tx_hash and approval_tx_hash != 'frontend_approved' else None,
-                                                status='confirmed',
-                                                related_object_id=str(course_id),
-                                                notes=f'TeoCoin discount ({teocoin_discount}%) applied for course: {course.title}'
-                                            )
-                                            print(f"📝 Discount transaction recorded in history")
-                                        except Exception as tx_error:
-                                            print(f"⚠️ Failed to record discount transaction: {tx_error}")
-                                        
-                                        # Award teacher bonus
-                                        teacher_bonus_teo = teacher_bonus_wei / 10**18
-                                        print(f"🎁 AWARDING teacher bonus: {teacher_bonus_teo:.2f} TEO")
+                                        # Note: Teacher will decide later whether to accept TeoCoin or get standard EUR commission
+                                        # For now, student enrollment proceeds with discounted EUR payment
                                         
                                     else:
-                                        print(f"❌ TeoCoin transfer failed")
+                                        print(f"❌ TeoCoin escrow creation failed")
                                         return Response({
                                             'success': False,
-                                            'error': 'TeoCoin transfer failed. Please ensure you have approved the reward pool to spend your tokens.'
+                                            'error': 'TeoCoin escrow creation failed. Please try again.'
                                         }, status=status.HTTP_400_BAD_REQUEST)
                                         
-                                except Exception as transfer_error:
-                                    print(f"❌ TeoCoin transfer error: {str(transfer_error)}")
+                                except Exception as escrow_error:
+                                    print(f"❌ TeoCoin escrow error: {str(escrow_error)}")
                                     return Response({
                                         'success': False,
-                                        'error': f'TeoCoin transfer failed: {str(transfer_error)}'
+                                        'error': f'TeoCoin escrow failed: {str(escrow_error)}'
                                     }, status=status.HTTP_400_BAD_REQUEST)
                                 # 4. Backend verifies approval and executes transfer
                                 #

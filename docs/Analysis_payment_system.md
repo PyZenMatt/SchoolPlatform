@@ -353,7 +353,7 @@ class TeoCoinPaymentStatus(models.Model):
 
 ## 📋 IMPLEMENTATION CHECKLIST
 
-## 🎉 IMPLEMENTATION STATUS - PHASE 2 COMPLETE!
+## 🎉 IMPLEMENTATION STATUS - PHASE 2.5 COMPLETE!
 
 ### ✅ Phase 1 (Critical - Required) - COMPLETED ✅
 - [x] Fix commission calculations in payment_service.py
@@ -370,51 +370,124 @@ class TeoCoinPaymentStatus(models.Model):
 - [x] Enhanced approval handling with transaction hash return
 - [x] Complete TeoCoin payment flow testing
 
-**🧪 TESTING RESULTS: ALL PHASE 2 TESTS PASSING (5/5)**
-- ✅ Commission calculations: 50% platform rate working
-- ✅ TeoCoin calculation logic: Discount math correct
-- ✅ Payment service integration: All methods available
-- ✅ Course model validation: Price fields accessible  
-- ✅ Frontend integration: PaymentModal.jsx enhanced
+### ✅ Phase 2.5 (Critical Transfer Fix) - COMPLETED ✅
+- [x] Fix 'sufficient_allowance' placeholder with real transfers
+- [x] Implement actual TeoCoin transferFrom transactions
+- [x] Add executeTeoCoinTransfer() function for blockchain transfers
+- [x] Record real transaction hashes in transaction history
+- [x] Add discount transactions to blockchain transaction list
 
-**🚀 USER JOURNEY NOW FUNCTIONAL:**
-1. ✅ Connect MetaMask wallet
-2. ✅ See actual TeoCoin balance and pricing
-3. ✅ Select TeoCoin discount options (no longer disabled)
-4. ✅ Approve TeoCoin spending with transaction hash
-5. ✅ Complete hybrid payments (TeoCoin discount + Stripe remainder)
-6. ✅ View real-time balance updates
+**🚨 CRITICAL BUSINESS LOGIC ISSUE IDENTIFIED:**
+Current implementation sends TeoCoin directly to reward pool, but business model requires:
+- TeoCoin should go to **ESCROW** until teacher decides
+- Teacher gets **notification**: "Student used X TeoCoin for Y% discount"
+- Teacher chooses: **Accept TeoCoin** (get reduced EUR + TeoCoin) OR **Reject** (get standard EUR, TeoCoin returns to platform)
 
-### 🔧 Phase 3 (Medium Priority) - AVAILABLE FOR IMPLEMENTATION
+### 🔧 Phase 3 (HIGH PRIORITY) - Teacher Choice & Escrow System 📬
+**BUSINESS REQUIREMENT**: Teacher notification and TeoCoin choice system
+
+#### Step 3.1: Create TeoCoin Escrow Model
+**File**: `rewards/models.py`
+**Add new model for holding TeoCoin until teacher decides:**
+- TeoCoinEscrow model with student, teacher, course, amount, status fields
+- Status options: 'pending', 'accepted', 'rejected', 'expired'
+- Auto-expire after 7 days if no teacher response
+
+#### Step 3.2: Create Teacher Notification System
+**File**: `notifications/models.py` 
+**Add TeoCoin discount notification type:**
+- Notification for teacher when student uses TeoCoin discount
+- Include discount details, TeoCoin amount, choice deadline
+- Link to escrow record for teacher response
+
+#### Step 3.3: Modify Payment Flow to Use Escrow
+**File**: `courses/views/payments.py`
+**Change TeoCoin transfer logic:**
+- Instead of transferring to reward pool immediately
+- Create TeoCoinEscrow record with 'pending' status  
+- Transfer TeoCoin to escrow contract/address
+- Create notification for teacher
+- Complete EUR payment processing
+
+#### Step 3.4: Teacher Choice Interface
+**File**: `frontend/src/components/TeoCoinChoiceModal.jsx`
+**New component for teacher TeoCoin decisions:**
+- Display TeoCoin discount details
+- Show calculation: Accept (reduced EUR + TeoCoin) vs Reject (standard EUR)
+- Accept/Reject buttons with confirmation
+- Integrate with teacher dashboard
+
+#### Step 3.5: Teacher Choice API Endpoints
+**File**: `api/teocoin_choice_views.py`
+**Create teacher choice endpoints:**
+- GET /api/teacher/teocoin-choices/ (list pending choices)
+- POST /api/teacher/teocoin-choices/{id}/accept/ 
+- POST /api/teacher/teocoin-choices/{id}/reject/
+- Handle escrow transfers based on choice
+
+#### Step 3.6: Updated Commission Calculations
+**File**: `services/payment_service.py`
+**Modify teacher payment calculations:**
+- If teacher accepts TeoCoin: reduced EUR percentage + TeoCoin amount
+- If teacher rejects TeoCoin: standard EUR percentage + 0 TeoCoin
+- Handle escrow resolution in payment calculations
+
+#### Step 3.7: Automatic Escrow Resolution
+**File**: `services/escrow_service.py`
+**Create background task for expired escrows:**
+- Daily check for expired TeoCoin escrows (7+ days old)
+- Auto-reject expired escrows
+- Return TeoCoin to platform wallet
+- Send teacher 'opportunity missed' notification
+
+**🎯 UPDATED BUSINESS FLOW:**
+1. ✅ Student pays TeoCoin discount + EUR remainder
+2. 🆕 TeoCoin goes to ESCROW (not reward pool)
+3. 🆕 Teacher gets NOTIFICATION about TeoCoin discount
+4. 🆕 Teacher CHOOSES: Accept TeoCoin or get standard EUR
+5. 🆕 Based on choice: TeoCoin → Teacher OR Platform
+6. ✅ Course enrollment completes immediately
+
+**📊 TEACHER ECONOMICS EXAMPLE (100€ course, 10% discount):**
+- **Student pays:** 100 TeoCoin + 90€
+- **Teacher accepts:** Gets 45€ + 100 TeoCoin (better if TeoCoin has value)
+- **Teacher rejects:** Gets 50€ + 0 TeoCoin (standard commission)
+- **Platform:** Gets commission + rejected TeoCoin (for platform growth)
+
+### 🔧 Phase 4 (Medium Priority) - System Enhancements
 - [ ] Add balance validation
-- [ ] Add approval validation
+- [ ] Add approval validation  
 - [ ] Improve error messages
-- [ ] Test error scenarios
+- [ ] Add escrow transaction tracking
 
-### 🚀 Phase 4 (Low Priority)
+### 🚀 Phase 5 (Low Priority) - Advanced Features
 - [ ] Add transaction status tracking
 - [ ] Implement retry mechanisms
 - [ ] Performance optimizations
 - [ ] Load testing
+- [ ] Teacher dashboard escrow management
+- [ ] Mobile-friendly escrow notifications
 
 ## ⏱️ TOTAL ESTIMATED TIME
-- **Phase 1**: 55 minutes (Critical fixes)
-- **Phase 2**: 2.5 hours (Complete TeoCoin flow)
-- **Phase 3**: 2.25 hours (Error handling)
-- **Phase 4**: 2+ hours (Optimizations)
+- **Phase 1**: 55 minutes (Critical fixes) ✅ COMPLETED
+- **Phase 2**: 2.5 hours (Complete TeoCoin flow) ✅ COMPLETED  
+- **Phase 2.5**: 1 hour (Transfer implementation) ✅ COMPLETED
+- **Phase 3**: 4 hours (Teacher escrow system) 🎯 CURRENT PRIORITY
+- **Phase 4**: 2 hours (System validation)
+- **Phase 5**: 3+ hours (Advanced features)
 
-**Total Minimum (Phases 1-2)**: ~3 hours for basic TeoCoin payments to work
-**Total Complete (All Phases)**: ~7 hours for production-ready system
+**Total for Teacher Choice System (Phase 3)**: ~4 hours
+**Total Complete System**: ~12 hours for production-ready with teacher choice
 
-## 🎯 SUCCESS CRITERIA
-After implementation, users should be able to:
-1. ✅ Connect MetaMask wallet
-2. ✅ See actual TeoCoin balance and pricing
-3. ✅ Select TeoCoin discount options
-4. ✅ Approve TeoCoin spending
-5. ✅ Complete hybrid payments (TeoCoin discount + Stripe for remainder)
-6. ✅ See TeoCoin balance decrease after payment
-7. ✅ Receive appropriate error messages for failures
+## 🎯 SUCCESS CRITERIA - UPDATED FOR TEACHER CHOICE
+After Phase 3 implementation, the system should support:
+1. ✅ Students pay TeoCoin discounts + EUR remainder
+2. 🆕 Teachers receive notifications about TeoCoin discounts
+3. 🆕 Teachers can accept/reject TeoCoin from escrow
+4. 🆕 Automatic calculation: Accept = reduced EUR + TeoCoin, Reject = standard EUR
+5. 🆕 Expired escrows (7+ days) automatically return to platform
+6. ✅ Complete transaction history and blockchain tracking
 
-## 🚨 CRITICAL PATH
-**Must complete Phase 1 and 2.1-2.2 for the payment system to be functional for users.**
+## 🚨 CRITICAL PATH - UPDATED
+**Current Status: Phase 2.5 Complete - TeoCoin transfers working**
+**Next Priority: Phase 3 - Teacher Choice System for proper business model**
