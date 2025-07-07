@@ -304,53 +304,13 @@ class PaymentSummaryView(APIView):
     def get(self, request, course_id):
         try:
             course = get_object_or_404(Course, id=course_id)
-            discount_percent = int(request.query_params.get('discount_percent', 0))
-            student_address = request.query_params.get('student_address', '')
             
             # Base pricing
             original_price = course.price_eur
-            pricing_summary = {
-                'original_price': str(original_price),
-                'currency': 'EUR',
-                'discount_available': course.teocoin_discount_percent > 0,
-                'max_discount_percent': int(course.teocoin_discount_percent),
-            }
-            
-            # Calculate TeoCoin discount if requested
-            if discount_percent > 0 and student_address:
-                try:
-                    discount_service = TeoCoinDiscountService()
-                    
-                    # Calculate TEO costs
-                    teo_cost, teacher_bonus = discount_service.calculate_teo_cost(
-                        original_price, discount_percent
-                    )
-                    
-                    discount_amount = original_price * Decimal(discount_percent) / Decimal('100')
-                    final_price = original_price - discount_amount
-                    
-                    # Convert TEO amounts from wei to tokens
-                    teo_cost_tokens = teo_cost // (10 ** 18)
-                    teacher_bonus_tokens = teacher_bonus // (10 ** 18)
-                    
-                    pricing_summary.update({
-                        'teocoin_discount': {
-                            'discount_percent': discount_percent,
-                            'discount_amount_eur': str(discount_amount),
-                            'final_price_eur': str(final_price),
-                            'teo_cost': teo_cost_tokens,
-                            'teacher_bonus_teo': teacher_bonus_tokens,
-                            'teacher_bonus_rate': '125%'  # 125% compensation
-                        }
-                    })
-                    
-                except Exception as e:
-                    logger.error(f"TeoCoin calculation error: {e}")
-                    pricing_summary['teocoin_error'] = 'Failed to calculate TeoCoin discount'
             
             # Course information
             course_info = {
-                'id': course.id,
+                'id': course.pk,  # Use .pk instead of .id for better compatibility
                 'title': course.title,
                 'instructor': course.teacher.username if course.teacher else 'Unknown',
                 'description': course.description[:200] + '...' if len(course.description) > 200 else course.description,
@@ -364,10 +324,54 @@ class PaymentSummaryView(APIView):
                 student=user, course=course
             ).exists()
             
+            # Create pricing options array for frontend compatibility
+            pricing_options = []
+            
+            # Always add fiat payment option
+            pricing_options.append({
+                'method': 'fiat',
+                'price': str(original_price),
+                'currency': 'EUR',
+                'description': 'Pay with Credit/Debit Card',
+                'reward': '50',  # TEO rewards for fiat payment
+                'disabled': False
+            })
+            
+            # Add TeoCoin discount option if available
+            if hasattr(course, 'teocoin_discount_percent') and course.teocoin_discount_percent > 0:
+                discount_percent = int(course.teocoin_discount_percent)
+                discount_amount = original_price * Decimal(discount_percent) / Decimal('100')
+                final_price = original_price - discount_amount
+                
+                # Simple TEO cost calculation (1 TEO = 0.10 EUR discount value)
+                teo_cost_eur = discount_amount  # EUR value of discount
+                teo_cost_tokens = int(teo_cost_eur * 10)  # Simplified: 1 TEO = 0.10 EUR
+                
+                pricing_options.append({
+                    'method': 'teocoin',
+                    'price': str(teo_cost_tokens),
+                    'currency': 'TEO',
+                    'description': f'Use TEO for {discount_percent}% discount',
+                    'discount': discount_percent,
+                    'discount_percent': discount_percent,
+                    'final_price_eur': str(final_price),
+                    'savings_eur': str(discount_amount),
+                    'disabled': False
+                })
+            
+            # Basic pricing summary for backward compatibility
+            pricing_summary = {
+                'original_price': str(original_price),
+                'currency': 'EUR',
+                'discount_available': hasattr(course, 'teocoin_discount_percent') and course.teocoin_discount_percent > 0,
+                'max_discount_percent': int(course.teocoin_discount_percent) if hasattr(course, 'teocoin_discount_percent') else 0,
+            }
+            
             return Response({
                 'success': True,
                 'course': course_info,
                 'pricing': pricing_summary,
+                'pricing_options': pricing_options,
                 'student_status': {
                     'is_enrolled': is_enrolled,
                     'can_enroll': not is_enrolled

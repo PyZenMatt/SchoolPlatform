@@ -117,13 +117,18 @@
 
 ## **Phase 5: Testing & Optimization**
 
-### **5.1 Backend Testing** ⭐ **PRIORITY 1**
-- [ ] **File**: `tests/test_teocoin_discount.py`
-- [ ] Unit tests for service functions
-- [ ] Integration tests for smart contract calls
-- [ ] API endpoint testing
+### **5.1 Backend Testing** ⭐ **PRIORITY 1** ✅ **COMPLETED**
+- [x] **File**: `tests/test_teocoin_discount.py`
+- [x] Unit tests for service functions
+- [x] Integration tests for smart contract calls
+- [x] API endpoint testing
+- [x] **Core Tests**: `tests/test_teocoin_core.py` - Essential functionality validated
+- [x] **Business Logic**: TEO cost calculations verified
+- [x] **Database Models**: CourseEnrollment TeoCoin fields tested
 
-### **5.2 Frontend Testing** 🔶 **PRIORITY 2**
+### **5.2 Frontend Testing** 🔶 **PRIORITY 2** ✅ **READY FOR TESTING**
+- [x] **Payment Options Fixed**: TeoCoin discount option now visible in PaymentModal
+- [x] **Backend API**: PaymentSummaryView updated with pricing_options array
 - [ ] Test discount request flow end-to-end
 - [ ] Test teacher approval/rejection
 - [ ] Error handling for failed transactions
