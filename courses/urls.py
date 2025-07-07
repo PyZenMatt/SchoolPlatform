@@ -21,7 +21,8 @@ from courses.views.hybrid_payment import HybridPaymentView
 from courses.views.payments import (
     CreatePaymentIntentView,
     ConfirmPaymentView, 
-    PaymentSummaryView
+    PaymentSummaryView,
+    TeoCoinDiscountStatusView
 )
 
 # === LESSONS ===
@@ -103,4 +104,5 @@ urlpatterns = [
     path('courses/<int:course_id>/create-payment-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
     path('courses/<int:course_id>/confirm-payment/', ConfirmPaymentView.as_view(), name='confirm-payment'),
     path('courses/<int:course_id>/payment-summary/', PaymentSummaryView.as_view(), name='payment-summary'),
+    path('courses/<int:course_id>/discount-status/', TeoCoinDiscountStatusView.as_view(), name='teocoin-discount-status'),
 ]

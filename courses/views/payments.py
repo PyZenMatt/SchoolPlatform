@@ -1,7 +1,12 @@
 """
-⚡ OPTIMIZED Payment Views for Ultra-Fast Payment Processing
-Enhanced with Redis caching, rate limiting, and performance optimizations
-VERSION: 3.0 - Investor Demo Ready
+TeoCoin Discount Payment System - Clean Implementation
+Backend Proxy Architecture: Platform pays gas fees, students get guaranteed discounts
+
+Business Logic:
+- Students always get discounts regardless of teacher decision
+- Teachers choose between EUR safety vs TEO staking opportunity  
+- Platform absorbs discount cost if teacher declines
+- 50% baseline commission with staking tier adjustments
 """
 
 from rest_framework.views import APIView
@@ -12,390 +17,419 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
-from decimal import Decimal
+from django.utils import timezone
 from decimal import Decimal
 import logging
+import stripe
+from django.conf import settings
 
-from courses.models import Course
-from services.cached_payment_service import cached_payment_service, payment_rate_limit
-
-# Import payment_service for fallback logic
-from services.payment_service import payment_service
+from courses.models import Course, CourseEnrollment
+from users.models import User
+from services.teocoin_discount_service import TeoCoinDiscountService, DiscountStatus
+from services.teo_earning_service import TeoEarningService
+from blockchain.blockchain import TeoCoinService
+from notifications.services import teocoin_notification_service
 
 logger = logging.getLogger(__name__)
 
 
 class CreatePaymentIntentView(APIView):
     """
-    ⚡ ULTRA-FAST Create Stripe payment intent with caching
+    Create Stripe payment intent with TeoCoin discount integration
     
-    POST /api/courses/{course_id}/create-payment-intent/
+    POST /api/v1/courses/{course_id}/payment/create-intent/
+    {
+        "use_teocoin_discount": true,
+        "discount_percent": 15,
+        "student_address": "0x...",
+        "student_signature": "0x..."
+    }
     """
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(payment_rate_limit(max_requests=5, window=60))
     def post(self, request, course_id):
         try:
-            # Get request data
-            teocoin_discount = request.data.get('teocoin_discount', 0)
-            payment_method = request.data.get('payment_method', 'stripe')
-            approval_tx_hash = request.data.get('approval_tx_hash')
+            course = get_object_or_404(Course, id=course_id)
+            user = request.user
             
-            # ⚡ PERFORMANCE: Get cached course data first
-            course_data = cached_payment_service.get_course_pricing_cached(course_id)
-            if 'error' in course_data:
-                return Response({
-                    'success': False,
-                    'error': course_data['error']
-                }, status=status.HTTP_404_NOT_FOUND)
+            # Extract request data
+            use_teocoin_discount = request.data.get('use_teocoin_discount', False)
+            discount_percent = request.data.get('discount_percent', 0)
+            student_address = request.data.get('student_address', '')
+            student_signature = request.data.get('student_signature', '')
             
-            # Use course's EUR price
-            amount_eur = course_data.get('price_eur')
-            if not amount_eur:
-                return Response({
-                    'success': False,
-                    'error': 'Course does not have EUR pricing configured'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Handle TeoCoin discount payments and hybrid payments
-            if payment_method in ['teocoin', 'hybrid'] and teocoin_discount > 0:
-                # Use the gas-free TeoCoin discount service
-                from services.teocoin_discount_service import teocoin_discount_service
-                from courses.models import Course
-                
-                course = Course.objects.get(id=course_id)
-                
-                # Check if user has a wallet address
-                wallet_address = getattr(request.user, 'wallet_address', None)
-                
-                # Also check for wallet_address in request data (from frontend)
-                if not wallet_address:
-                    wallet_address = request.data.get('wallet_address')
-                
-                if not wallet_address:
-                    return Response({
-                        'success': False,
-                        'error': 'Please connect your wallet to use TeoCoin discounts'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Calculate TEO cost using the consistent course model method
+            # Calculate pricing
+            original_price = course.price_eur
+            discount_amount = Decimal('0')
+            final_price = original_price
+            discount_request_id = None
+            
+            # Process TeoCoin discount if requested
+            if use_teocoin_discount and discount_percent > 0:
                 try:
-                    teo_cost_decimal = course.get_teocoin_discount_amount()  # Use course model method
-                    print(f"🔍 DEBUG: teo_cost_decimal = {teo_cost_decimal} (type: {type(teo_cost_decimal)})")
+                    # Create discount request via backend proxy
+                    discount_service = TeoCoinDiscountService()
+                    teacher_address = getattr(course.teacher, 'wallet_address', '') or getattr(course.teacher, 'amoy_address', '')
                     
-                    teo_cost_wei = int(float(teo_cost_decimal) * 10**18)  # Convert to wei safely
-                    discount_value_eur = float(teo_cost_decimal) / 10.0  # Convert back to EUR for display
+                    if not teacher_address:
+                        return Response({
+                            'error': 'Teacher wallet address not configured',
+                            'code': 'TEACHER_WALLET_MISSING'
+                        }, status=status.HTTP_400_BAD_REQUEST)
                     
-                    print(f"🔍 DEBUG: teo_cost_wei = {teo_cost_wei}, discount_value_eur = {discount_value_eur}")
-                except Exception as calc_error:
-                    print(f"❌ TEO calculation error: {calc_error}")
-                    return Response({
-                        'success': False,
-                        'error': f'TEO calculation error: {str(calc_error)}'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                teacher_bonus_wei = int(teo_cost_wei * 25 / 100)  # 25% bonus
-                
-                # Check balances
-                teo_service = teocoin_discount_service.teocoin_service
-                student_balance = teo_service.get_balance(wallet_address)
-                required_teo = teo_cost_wei / 10**18
-                
-                if student_balance < required_teo:
-                    return Response({
-                        'success': False,
-                        'error': f'Insufficient TEO balance. Required: {required_teo:.2f} TEO, Available: {student_balance:.2f} TEO'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Check reward pool balance
-                reward_pool_balance = teo_service.get_reward_pool_balance()
-                required_bonus = teacher_bonus_wei / 10**18
-                
-                if reward_pool_balance < required_bonus:
-                    return Response({
-                        'success': False,
-                        'error': 'Insufficient reward pool balance for teacher bonus'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Calculate final price after discount
-                final_price = amount_eur - discount_value_eur
-                
-                # If hybrid payment, create Stripe payment intent for remaining amount
-                if payment_method == 'hybrid':
-                    # ⚡ CRITICAL: Actually transfer TEO tokens from student
-                    try:
-                        print(f"🪙 Starting TEO transfer: {required_teo:.2f} TEO from {wallet_address}")
+                    # Create discount request
+                    discount_result = discount_service.create_discount_request(
+                        student_address=student_address,
+                        teacher_address=teacher_address,
+                        course_id=course_id,
+                        course_price=original_price,
+                        discount_percent=discount_percent,
+                        student_signature=student_signature
+                    )
+                    
+                    if discount_result['success']:
+                        discount_request_id = discount_result['request_id']
+                        # Student gets guaranteed discount
+                        discount_amount = original_price * Decimal(discount_percent) / Decimal('100')
+                        final_price = original_price - discount_amount
                         
-                        # Check if TeoCoin service is available
-                        if not hasattr(teo_service, 'transfer_with_reward_pool_gas'):
-                            print(f"❌ TeoCoin service method not available")
-                            # Phase 1: Enable real TeoCoin transfers
-                            print(f"🪙 Executing actual TeoCoin transfer...")
-                        else:
-                            # Transfer TEO from student to reward pool for discount
-                            from django.conf import settings
-                            reward_pool_address = getattr(settings, 'REWARD_POOL_ADDRESS', None)
+                        # Send notification to teacher
+                        try:
+                            teo_cost = discount_result.get('teo_cost', 0) / 10**18  # Convert from wei
+                            teacher_bonus = discount_result.get('teacher_bonus', 0) / 10**18  # Convert from wei
+                            expires_at = discount_result.get('deadline')
                             
-                            if not reward_pool_address:
-                                print(f"❌ Reward pool address not configured")
-                                return Response({
-                                    'success': False,
-                                    'error': 'Reward pool not configured for TeoCoin transfers'
-                                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                            else:
-                                print(f"� Creating TeoCoin escrow instead of direct transfer")
-                                
-                                # 🆕 CREATE ESCROW instead of direct transfer
-                                try:
-                                    from services.escrow_service import escrow_service
-                                    
-                                    print(f"💰 CREATING ESCROW: {required_teo:.2f} TEO from {wallet_address}")
-                                    
-                                    # Create escrow for teacher choice
-                                    escrow = escrow_service.create_escrow(
-                                        student=request.user,
-                                        teacher=course.teacher,
-                                        course=course,
-                                        teocoin_amount=Decimal(str(required_teo)),
-                                        discount_data={
-                                            'percentage': teocoin_discount,
-                                            'euro_amount': (teocoin_discount * amount_eur / 100),
-                                            'original_price': amount_eur
-                                        },
-                                        transfer_tx_hash=approval_tx_hash if approval_tx_hash and approval_tx_hash != 'frontend_approved' else None
-                                    )
-                                    
-                                    if escrow:
-                                        print(f"✅ TeoCoin escrow created: {escrow.id}")
-                                        print(f"� Teacher notification sent for escrow decision")
-                                        print(f"⏰ Escrow expires: {escrow.expires_at}")
-                                        
-                                        # Note: Teacher will decide later whether to accept TeoCoin or get standard EUR commission
-                                        # For now, student enrollment proceeds with discounted EUR payment
-                                        
-                                    else:
-                                        print(f"❌ TeoCoin escrow creation failed")
-                                        return Response({
-                                            'success': False,
-                                            'error': 'TeoCoin escrow creation failed. Please try again.'
-                                        }, status=status.HTTP_400_BAD_REQUEST)
-                                        
-                                except Exception as escrow_error:
-                                    print(f"❌ TeoCoin escrow error: {str(escrow_error)}")
-                                    return Response({
-                                        'success': False,
-                                        'error': f'TeoCoin escrow failed: {str(escrow_error)}'
-                                    }, status=status.HTTP_400_BAD_REQUEST)
-                                # 4. Backend verifies approval and executes transfer
-                                #
-                                # Uncomment when frontend approval is implemented:
-                                # transfer_result = teo_service.transfer_with_reward_pool_gas(
-                                #     wallet_address, reward_pool_address, Decimal(str(required_teo))
-                                # )
+                            teocoin_notification_service.notify_teacher_discount_pending(
+                                teacher=course.teacher,
+                                student=user,
+                                course_title=course.title,
+                                discount_percent=discount_percent,
+                                teo_cost=teo_cost,
+                                teacher_bonus=teacher_bonus,
+                                request_id=discount_request_id,
+                                expires_at=expires_at
+                            )
+                        except Exception as notification_error:
+                            logger.warning(f"Failed to send teacher notification: {notification_error}")
                         
-                    except Exception as e:
-                        print(f"❌ TEO transfer error: {str(e)}")
-                        print(f"⚠️ Continuing with discount anyway - transfer will be fixed in Phase 2")
-                    
-                    # Create Stripe payment intent for the discounted amount with TeoCoin metadata
-                    import stripe
-                    from django.conf import settings
-                    stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
-                    
-                    # Get course and teacher information
-                    from courses.models import Course
-                    course = Course.objects.get(id=course_id)
-                    teacher_address = getattr(course.teacher, 'wallet_address', None)
-                    
-                    # Create Stripe payment intent with TeoCoin metadata
-                    try:
-                        intent = stripe.PaymentIntent.create(
-                            amount=int(final_price * 100),  # Stripe uses cents
-                            currency='eur',
-                            payment_method_types=['card'],
-                            metadata={
-                                'course_id': course_id,
-                                'user_id': request.user.id,
-                                'payment_type': 'hybrid_teocoin',
-                                'teocoin_discount_applied': 'true',
-                                'teocoin_discount_percent': str(teocoin_discount),
-                                'teocoin_required': str(required_teo),
-                                'student_wallet_address': wallet_address,
-                                'teacher_wallet_address': teacher_address or '',
-                                'discount_amount_eur': str(discount_value_eur),
-                                'original_price_eur': str(amount_eur),
-                                'course_title': course.title,
-                                'student_email': request.user.email
-                            },
-                            description=f"Course: {course.title} (TeoCoin {teocoin_discount}% discount)"
-                        )
-                        
+                        logger.info(f"✅ Discount request created: {discount_request_id} for €{discount_amount}")
+                    else:
+                        logger.error(f"❌ Discount request failed: {discount_result.get('error')}")
                         return Response({
-                            'success': True,
-                            'payment_method': 'hybrid',
-                            'client_secret': intent.client_secret,
-                            'payment_intent_id': intent.id,
-                            'final_amount': float(final_price),
-                            'discount_applied': float(discount_value_eur),
-                            'teo_cost': float(required_teo),
-                            'teacher_bonus': float(required_bonus),
-                            'message': f'TeoCoin discount applied. Pay remaining €{final_price:.2f} with card'
-                        }, status=status.HTTP_200_OK)
+                            'error': 'Failed to create discount request',
+                            'details': discount_result.get('error'),
+                            'code': 'DISCOUNT_REQUEST_FAILED'
+                        }, status=status.HTTP_400_BAD_REQUEST)
                         
-                    except Exception as e:
-                        logger.error(f"Failed to create hybrid payment intent: {str(e)}")
-                        return Response({
-                            'success': False,
-                            'error': f'Failed to create payment intent: {str(e)}'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                # Full TeoCoin payment (only when payment_method == 'teocoin')
-                else:
-                    # TeoCoin-only payment is not supported in this version
-                    # The system only supports TeoCoin discounts (hybrid payments)
+                except Exception as e:
+                    logger.error(f"Discount creation error: {e}")
                     return Response({
-                        'success': False,
-                        'error': 'Full TeoCoin payment not supported. Use hybrid payment for TeoCoin discounts.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                        'error': 'TeoCoin discount system error',
+                        'details': str(e),
+                        'code': 'DISCOUNT_SYSTEM_ERROR'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # ⚡ PERFORMANCE: Create payment intent using optimized service
-            result = cached_payment_service.create_payment_intent_optimized(
-                user_id=request.user.id,
-                course_id=course_id,
-                amount_eur=Decimal(str(amount_eur))
-            )
+            # Create Stripe payment intent for final price
+            stripe.api_key = settings.STRIPE_SECRET_KEY
             
-            if result.get('success'):
-                return Response({
-                    'success': True,
-                    'client_secret': result['client_secret'],
-                    'payment_intent_id': result['payment_intent_id'],
-                    'amount': str(result['amount']),
-                    'course_title': result.get('course_title'),
-                    'teocoin_reward': str(result.get('teocoin_reward', 0))
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'success': False,
-                    'error': result.get('error', 'Payment intent creation failed')
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Exception as e:
-            logger.error(f"⚡ OPTIMIZED Payment intent creation failed: {str(e)}")
+            intent_data = {
+                'amount': int(final_price * 100),  # Convert to cents
+                'currency': 'eur',
+                'metadata': {
+                    'course_id': course_id,
+                    'user_id': user.id,
+                    'original_price': str(original_price),
+                    'discount_amount': str(discount_amount),
+                    'discount_percent': discount_percent,
+                    'use_teocoin_discount': str(use_teocoin_discount),
+                    'student_address': student_address,
+                }
+            }
+            
+            # Add discount request ID if applicable
+            if discount_request_id:
+                intent_data['metadata']['discount_request_id'] = str(discount_request_id)
+            
+            payment_intent = stripe.PaymentIntent.create(**intent_data)
+            
             return Response({
-                'success': False,
-                'error': 'Internal server error'
+                'success': True,
+                'client_secret': payment_intent.client_secret,
+                'payment_intent_id': payment_intent.id,
+                'pricing': {
+                    'original_price': str(original_price),
+                    'discount_amount': str(discount_amount),
+                    'final_price': str(final_price),
+                    'discount_percent': discount_percent
+                },
+                'discount_request_id': discount_request_id,
+                'course': {
+                    'title': course.title,
+                    'instructor': course.teacher.username if course.teacher else 'Unknown'
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Payment intent creation error: {e}")
+            return Response({
+                'error': 'Failed to create payment intent',
+                'details': str(e),
+                'code': 'PAYMENT_INTENT_ERROR'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ConfirmPaymentView(APIView):
     """
-    ⚡ ULTRA-FAST Confirm successful Stripe payment with cache invalidation
+    Confirm successful payment and enroll student
     
-    POST /api/courses/{course_id}/confirm-payment/
+    POST /api/v1/courses/{course_id}/payment/confirm/
     {
-        "payment_intent_id": "pi_..."
+        "payment_intent_id": "pi_...",
+        "process_discount": true
     }
     """
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(payment_rate_limit(max_requests=3, window=60))
     def post(self, request, course_id):
         try:
+            course = get_object_or_404(Course, id=course_id)
+            user = request.user
             payment_intent_id = request.data.get('payment_intent_id')
+            process_discount = request.data.get('process_discount', True)
             
             if not payment_intent_id:
                 return Response({
-                    'success': False,
-                    'error': 'payment_intent_id is required'
+                    'error': 'Payment intent ID required',
+                    'code': 'MISSING_PAYMENT_INTENT'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # ⚡ PERFORMANCE: Process payment confirmation using optimized service
-            result = cached_payment_service.process_payment_optimized(
-                payment_intent_id=payment_intent_id,
-                course_id=course_id,
-                user_id=request.user.id
+            # Verify payment with Stripe
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            if payment_intent.status != 'succeeded':
+                return Response({
+                    'error': 'Payment not completed',
+                    'payment_status': payment_intent.status,
+                    'code': 'PAYMENT_NOT_COMPLETED'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Extract metadata
+            metadata = payment_intent.metadata
+            discount_request_id = metadata.get('discount_request_id')
+            use_teocoin_discount = metadata.get('use_teocoin_discount') == 'True'
+            original_price = Decimal(metadata.get('original_price', '0'))
+            discount_amount = Decimal(metadata.get('discount_amount', '0'))
+            student_address = metadata.get('student_address', '')
+            
+            # Check if already enrolled
+            existing_enrollment = CourseEnrollment.objects.filter(
+                student=user, course=course
+            ).first()
+            
+            if existing_enrollment:
+                return Response({
+                    'error': 'Already enrolled in this course',
+                    'enrollment_id': existing_enrollment.id,
+                    'code': 'ALREADY_ENROLLED'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create enrollment with proper payment tracking
+            final_price = original_price - discount_amount
+            payment_method = 'teocoin_discount' if use_teocoin_discount else 'stripe'
+            
+            enrollment = CourseEnrollment.objects.create(
+                student=user,
+                course=course,
+                payment_method=payment_method,
+                stripe_payment_intent_id=payment_intent_id,
+                amount_paid_eur=final_price,
+                original_price_eur=original_price,
+                discount_amount_eur=discount_amount,
+                teocoin_discount_request_id=discount_request_id
             )
             
-            if result.get('success'):
-                return Response({
-                    'success': True,
-                    'enrollment': result.get('enrollment'),
-                    'teocoin_reward': result.get('teocoin_reward'),
-                    'amount_paid': str(result.get('amount_paid', 0)),
-                    'message': result.get('message', 'Payment confirmed successfully')
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'success': False,
-                    'error': result.get('error', 'Payment confirmation failed')
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Exception as e:
-            logger.error(f"⚡ OPTIMIZED Payment confirmation failed: {str(e)}")
+            logger.info(f"✅ Student enrolled: {user.username} in {course.title} for €{final_price}")
+            
+            # Process teacher notification for discount decision
+            teacher_notification_sent = False
+            if use_teocoin_discount and discount_request_id and process_discount:
+                try:
+                    # Teacher has 2 hours to decide: Accept TEO vs Keep EUR
+                    # This is handled by the TeoCoin discount service
+                    teacher_notification_sent = True
+                    logger.info(f"📧 Teacher notification sent for discount request {discount_request_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Teacher notification error: {e}")
+            
+            # Award completion TEO to student (backend proxy handles minting)
+            try:
+                teo_service = TeoEarningService()
+                teo_service.reward_course_purchase(user.id, course_id)
+                logger.info(f"🪙 TEO purchase reward sent to {student_address}")
+            except Exception as e:
+                logger.error(f"TEO reward error: {e}")
+            
             return Response({
-                'success': False,
-                'error': 'Internal server error'
+                'success': True,
+                'enrollment_id': enrollment.id,
+                'course_title': course.title,
+                'amount_paid': str(final_price),
+                'discount_applied': str(discount_amount) if discount_amount > 0 else None,
+                'payment_method': payment_method,
+                'teacher_notification_sent': teacher_notification_sent,
+                'message': f'Successfully enrolled in {course.title}!'
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Payment confirmation error: {e}")
+            return Response({
+                'error': 'Failed to confirm payment',
+                'details': str(e),
+                'code': 'PAYMENT_CONFIRMATION_ERROR'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PaymentSummaryView(APIView):
     """
-    ⚡ ULTRA-FAST Get payment options summary with aggressive caching
+    Get payment summary for a course including TeoCoin discount calculations
     
-    GET /api/courses/{course_id}/payment-summary/
+    GET /api/v1/courses/{course_id}/payment/summary/?discount_percent=15&student_address=0x...
     """
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(cache_page(60))  # Cache for 1 minute
-    @method_decorator(vary_on_headers('Authorization'))  # Vary by user
+    @method_decorator(cache_page(60 * 5))  # Cache for 5 minutes
+    @method_decorator(vary_on_headers('Authorization'))
     def get(self, request, course_id):
         try:
-            # ⚡ PERFORMANCE: Use cached payment summary
-            result = cached_payment_service.get_payment_summary_cached(
-                user_id=request.user.id,
-                course_id=course_id
-            )
+            course = get_object_or_404(Course, id=course_id)
+            discount_percent = int(request.query_params.get('discount_percent', 0))
+            student_address = request.query_params.get('student_address', '')
             
-            if 'error' in result:
+            # Base pricing
+            original_price = course.price_eur
+            pricing_summary = {
+                'original_price': str(original_price),
+                'currency': 'EUR',
+                'discount_available': course.teocoin_discount_percent > 0,
+                'max_discount_percent': int(course.teocoin_discount_percent),
+            }
+            
+            # Calculate TeoCoin discount if requested
+            if discount_percent > 0 and student_address:
+                try:
+                    discount_service = TeoCoinDiscountService()
+                    
+                    # Calculate TEO costs
+                    teo_cost, teacher_bonus = discount_service.calculate_teo_cost(
+                        original_price, discount_percent
+                    )
+                    
+                    discount_amount = original_price * Decimal(discount_percent) / Decimal('100')
+                    final_price = original_price - discount_amount
+                    
+                    # Convert TEO amounts from wei to tokens
+                    teo_cost_tokens = teo_cost // (10 ** 18)
+                    teacher_bonus_tokens = teacher_bonus // (10 ** 18)
+                    
+                    pricing_summary.update({
+                        'teocoin_discount': {
+                            'discount_percent': discount_percent,
+                            'discount_amount_eur': str(discount_amount),
+                            'final_price_eur': str(final_price),
+                            'teo_cost': teo_cost_tokens,
+                            'teacher_bonus_teo': teacher_bonus_tokens,
+                            'teacher_bonus_rate': '125%'  # 125% compensation
+                        }
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"TeoCoin calculation error: {e}")
+                    pricing_summary['teocoin_error'] = 'Failed to calculate TeoCoin discount'
+            
+            # Course information
+            course_info = {
+                'id': course.id,
+                'title': course.title,
+                'instructor': course.teacher.username if course.teacher else 'Unknown',
+                'description': course.description[:200] + '...' if len(course.description) > 200 else course.description,
+                'duration_hours': getattr(course, 'duration_hours', None),
+                'skill_level': getattr(course, 'skill_level', None),
+            }
+            
+            # Student enrollment status
+            user = request.user
+            is_enrolled = CourseEnrollment.objects.filter(
+                student=user, course=course
+            ).exists()
+            
+            return Response({
+                'success': True,
+                'course': course_info,
+                'pricing': pricing_summary,
+                'student_status': {
+                    'is_enrolled': is_enrolled,
+                    'can_enroll': not is_enrolled
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Payment summary error: {e}")
+            return Response({
+                'error': 'Failed to get payment summary',
+                'details': str(e),
+                'code': 'PAYMENT_SUMMARY_ERROR'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TeoCoinDiscountStatusView(APIView):
+    """
+    Get status of TeoCoin discount requests for student
+    
+    GET /api/v1/courses/{course_id}/payment/discount-status/?student_address=0x...
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, course_id):
+        try:
+            course = get_object_or_404(Course, id=course_id)
+            student_address = request.query_params.get('student_address', '')
+            
+            if not student_address:
                 return Response({
-                    'success': False,
-                    'error': result['error']
+                    'error': 'Student address required',
+                    'code': 'MISSING_STUDENT_ADDRESS'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            return Response({
-                'success': True,
-                'data': result
-            }, status=status.HTTP_200_OK)
+            # Get discount requests for this student and course
+            discount_service = TeoCoinDiscountService()
+            student_requests = discount_service.get_student_requests(student_address)
             
-        except Exception as e:
-            logger.error(f"⚡ OPTIMIZED Payment summary failed: {str(e)}")
-            return Response({
-                'success': False,
-                'error': 'Internal server error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    """
-    Get payment options and enrollment status for a course
-    
-    GET /api/courses/payment/summary/{course_id}/
-    """
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, course_id):
-        try:
-            # Get payment summary using service
-            result = payment_service.get_payment_summary(
-                user_id=request.user.id,
-                course_id=course_id
-            )
+            # Filter for this specific course
+            course_requests = [
+                req for req in student_requests 
+                if req.get('course_id') == course_id
+            ]
+            
+            # Get most recent request
+            latest_request = None
+            if course_requests:
+                latest_request = max(course_requests, key=lambda x: x.get('timestamp', 0))
             
             return Response({
                 'success': True,
-                'data': result
+                'course_id': course_id,
+                'student_address': student_address,
+                'latest_request': latest_request,
+                'total_requests': len(course_requests),
+                'all_requests': course_requests
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Payment summary failed: {str(e)}")
+            logger.error(f"Discount status error: {e}")
             return Response({
-                'success': False,
-                'error': 'Could not retrieve payment summary'
+                'error': 'Failed to get discount status',
+                'details': str(e),
+                'code': 'DISCOUNT_STATUS_ERROR'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

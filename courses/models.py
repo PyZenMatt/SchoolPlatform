@@ -403,12 +403,13 @@ class CourseEnrollment(models.Model):
     PAYMENT_METHODS = [
         ('fiat', 'Euro Payment'),
         ('teocoin', 'TeoCoin Payment'),
+        ('teocoin_discount', 'Euro Payment with TeoCoin Discount'),
         ('free', 'Free Course'),
         ('admin', 'Admin Granted'),
     ]
     
     payment_method = models.CharField(
-        max_length=10, 
+        max_length=20, 
         choices=PAYMENT_METHODS,
         default='free'
     )
@@ -427,6 +428,30 @@ class CourseEnrollment(models.Model):
         null=True, 
         blank=True,
         help_text="Amount paid in TeoCoin for crypto payments"
+    )
+    
+    # TEOCOIN DISCOUNT TRACKING
+    original_price_eur = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Original course price before discount"
+    )
+    
+    discount_amount_eur = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Discount amount in EUR for TeoCoin discount payments"
+    )
+    
+    teocoin_discount_request_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="TeoCoin discount request ID from smart contract"
     )
     
     stripe_payment_intent_id = models.CharField(
