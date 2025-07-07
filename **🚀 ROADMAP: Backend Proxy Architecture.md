@@ -128,7 +128,9 @@
 
 ### **5.2 Frontend Testing** 🔶 **PRIORITY 2** ✅ **READY FOR TESTING**
 - [x] **Payment Options Fixed**: TeoCoin discount option now visible in PaymentModal
-- [x] **Backend API**: PaymentSummaryView updated with pricing_options array
+- [x] **Backend API**: PaymentSummaryView updated with pricing_options array  
+- [x] **API Response**: Fixed JSON structure compatibility
+- [x] **Git Commit**: All fixes committed and ready for testing
 - [ ] Test discount request flow end-to-end
 - [ ] Test teacher approval/rejection
 - [ ] Error handling for failed transactions

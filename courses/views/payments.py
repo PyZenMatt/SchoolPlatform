@@ -299,8 +299,6 @@ class PaymentSummaryView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    @method_decorator(cache_page(60 * 5))  # Cache for 5 minutes
-    @method_decorator(vary_on_headers('Authorization'))
     def get(self, request, course_id):
         try:
             course = get_object_or_404(Course, id=course_id)
