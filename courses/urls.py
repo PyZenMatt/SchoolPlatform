@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
 # === COURSES ===
 from courses.views.courses import (
@@ -55,8 +56,19 @@ from courses.views.exercises import (
 # === PENDING COURSES ===
 from courses.views.pending import PendingCoursesView, ApproveCourseView, RejectCourseView
 
+# === TEACHER CHOICE ===
+from courses.api.teacher_choice_api import TeacherChoiceViewSet, TeacherPreferenceViewSet
+
+# Setup router for ViewSets
+router = DefaultRouter()
+router.register(r'teacher-choices', TeacherChoiceViewSet, basename='teacher-choices')
+router.register(r'teacher-preferences', TeacherPreferenceViewSet, basename='teacher-preferences')
+
 
 urlpatterns = [
+    # === TEACHER CHOICE API ===
+    path('api/', include(router.urls)),
+    
     # === COURSES ===
     path('courses/', CourseListCreateView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseDetailView.as_view(), name='course-detail'),

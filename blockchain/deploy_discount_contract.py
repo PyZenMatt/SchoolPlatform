@@ -28,45 +28,23 @@ django.setup()
 
 from web3 import Web3
 from eth_account import Account
-from solcx import compile_source, install_solc, set_solc_version
 from blockchain.blockchain import TeoCoinService
 
 
-def load_contract_source():
-    """Load TeoCoinDiscount.sol source code"""
-    contract_path = project_root / 'blockchain' / 'contracts' / 'TeoCoinDiscount.sol'
+def load_compiled_contract():
+    """Load pre-compiled TeoCoinDiscount contract artifacts"""
+    artifact_path = project_root / 'blockchain' / 'contracts' / 'teocoin-contracts' / 'artifacts-zk' / 'contracts' / 'TeoCoinDiscount.sol' / 'TeoCoinDiscount.json'
     
-    if not contract_path.exists():
-        raise FileNotFoundError(f"Contract not found at {contract_path}")
+    if not artifact_path.exists():
+        raise FileNotFoundError(f"Compiled contract not found at {artifact_path}")
     
-    with open(contract_path, 'r') as file:
-        return file.read()
-
-
-def compile_contract(source_code):
-    """Compile the TeoCoinDiscount contract"""
-    print("📦 Compiling TeoCoinDiscount contract...")
+    with open(artifact_path, 'r') as file:
+        artifact = json.load(file)
     
-    # Install and set Solidity version
-    install_solc('0.8.19')
-    set_solc_version('0.8.19')
-    
-    # Compile the contract
-    compiled_sol = compile_source(
-        source_code,
-        output_values=['abi', 'bin'],
-        solc_version='0.8.19',
-        import_remappings=[
-            '@openzeppelin/contracts=node_modules/@openzeppelin/contracts'
-        ]
-    )
-    
-    # Get contract interface
-    contract_id = '<stdin>:TeoCoinDiscount'
-    contract_interface = compiled_sol[contract_id]
-    
-    print("✅ Contract compiled successfully!")
-    return contract_interface
+    return {
+        'abi': artifact['abi'],
+        'bin': artifact['bytecode']
+    }
 
 
 def deploy_contract():
@@ -111,12 +89,11 @@ def deploy_contract():
     print(f"🪙 TeoCoin2 address: {teocoin_address}")
     print(f"🏦 Reward pool address: {reward_pool_address}")
     
-    # Load and compile contract
+    # Load compiled contract
     try:
-        source_code = load_contract_source()
-        contract_interface = compile_contract(source_code)
+        contract_interface = load_compiled_contract()
     except Exception as e:
-        print(f"❌ ERROR compiling contract: {e}")
+        print(f"❌ ERROR loading compiled contract: {e}")
         return None
     
     # Create contract instance
@@ -162,7 +139,7 @@ def deploy_contract():
         
         # Sign and send transaction
         signed_txn = w3.eth.account.sign_transaction(transaction, deployer_private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
         
         print(f"📡 Transaction sent: {tx_hash.hex()}")
         print("⏳ Waiting for confirmation...")
@@ -170,12 +147,12 @@ def deploy_contract():
         # Wait for confirmation
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         
-        if receipt.status == 1:
-            contract_address = receipt.contractAddress
+        if receipt['status'] == 1:
+            contract_address = receipt['contractAddress']
             print(f"✅ Contract deployed successfully!")
             print(f"📍 Contract address: {contract_address}")
             print(f"🔗 PolygonScan: https://amoy.polygonscan.com/address/{contract_address}")
-            print(f"💰 Gas used: {receipt.gasUsed:,}")
+            print(f"💰 Gas used: {receipt['gasUsed']:,}")
             
             # Save deployment info
             deployment_info = {
@@ -184,9 +161,9 @@ def deploy_contract():
                 'teocoin_address': teocoin_address,
                 'reward_pool_address': reward_pool_address,
                 'transaction_hash': tx_hash.hex(),
-                'block_number': receipt.blockNumber,
-                'gas_used': receipt.gasUsed,
-                'deployment_timestamp': int(w3.eth.get_block(receipt.blockNumber).timestamp),
+                'block_number': receipt['blockNumber'],
+                'gas_used': receipt['gasUsed'],
+                'deployment_timestamp': int(w3.eth.get_block(receipt['blockNumber']).get('timestamp', 0)),
                 'abi': contract_interface['abi']
             }
             

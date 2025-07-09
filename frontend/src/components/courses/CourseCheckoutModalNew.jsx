@@ -27,14 +27,16 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
   const walletConnected = Boolean(user?.wallet_address);
   const walletAddress = user?.wallet_address;
 
-  // Calculate pricing options
+  // Calculate pricing options with REASONABLE TEO pricing
   const fiatPrice = course?.price_eur || 0;
   const teoReward = course?.teocoin_reward || 0;
   const teoDiscount = course?.teocoin_discount_percent || 10;
-  // Use backend-calculated teocoin_price if available
-  const discountedTeoPrice = course?.teocoin_price || 0;
-  // For strikethrough display, show the original (non-discounted) TEO price
-  const teoPrice = course?.price_eur ? course.price_eur * 10 : 0;
+  
+  // FIXED: Use 1 EUR = 1 TEO ratio (not 10x)
+  const teoPrice = fiatPrice; // 1:1 ratio instead of 10x
+  const discountedTeoPrice = teoPrice * (1 - teoDiscount / 100); // Apply discount
+  
+  console.log(`💰 Pricing: €${fiatPrice} = ${teoPrice} TEO, with ${teoDiscount}% discount = ${discountedTeoPrice.toFixed(2)} TEO`);
 
   // Load balances when modal opens (for TeoCoin tab)
   React.useEffect(() => {
@@ -74,80 +76,102 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
 
   // Handle Stripe payment success
   const handleStripeSuccess = (result) => {
+    console.log('🎉 Payment success handler called!');
+    console.log('💳 Payment result:', result);
+    
     setPaymentResult(result);
     setStep('success');
+    
+    console.log('✅ Step set to success, paymentResult set');
+    
     if (onPurchaseComplete) {
+      console.log('🔄 Calling onPurchaseComplete...');
       onPurchaseComplete();
+    } else {
+      console.log('⚠️ No onPurchaseComplete callback provided');
     }
   };
 
   // Handle Stripe payment error  
   const handleStripeError = (error) => {
+    console.error('❌ Payment error handler called:', error);
     setError(error);
     setStep('confirm');
   };
 
-  // Handle TeoCoin payment (existing logic)
-  const handleTeoCoinPurchase = async () => {
+  // Handle TeoCoin DISCOUNT (not full purchase)
+  const handleTeoCoinDiscount = async () => {
     if (!user?.wallet_address) {
-      setError('Devi collegare un wallet dal tuo profilo prima di procedere con l\'acquisto');
+      setError('Devi collegare un wallet dal tuo profilo prima di procedere con lo sconto');
       return;
     }
 
-    if (blockchainBalance < discountedTeoPrice) {
-      setError(`TeoCoin insufficienti. Necessari: ${discountedTeoPrice.toFixed(2)} TEO, Disponibili: ${blockchainBalance.toFixed(2)} TEO`);
+    // Calculate TEO needed for discount (10 TEO for 10% discount)
+    const teoNeededForDiscount = Math.floor(fiatPrice * teoDiscount / 100); // 10 TEO for 10% of €100
+    
+    if (blockchainBalance < teoNeededForDiscount) {
+      setError(`TeoCoin insufficienti per lo sconto. Necessari: ${teoNeededForDiscount} TEO, Disponibili: ${blockchainBalance.toFixed(2)} TEO`);
       return;
     }
 
-    const minMaticRequired = 0.01;
-    if (maticBalance < minMaticRequired) {
-      setError(
-        `MATIC insufficienti per gas fees. ` +
-        `Hai ${maticBalance.toFixed(4)} MATIC, servono almeno ${minMaticRequired} MATIC. ` +
-        `Ottieni MATIC da: https://faucet.polygon.technology/`
-      );
-      return;
-    }
+    console.log('🚀 Applying TeoCoin discount via Layer 2...');
+    console.log(`💰 Using ${teoNeededForDiscount} TEO for €${(fiatPrice * teoDiscount / 100).toFixed(2)} discount`);
 
     setLoading(true);
     setError('');
-    setStep('purchasing');
     
     try {
-      if (!course.teacher.wallet_address) {
-        throw new Error('Il docente non ha configurato un wallet per ricevere i pagamenti');
-      }
+      // Use Layer 2 API for gas-free discount
+      const response = await fetch('/api/v1/services/discount/layer2/create/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({
+          course_id: parseInt(course.id),
+          discount_amount: Math.round(fiatPrice * teoDiscount / 100 * 100) / 100, // Round to 2 decimals
+          discount_percentage: parseInt(teoDiscount),
+          student_wallet: walletAddress
+        })
+      });
 
-      console.log('🎓 Processing TeoCoin course payment...');
-      const result = await web3Service.processCoursePaymentDirect(
-        walletAddress,
-        course.teacher.wallet_address,
-        discountedTeoPrice,
-        course.id
-      );
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Layer 2 TeoCoin discount applied successfully!');
+        
+        // Store discount info and switch to Stripe payment for remaining amount
+        const discountInfo = {
+          teo_used: teoNeededForDiscount,
+          discount_amount: fiatPrice * teoDiscount / 100,
+          discount_percentage: teoDiscount,
+          final_price: fiatPrice - (fiatPrice * teoDiscount / 100),
+          transaction_hash: data.data.transaction_hash,
+          layer2_processed: true
+        };
 
-      setTransactionHash(result.teacherTxHash || 'N/A');
-      
-      // Update balances after successful payment
-      const [newTeoBalance, newMaticBalance] = await Promise.all([
-        web3Service.getBalance(walletAddress),
-        web3Service.getMaticBalance(walletAddress)
-      ]);
-      
-      setBlockchainBalance(parseFloat(newTeoBalance));
-      setMaticBalance(parseFloat(newMaticBalance));
-      
-      setStep('success');
-      setLoading(false);
-      
-      if (onPurchaseComplete) {
-        onPurchaseComplete();
+        // Switch to fiat tab to complete payment with discounted price
+        setActiveTab('fiat');
+        setStep('discount_applied');
+        setPaymentResult(discountInfo);
+        
+        alert(`✅ Sconto TeoCoin applicato!
+        
+💰 TEO utilizzati: ${teoNeededForDiscount} TEO
+💸 Sconto ottenuto: €${discountInfo.discount_amount.toFixed(2)}
+💳 Prezzo finale: €${discountInfo.final_price.toFixed(2)}
+
+Completa ora il pagamento con carta di credito per il prezzo scontato.`);
+
+      } else {
+        throw new Error(data.error || 'Sconto TeoCoin fallito');
       }
       
     } catch (err) {
-      console.error('Error during TeoCoin purchase:', err);
-      setError(err.message || 'Errore durante l\'acquisto del corso con TeoCoin.');
-      setStep('confirm');
+      console.error('Error applying TeoCoin discount:', err);
+      setError(err.message || 'Errore durante l\'applicazione dello sconto TeoCoin.');
+    } finally {
       setLoading(false);
     }
   };
@@ -216,11 +240,12 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         )}
 
         <PaymentModal
+          isOpen={true}
           course={course}
-          onSuccess={handleStripeSuccess}
+          onPaymentSuccess={handleStripeSuccess}
           onError={handleStripeError}
           onClose={handleClose}
-          embedded={true}
+          discountInfo={step === 'discount_applied' ? paymentResult : null}
         />
       </div>
     );
@@ -265,21 +290,24 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
       <div className="p-3">
         <div className="payment-option-card mb-4 p-3" style={{ border: '2px solid #28a745', borderRadius: '8px', backgroundColor: '#f8fff9' }}>
           <div className="d-flex justify-content-between align-items-center mb-2">
-            <h5 className="mb-0 text-success">🪙 Pagamento con TeoCoin</h5>
+            <h5 className="mb-0 text-success">🪙 Sconto TeoCoin</h5>
             <span className="badge badge-success">{teoDiscount}% Sconto</span>
           </div>
           <div className="row">
             <div className="col-6">
-              <strong>{discountedTeoPrice.toFixed(2)} TEO</strong>
+              <strong>Usa {Math.floor(fiatPrice * teoDiscount / 100)} TEO</strong>
               <br />
               <small className="text-muted">
-                <s>{teoPrice} TEO</s> (-{teoDiscount}%)
+                Per €{(fiatPrice * teoDiscount / 100).toFixed(2)} di sconto
               </small>
             </div>
             <div className="col-6 text-end">
-              <span className="text-success">Sconto esclusivo</span>
+              <span className="text-success">Prezzo finale: €{(fiatPrice - fiatPrice * teoDiscount / 100).toFixed(2)}</span>
             </div>
           </div>
+          <small className="text-muted">
+            Usa i tuoi TeoCoin per ottenere uno sconto, poi completa il pagamento con carta.
+          </small>
         </div>
 
         {!walletConnected && (
@@ -298,8 +326,13 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
                 <span className="text-muted">TEO:</span> <strong>{blockchainBalance.toFixed(2)}</strong>
               </div>
               <div className="col-6">
-                <span className="text-muted">MATIC:</span> <strong>{maticBalance.toFixed(4)}</strong>
+                <span className="text-muted">Gas:</span> <strong style={{color: '#4CAF50'}}>🚀 Layer 2 (Free)</strong>
               </div>
+            </div>
+            <div className="mt-2">
+              <small className="text-muted">
+                Necessari: {Math.floor(fiatPrice * teoDiscount / 100)} TEO per {teoDiscount}% di sconto
+              </small>
             </div>
             <Button variant="outline-secondary" size="sm" onClick={refreshBalances} className="mt-2">
               🔄 Aggiorna saldi
@@ -317,18 +350,21 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
           <Button
             variant="success"
             size="lg"
-            onClick={handleTeoCoinPurchase}
-            disabled={loading || !walletConnected || blockchainBalance < discountedTeoPrice}
+            onClick={handleTeoCoinDiscount}
+            disabled={loading || !walletConnected || blockchainBalance < Math.floor(fiatPrice * teoDiscount / 100)}
           >
             {loading ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
-                Elaborazione...
+                Applicando sconto...
               </>
             ) : (
-              `Acquista con ${discountedTeoPrice.toFixed(2)} TEO`
+              `🪙 Applica sconto con ${Math.floor(fiatPrice * teoDiscount / 100)} TEO`
             )}
           </Button>
+          <small className="text-muted text-center mt-2">
+            Dopo lo sconto, completerai il pagamento con carta per €{(fiatPrice - fiatPrice * teoDiscount / 100).toFixed(2)}
+          </small>
         </div>
       </div>
     );
@@ -352,7 +388,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
             </Nav.Item>
             <Nav.Item>
               <Nav.Link eventKey="teocoin" className="mx-2">
-                🪙 TeoCoin
+                🪙 Sconto TeoCoin
               </Nav.Link>
             </Nav.Item>
           </Nav>

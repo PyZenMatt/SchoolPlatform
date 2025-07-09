@@ -82,8 +82,10 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
     setStep('confirm');
   };
 
-  // Handle TeoCoin payment (existing logic)
-  const handleTeoCoinPurchase = async () => {
+  // Layer 2 gas-free TeoCoin discount (UPDATED)
+  const handleTeoCoinDiscount = async () => {
+    console.log('🚀 Processing Layer 2 gas-free TeoCoin discount...');
+    
     if (!user?.wallet_address) {
       setError('Devi collegare un wallet dal tuo profilo prima di procedere con l\'acquisto');
       return;
@@ -94,15 +96,8 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
       return;
     }
 
-    const minMaticRequired = 0.01;
-    if (maticBalance < minMaticRequired) {
-      setError(
-        `MATIC insufficienti per gas fees. ` +
-        `Hai ${maticBalance.toFixed(4)} MATIC, servono almeno ${minMaticRequired} MATIC. ` +
-        `Ottieni MATIC da: https://faucet.polygon.technology/`
-      );
-      return;
-    }
+    // ✅ NO MORE MATIC CHECK - Layer 2 handles all gas fees!
+    console.log('⛽ Gas cost for student: 0 ETH (Layer 2 covers all fees)');
 
     setLoading(true);
     setError('');
@@ -113,35 +108,69 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         throw new Error('Il docente non ha configurato un wallet per ricevere i pagamenti');
       }
 
-      console.log('🎓 Processing TeoCoin course payment...');
-      const result = await web3Service.processCoursePaymentDirect(
-        walletAddress,
-        course.teacher.wallet_address,
-        discountedTeoPrice,
-        course.id
-      );
+      // Use Layer 2 gas-free transfer instead of old web3Service
+      console.log('🎓 Processing Layer 2 TeoCoin course payment...');
+      
+      // Create Layer 2 payment request
+      const response = await fetch('/api/v1/services/discount/layer2/create/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({
+          course_id: parseInt(course.id),
+          discount_amount: 0, // Full TEO payment, not discount
+          discount_percentage: 0,
+          student_wallet: walletAddress,
+          teo_amount: discountedTeoPrice // Full TEO price
+        })
+      });
 
-      setTransactionHash(result.teacherTxHash || 'N/A');
+      const data = await response.json();
       
-      // Update balances after successful payment
-      const [newTeoBalance, newMaticBalance] = await Promise.all([
-        web3Service.getBalance(walletAddress),
-        web3Service.getMaticBalance(walletAddress)
-      ]);
-      
-      setBlockchainBalance(parseFloat(newTeoBalance));
-      setMaticBalance(parseFloat(newMaticBalance));
-      
-      setStep('success');
-      setLoading(false);
-      
-      if (onPurchaseComplete) {
-        onPurchaseComplete();
+      if (data.success) {
+        console.log('✅ Layer 2 TeoCoin payment processed successfully!');
+        setTransactionHash(data.data.transaction_hash || 'Layer2-' + Date.now());
+      if (data.success) {
+        console.log('✅ Layer 2 TeoCoin payment processed successfully!');
+        setTransactionHash(data.data.transaction_hash || 'Layer2-' + Date.now());
+        
+        // Complete the course purchase
+        const purchaseResult = await purchaseCourse(course.id, {
+          payment_method: 'teocoin_layer2',
+          transaction_hash: data.data.transaction_hash,
+          teo_amount: discountedTeoPrice,
+          gas_free: true,
+          layer2_processed: true
+        });
+
+        if (purchaseResult.success) {
+          // Update balances after successful payment
+          const [newTeoBalance, newMaticBalance] = await Promise.all([
+            web3Service.getBalance(walletAddress),
+            web3Service.getMaticBalance(walletAddress)
+          ]);
+          
+          setBlockchainBalance(parseFloat(newTeoBalance));
+          setMaticBalance(parseFloat(newMaticBalance));
+          
+          setStep('success');
+          setLoading(false);
+          
+          if (onPurchaseComplete) {
+            onPurchaseComplete();
+          }
+        } else {
+          throw new Error(purchaseResult.error || 'Purchase completion failed');
+        }
+      } else {
+        throw new Error(data.error || 'Layer 2 payment failed');
       }
       
     } catch (err) {
-      console.error('Error during TeoCoin purchase:', err);
-      setError(err.message || 'Errore durante l\'acquisto del corso con TeoCoin.');
+      console.error('❌ Layer 2 TeoCoin payment failed:', err);
+      setError(`Pagamento fallito: ${err.message}`);
       setStep('confirm');
       setLoading(false);
     }
@@ -311,7 +340,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
           <Button
             variant="success"
             size="lg"
-            onClick={handleTeoCoinPurchase}
+            onClick={handleTeoCoinDiscount}
             disabled={loading || !walletConnected || blockchainBalance < discountedTeoPrice}
           >
             {loading ? (
@@ -519,31 +548,31 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
                   </div>
                   <div className="d-flex justify-content-between mt-1">
                     <span className="text-muted">Saldo MATIC (gas)</span>
-                    <span className={`fw-bold ${maticBalance >= 0.01 ? 'text-success' : 'text-danger'}`}>
-                      {maticBalance.toFixed(4)} MATIC
+                    <span className="fw-bold text-success">
+                      🚀 Gas-Free (Layer 2)
                     </span>
                   </div>
                 </>
               )}
               </div>
               
-              {walletConnected && (blockchainBalance < course?.price || maticBalance < 0.01) && (
+              {walletConnected && blockchainBalance < course?.price && (
                 <Alert variant="warning">
                   <i className="feather icon-alert-triangle me-2"></i>
-                  {blockchainBalance < course?.price && (
-                    <div>
-                      <strong>⚠️ TeoCoin insufficienti!</strong> Hai bisogno di almeno {course?.price} TEO per acquistare questo corso.
-                    </div>
-                  )}
-                  {maticBalance < 0.01 && (
-                    <div>
-                      <strong>⚠️ MATIC insufficienti!</strong> Hai bisogno di almeno 0.01 MATIC per pagare le gas fees. 
-                      <br />
-                      <a href="https://faucet.polygon.technology/" target="_blank" rel="noopener noreferrer" className="text-decoration-none">
-                        Ottieni MATIC dal faucet Polygon →
-                      </a>
-                    </div>
-                  )}
+                  <div>
+                    <strong>⚠️ TeoCoin insufficienti!</strong> Hai bisogno di almeno {course?.price} TEO per acquistare questo corso.
+                  </div>
+                </Alert>
+              )}
+              
+              {walletConnected && blockchainBalance >= course?.price && (
+                <Alert variant="success">
+                  <i className="feather icon-check-circle me-2"></i>
+                  <div>
+                    <strong>✅ Pronto per l'acquisto gas-free!</strong> 
+                    <br />
+                    🚀 Layer 2 coprirà tutte le gas fees - paghi 0 ETH per il gas!
+                  </div>
                 </Alert>
               )}
               
@@ -569,14 +598,12 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
                 <Button 
                   variant="primary" 
                   onClick={handleConfirmPurchase} 
-                  disabled={loading || blockchainBalance < course?.price || maticBalance < 0.01}
+                  disabled={loading || blockchainBalance < course?.price}
                 >
                   <i className="feather icon-shopping-cart me-2"></i>
                   {blockchainBalance < course?.price ? 
                     'TeoCoin insufficienti' : 
-                    maticBalance < 0.01 ?
-                    'MATIC insufficienti' :
-                    `Conferma Acquisto (${course?.price} TEO)`
+                    `🚀 Acquista Gas-Free (${course?.price} TEO)`
                   }
                 </Button>
               )}

@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.contrib.auth.models import BaseUserManager
+from django.utils import timezone
 from decimal import Decimal
 
 class UserManager(BaseUserManager):
@@ -222,5 +223,133 @@ class UserAchievement(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.achievement.title}"
+
+
+class TeacherProfile(models.Model):
+    """
+    Teacher-specific profile for commission rates and staking data
+    
+    This model stores the dynamic commission rates and staking information
+    that are updated by the TeoCoin staking system.
+    """
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='teacher_profile',
+        help_text="User account associated with this teacher profile"
+    )
+    
+    # Commission and earnings data
+    commission_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=Decimal('50.00'),
+        help_text="Platform commission rate percentage (e.g., 50.00 for 50%)"
+    )
+    
+    # Staking information
+    staking_tier = models.CharField(
+        max_length=20, 
+        default='Bronze',
+        choices=[
+            ('Bronze', 'Bronze (0 TEO)'),
+            ('Silver', 'Silver (100 TEO)'),
+            ('Gold', 'Gold (300 TEO)'),
+            ('Platinum', 'Platinum (600 TEO)'),
+            ('Diamond', 'Diamond (1,000 TEO)'),
+        ],
+        help_text="Current staking tier based on TEO staked"
+    )
+    
+    staked_teo_amount = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Amount of TEO currently staked"
+    )
+    
+    # Blockchain integration
+    wallet_address = models.CharField(
+        max_length=42, 
+        blank=True, 
+        null=True,
+        help_text="Teacher's blockchain wallet address for staking"
+    )
+    
+    # Earnings tracking
+    total_earned_eur = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Total EUR earned from course sales"
+    )
+    
+    total_earned_teo = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Total TEO earned from student discounts"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_staking_update = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Profilo Insegnante"
+        verbose_name_plural = "Profili Insegnanti"
+        indexes = [
+            models.Index(fields=['staking_tier']),
+            models.Index(fields=['commission_rate']),
+            models.Index(fields=['wallet_address']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.staking_tier} ({self.commission_rate}%)"
+    
+    @property
+    def teacher_earnings_percentage(self):
+        """Calculate teacher's earnings percentage (100% - commission%)"""
+        return Decimal('100.00') - self.commission_rate
+    
+    @property
+    def commission_rate_decimal(self):
+        """Get commission rate as decimal (for calculations)"""
+        return self.commission_rate / Decimal('100.00')
+    
+    def update_from_staking_info(self, staking_info):
+        """
+        Update teacher profile with data from TeoCoin staking service
+        
+        Args:
+            staking_info: Dict from TeoCoinStakingService.get_user_staking_info()
+        """
+        self.commission_rate = Decimal(str(staking_info.get('commission_percentage', 50.00)))
+        self.staking_tier = staking_info.get('tier_name', 'Bronze')
+        self.staked_teo_amount = Decimal(str(staking_info.get('staked_amount_formatted', 0.00)))
+        self.wallet_address = staking_info.get('wallet_address', self.wallet_address)
+        self.last_staking_update = timezone.now()
+        self.save()
+        
+    def can_stake_more(self):
+        """Check if teacher can progress to next tier"""
+        tier_requirements = {
+            'Bronze': Decimal('100.00'),    # Next: Silver
+            'Silver': Decimal('300.00'),    # Next: Gold  
+            'Gold': Decimal('600.00'),      # Next: Platinum
+            'Platinum': Decimal('1000.00'), # Next: Diamond
+            'Diamond': None                 # Already at max
+        }
+        
+        next_requirement = tier_requirements.get(self.staking_tier)
+        if next_requirement is None:
+            return False, "Already at maximum tier (Diamond)"
+        
+        needed = next_requirement - self.staked_teo_amount
+        if needed <= 0:
+            return True, "Ready to upgrade tier!"
+        
+        return True, f"Need {needed} more TEO for next tier"
 
 

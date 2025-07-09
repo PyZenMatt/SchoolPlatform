@@ -656,7 +656,13 @@ def refill_reward_pool_matic(request):
         
         # Sign and send transaction
         signed_tx = teocoin_service.w3.eth.account.sign_transaction(transaction, admin_private_key)
-        tx_hash = teocoin_service.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        
+        # Handle Web3.py version compatibility
+        raw_transaction = getattr(signed_tx, 'raw_transaction', None) or getattr(signed_tx, 'rawTransaction', None)
+        if raw_transaction is None:
+            raise ValueError("Unable to get raw transaction from signed transaction")
+        
+        tx_hash = teocoin_service.w3.eth.send_raw_transaction(raw_transaction)
         
         # Wait for transaction receipt
         tx_receipt = teocoin_service.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)

@@ -86,8 +86,7 @@ Teacher Bonus: 25% bonus from reward pool (when choosing TeoCoin)
 2. Platform creates request via TeoCoinDiscount contract
 3. Teacher receives notification in dashboard
 4. Teacher chooses:
-   ├── Approve + Receive TeoCoin
-   ├── Approve + Receive Full Fiat
+   ├── Approve + Receive fiat with discount + TeoCoin
    └── Decline Request
 5. Platform executes choice (covers all gas fees)
 6. Student receives discount confirmation

@@ -149,3 +149,16 @@ export const getPaymentSummary = async (courseId) => {
   
   return response;
 };
+
+export const completeHybridPayment = async (courseId, paymentIntentId) => {
+  console.log('🔄 Calling completeHybridPayment API:', { courseId, paymentIntentId });
+  
+  // Call the backend completion endpoint that triggers TeoCoin transfer and teacher notification
+  const response = await api.put(`courses/${courseId}/hybrid-payment/`, {
+    payment_intent_id: paymentIntentId
+  });
+  
+  console.log('✅ Hybrid payment completion response:', response.data);
+  
+  return response;
+};

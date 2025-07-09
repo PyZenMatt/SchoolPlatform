@@ -323,16 +323,91 @@ class PaymentService(TransactionalService):
     """
     Service for handling payment operations.
     
-    Handles course purchases, commission calculations, 
+    Handles course purchases, commission calculations with dynamic staking tiers,
     blockchain verification, and transaction recording.
     """
     
-    # Payment configuration
-    PLATFORM_COMMISSION_RATE = Decimal('0.50')  # 50% base rate
+    # Fallback commission rate for non-teachers or when profile is missing
+    DEFAULT_COMMISSION_RATE = Decimal('0.50')  # 50% fallback
     
     def __init__(self):
         super().__init__()
         self.service_name = "PaymentService"
+    
+    def get_teacher_commission_rate(self, teacher_user) -> Decimal:
+        """
+        Get dynamic commission rate for a teacher based on staking tier
+        
+        Args:
+            teacher_user: User object for the teacher
+            
+        Returns:
+            Decimal: Commission rate (0.50 for 50%, 0.25 for 25%, etc.)
+        """
+        try:
+            # Check if user is teacher and has profile
+            if teacher_user.role != 'teacher':
+                return self.DEFAULT_COMMISSION_RATE
+            
+            if not hasattr(teacher_user, 'teacher_profile') or not teacher_user.teacher_profile:
+                self.log_warning(f"Teacher {teacher_user.email} missing TeacherProfile - using default rate")
+                return self.DEFAULT_COMMISSION_RATE
+            
+            # Get commission rate from teacher profile
+            profile = teacher_user.teacher_profile
+            commission_decimal = profile.commission_rate_decimal
+            
+            self.log_info(f"Teacher {teacher_user.email} commission: {profile.commission_rate}% ({profile.staking_tier} tier)")
+            return commission_decimal
+            
+        except Exception as e:
+            self.log_error(f"Error getting commission rate for {teacher_user.email}: {e}")
+            return self.DEFAULT_COMMISSION_RATE
+    
+    def update_teacher_commission_from_staking(self, teacher_user) -> bool:
+        """
+        Update teacher's commission rate based on current staking info
+        
+        Args:
+            teacher_user: User object for the teacher
+            
+        Returns:
+            bool: True if updated successfully, False otherwise
+        """
+        try:
+            if teacher_user.role != 'teacher':
+                return False
+            
+            if not hasattr(teacher_user, 'teacher_profile') or not teacher_user.teacher_profile:
+                self.log_error(f"Cannot update commission for {teacher_user.email} - no TeacherProfile")
+                return False
+            
+            # Get staking service and current staking info
+            from services.teocoin_staking_service import teocoin_staking_service
+            
+            if not teacher_user.wallet_address:
+                self.log_warning(f"Teacher {teacher_user.email} has no wallet address for staking lookup")
+                return False
+            
+            # Get staking info from blockchain
+            staking_info = teocoin_staking_service.get_user_staking_info(teacher_user.wallet_address)
+            
+            if staking_info and staking_info.get('success'):
+                # Update teacher profile with new staking data
+                profile = teacher_user.teacher_profile
+                old_rate = profile.commission_rate
+                
+                profile.update_from_staking_info(staking_info)
+                
+                self.log_info(f"Updated {teacher_user.email} commission: {old_rate}% → {profile.commission_rate}% ({profile.staking_tier})")
+                return True
+            else:
+                self.log_warning(f"Could not get staking info for {teacher_user.email}")
+                return False
+                
+        except Exception as e:
+            self.log_error(f"Error updating commission from staking for {teacher_user.email}: {e}")
+            return False
     
     def initiate_course_purchase(
         self,
@@ -402,9 +477,11 @@ class PaymentService(TransactionalService):
                     required=float(course.price_eur),
                     available=float(balance)
                 )
-            # Calculate payment breakdown
-            commission_amount = course.price_eur * self.PLATFORM_COMMISSION_RATE
+            # Calculate payment breakdown with dynamic commission rate
+            commission_rate = self.get_teacher_commission_rate(course.teacher)
+            commission_amount = course.price_eur * commission_rate
             teacher_amount = course.price_eur - commission_amount
+            
             return {
                 'payment_required': True,
                 'course_id': course.pk,
@@ -412,7 +489,7 @@ class PaymentService(TransactionalService):
                 'course_price': float(course.price_eur),
                 'teacher_amount': float(teacher_amount),
                 'commission_amount': float(commission_amount),
-                'commission_rate': f"{float(self.PLATFORM_COMMISSION_RATE * 100)}%",
+                'commission_rate': f"{float(commission_rate * 100)}%",
                 'teacher_address': course.teacher.wallet_address,
                 'student_address': wallet_address,
                 'student_balance': float(balance),
@@ -420,7 +497,7 @@ class PaymentService(TransactionalService):
                     'total_price': float(course.price_eur),
                     'teacher_receives': float(teacher_amount),
                     'platform_commission': float(commission_amount),
-                    'commission_percentage': float(self.PLATFORM_COMMISSION_RATE * 100)
+                    'commission_percentage': float(commission_rate * 100)
                 }
             }
         
@@ -476,8 +553,9 @@ class PaymentService(TransactionalService):
                     400
                 )
             
-            # Calculate amounts
-            commission_amount = course.price_eur * self.PLATFORM_COMMISSION_RATE
+            # Calculate amounts with dynamic commission rate
+            commission_rate = self.get_teacher_commission_rate(course.teacher)
+            commission_amount = course.price_eur * commission_rate
             teacher_amount = course.price_eur - commission_amount
             
             # Enroll student in course
@@ -654,7 +732,7 @@ class PaymentService(TransactionalService):
                 'teacher_earnings': float(total_teacher_earnings),
                 'platform_commission': float(total_commission),
                 'average_sale_value': float(total_revenue / total_sales) if total_sales > 0 else 0,
-                'commission_rate': f"{float(self.PLATFORM_COMMISSION_RATE * 100)}%"
+                'commission_rate': f"{float(self.DEFAULT_COMMISSION_RATE * 100)}%"
             }
             
         except Exception as e:
@@ -964,8 +1042,9 @@ class PaymentService(TransactionalService):
                         # Execute the blockchain transfer via API call
                         import requests
                         
-                        # Calculate commission using PLATFORM_COMMISSION_RATE
-                        teacher_percentage = Decimal('1.00') - self.PLATFORM_COMMISSION_RATE  # 50%
+                        # Calculate commission using dynamic rate
+                        teacher_commission_rate = self.get_teacher_commission_rate(course.teacher)
+                        teacher_percentage = Decimal('1.00') - teacher_commission_rate
                         teo_required_decimal = Decimal(str(teo_required))
                         
                         transfer_data = {
@@ -974,7 +1053,7 @@ class PaymentService(TransactionalService):
                             'course_price': str(teo_required_decimal),
                             'course_id': course_id,
                             'teacher_amount': str(teo_required_decimal * teacher_percentage),  # 50% to teacher
-                            'commission_amount': str(teo_required_decimal * self.PLATFORM_COMMISSION_RATE),  # 50% commission
+                            'commission_amount': str(teo_required_decimal * teacher_commission_rate),  # Dynamic commission
                             'approval_tx_hash': f'payment_intent_{payment_intent_id}'
                         }
                         

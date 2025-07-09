@@ -9,15 +9,30 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title TeoCoinDiscount
- * @dev Layer 2 gas-free discount system for TeoCoin
+ * @dev Layer 2 gas-free discount system for TeoCoin with immediate TEO deduction
+ * 
+ * Business Logic:
+ * Example: €100 course, 10% discount (100 TEO)
+ * 
+ * 1. Student pays: €90 + 100 TEO (TEO deducted immediately from student wallet)
+ * 2. Teacher gets notification with two options:
+ * 
+ * Option A - Teacher ACCEPTS TEO payment:
+ * - Teacher gets: €40 + 125 TEO (100 TEO + 25% bonus)
+ * - Platform gets: €50
+ * 
+ * Option B - Teacher DECLINES TEO payment:
+ * - Teacher gets: €50 (50% of course price)
+ * - Platform gets: €40 + 100 TEO (absorbs discount cost)
  * 
  * Features:
  * - Students request discounts without paying gas fees
+ * - Immediate TEO deduction when request is created (escrow)
  * - Teachers approve/decline discount requests
  * - Platform pays all gas fees for seamless UX
- * - Direct MetaMask to MetaMask transfers
  * - Automatic teacher bonus from reward pool
  * - Time-limited discount requests (auto-decline after 2 hours)
+ * - TEO returns to reward pool on expiration
  */
 contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     using ECDSA for bytes32;
@@ -136,7 +151,7 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     // ========== MAIN FUNCTIONS ==========
     
     /**
-     * @dev Create a discount request (called by platform, student pays no gas)
+     * @dev Create a discount request with immediate TEO deduction (called by platform, student pays no gas)
      * @param student Student address requesting discount
      * @param teacher Teacher address for the course
      * @param courseId Course identifier
@@ -160,7 +175,7 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         
         // Calculate TEO cost and teacher bonus
         uint256 discountValue = (coursePrice * discountPercent) / 100; // Discount in EUR cents
-        uint256 teoCost = (discountValue * TEO_TO_EUR_RATE) / 100; // Convert to TEO (accounting for cents)
+        uint256 teoCost = (discountValue * TEO_TO_EUR_RATE * 10**18) / 100; // Convert to TEO tokens with 18 decimals
         uint256 teacherBonus = (teoCost * TEACHER_BONUS_PERCENT) / 100;
         
         // Verify student has enough TEO
@@ -171,6 +186,12 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         
         // Verify student signature
         require(_verifyStudentSignature(student, courseId, teoCost, studentSignature), "Invalid student signature");
+        
+        // *** IMMEDIATE TEO DEDUCTION - Transfer TEO from student to platform escrow ***
+        require(
+            teoToken.transferFrom(student, address(this), teoCost),
+            "TEO deduction from student failed"
+        );
         
         // Create request
         uint256 requestId = ++_requestIdCounter;
@@ -200,7 +221,9 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     }
     
     /**
-     * @dev Approve discount request and execute transfers (platform pays gas)
+     * @dev Approve discount request - Teacher accepts TEO payment
+     * Teacher gets: €40 + 125 TEO (original + 25% bonus)
+     * Platform gets: €50
      * @param requestId Request ID to approve
      */
     function approveDiscountRequest(uint256 requestId) 
@@ -215,14 +238,14 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         // Update status
         request.status = DiscountStatus.Approved;
         
-        // Execute transfers
-        // 1. Transfer TEO from student to teacher (platform pays gas)
+        // Execute transfers for TEACHER ACCEPTS scenario:
+        // 1. Transfer TEO from contract escrow to teacher
         require(
-            teoToken.transferFrom(request.student, request.teacher, request.teoCost),
-            "Student to teacher transfer failed"
+            teoToken.transfer(request.teacher, request.teoCost),
+            "Escrow to teacher TEO transfer failed"
         );
         
-        // 2. Transfer bonus from reward pool to teacher
+        // 2. Transfer 25% bonus from reward pool to teacher
         require(
             teoToken.transferFrom(rewardPool, request.teacher, request.teacherBonus),
             "Reward pool bonus transfer failed"
@@ -238,7 +261,9 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     }
     
     /**
-     * @dev Decline discount request
+     * @dev Decline discount request - Teacher refuses TEO payment
+     * Teacher gets: €50 (50% of course price)
+     * Platform gets: €40 + 100 TEO (absorbs discount cost and gets the TEO)
      * @param requestId Request ID to decline
      * @param reason Reason for declining
      */
@@ -251,11 +276,15 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         DiscountRequest storage request = discountRequests[requestId];
         request.status = DiscountStatus.Declined;
         
+        // In DECLINE scenario, platform keeps the TEO (already in contract)
+        // TEO stays in contract for platform to withdraw later
+        // Teacher gets 50% EUR payment (handled by backend)
+        
         emit DiscountDeclined(requestId, request.student, request.teacher, reason);
     }
     
     /**
-     * @dev Process expired requests (can be called by anyone)
+     * @dev Process expired requests - TEO goes back to reward pool
      * @param requestIds Array of request IDs to check for expiration
      */
     function processExpiredRequests(uint256[] memory requestIds) external whenNotPaused {
@@ -265,11 +294,19 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
                 discountRequests[requestId].status == DiscountStatus.Pending &&
                 block.timestamp > discountRequests[requestId].deadline) {
                 
-                discountRequests[requestId].status = DiscountStatus.Expired;
+                DiscountRequest storage request = discountRequests[requestId];
+                request.status = DiscountStatus.Expired;
+                
+                // Return TEO from contract escrow back to reward pool
+                require(
+                    teoToken.transfer(rewardPool, request.teoCost),
+                    "TEO return to reward pool failed"
+                );
+                
                 emit DiscountExpired(
                     requestId, 
-                    discountRequests[requestId].student, 
-                    discountRequests[requestId].teacher
+                    request.student, 
+                    request.teacher
                 );
             }
         }
@@ -306,7 +343,7 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         require(discountPercent >= 5 && discountPercent <= 15, "Invalid discount percent");
         
         uint256 discountValue = (coursePrice * discountPercent) / 100;
-        uint256 teoCost = (discountValue * TEO_TO_EUR_RATE) / 100;
+        uint256 teoCost = (discountValue * TEO_TO_EUR_RATE * 10**18) / 100; // Convert to TEO tokens with 18 decimals
         uint256 teacherBonus = (teoCost * TEACHER_BONUS_PERCENT) / 100;
         
         return (teoCost, teacherBonus);
@@ -339,6 +376,27 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         address oldAccount = platformAccount;
         platformAccount = newPlatformAccount;
         emit PlatformAccountUpdated(oldAccount, newPlatformAccount);
+    }
+    
+    /**
+     * @dev Withdraw TEO from declined requests to platform account (owner only)
+     * @param amount Amount of TEO to withdraw
+     */
+    function withdrawPlatformTeo(uint256 amount) external onlyOwner {
+        require(amount > 0, "Amount must be positive");
+        require(teoToken.balanceOf(address(this)) >= amount, "Insufficient contract TEO balance");
+        
+        require(
+            teoToken.transfer(platformAccount, amount),
+            "Platform TEO withdrawal failed"
+        );
+    }
+    
+    /**
+     * @dev Get contract's TEO balance (from declined requests)
+     */
+    function getContractTeoBalance() external view returns (uint256) {
+        return teoToken.balanceOf(address(this));
     }
     
     /**

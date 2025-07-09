@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Lesson, Exercise, Course, CourseEnrollment, ExerciseSubmission
+from .models import (
+    Lesson, Exercise, Course, CourseEnrollment, ExerciseSubmission,
+    TeacherDiscountDecision, TeacherChoicePreference
+)
 from users.models import User
 from users.serializers import UserSerializer
 
@@ -246,3 +249,78 @@ class StudentCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'title', 'description', 'price_eur']
+
+
+class TeacherDiscountDecisionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for teacher discount decisions
+    """
+    student_email = serializers.CharField(source='student.email', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    teo_cost_display = serializers.DecimalField(max_digits=10, decimal_places=4, read_only=True)
+    teacher_bonus_display = serializers.DecimalField(max_digits=10, decimal_places=4, read_only=True)
+    discounted_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    teacher_earnings_if_accepted = serializers.SerializerMethodField()
+    teacher_earnings_if_declined = serializers.SerializerMethodField()
+    is_expired = serializers.BooleanField(read_only=True)
+    time_remaining = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TeacherDiscountDecision
+        fields = [
+            'id', 'student_email', 'course_title', 'course_price', 'discount_percentage',
+            'teo_cost_display', 'teacher_bonus_display', 'discounted_price',
+            'teacher_commission_rate', 'teacher_staking_tier', 'decision',
+            'decision_made_at', 'expires_at', 'created_at', 'is_expired',
+            'time_remaining', 'teacher_earnings_if_accepted', 'teacher_earnings_if_declined'
+        ]
+        read_only_fields = [
+            'id', 'student_email', 'course_title', 'created_at',
+            'teo_cost_display', 'teacher_bonus_display', 'discounted_price', 'is_expired'
+        ]
+    
+    def get_teacher_earnings_if_accepted(self, obj):
+        return obj.teacher_earnings_if_accepted
+    
+    def get_teacher_earnings_if_declined(self, obj):
+        return obj.teacher_earnings_if_declined
+    
+    def get_time_remaining(self, obj):
+        if obj.is_expired:
+            return 'Expired'
+        
+        from django.utils import timezone
+        remaining = obj.expires_at - timezone.now()
+        hours = remaining.total_seconds() / 3600
+        
+        if hours < 1:
+            minutes = remaining.total_seconds() / 60
+            return f'{int(minutes)} minutes'
+        elif hours < 24:
+            return f'{int(hours)} hours'
+        else:
+            days = hours / 24
+            return f'{int(days)} days'
+
+
+class TeacherChoicePreferenceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for teacher choice preferences
+    """
+    teacher_email = serializers.CharField(source='teacher.email', read_only=True)
+    preference_display = serializers.CharField(source='get_preference_display', read_only=True)
+    
+    class Meta:
+        model = TeacherChoicePreference
+        fields = [
+            'id', 'teacher_email', 'preference', 'preference_display',
+            'minimum_teo_threshold', 'email_notifications', 'immediate_notifications',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'teacher_email', 'created_at', 'updated_at']
+    
+    def validate_minimum_teo_threshold(self, value):
+        """Validate threshold is positive if provided"""
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('Threshold must be positive')
+        return value

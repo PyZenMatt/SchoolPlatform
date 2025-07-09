@@ -271,9 +271,10 @@ class TeoCoinService:
             
         except Exception as e:
             logger.error(f"Errore nel trasferimento con gas reward pool: {e}")
-            # Fallback: se transferFrom non funziona, usa trasferimento diretto dalla reward pool
-            logger.info("Fallback: usando trasferimento diretto dalla reward pool")
-            return self.transfer_from_reward_pool(to_address, amount)
+            # CRITICAL FIX: Do NOT fallback to giving TEO to student!
+            # The original transfer failed, so return None to indicate failure
+            logger.error("Transfer failed - this likely means the student hasn't approved the platform to spend their TEO")
+            return None
     
     # Class-level cache for token info to avoid repeated RPC calls
     _token_info_cache = None

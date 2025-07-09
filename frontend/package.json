@@ -18,6 +18,10 @@
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.2.0",
+    "@mui/material": "^7.2.0",
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@react-google-maps/api": "^2.19.3",
     "@stripe/react-stripe-js": "^2.9.0",
