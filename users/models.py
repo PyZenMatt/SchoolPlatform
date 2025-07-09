@@ -291,6 +291,19 @@ class TeacherProfile(models.Model):
         help_text="Total TEO earned from student discounts"
     )
     
+    # Course statistics
+    total_courses = models.PositiveIntegerField(
+        default=0,
+        help_text="Total number of courses created by this teacher"
+    )
+    
+    total_earnings = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Combined total earnings (EUR equivalent)"
+    )
+    
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -351,5 +364,50 @@ class TeacherProfile(models.Model):
             return True, "Ready to upgrade tier!"
         
         return True, f"Need {needed} more TEO for next tier"
+
+    def update_tier_and_commission(self):
+        """
+        Update teacher's tier and commission based on current staked amount
+        
+        This method calculates the appropriate tier based on the staked amount
+        and updates both the tier and commission rate accordingly.
+        """
+        # Define tier thresholds and commission rates (matches staking_config.py)
+        tier_config = {
+            'Bronze': {'min_stake': Decimal('0'), 'commission_rate': Decimal('50.00')},
+            'Silver': {'min_stake': Decimal('100.00'), 'commission_rate': Decimal('44.00')},
+            'Gold': {'min_stake': Decimal('300.00'), 'commission_rate': Decimal('38.00')},
+            'Platinum': {'min_stake': Decimal('600.00'), 'commission_rate': Decimal('31.00')},
+            'Diamond': {'min_stake': Decimal('1000.00'), 'commission_rate': Decimal('25.00')},
+        }
+        
+        # Determine the appropriate tier based on staked amount
+        current_staked = self.staked_teo_amount or Decimal('0')
+        new_tier = 'Bronze'  # Default
+        new_commission = Decimal('50.00')  # Default
+        
+        # Check from highest tier down
+        for tier_name, config in reversed(list(tier_config.items())):
+            if current_staked >= config['min_stake']:
+                new_tier = tier_name
+                new_commission = config['commission_rate']
+                break
+        
+        # Update if changed
+        if self.staking_tier != new_tier or self.commission_rate != new_commission:
+            self.staking_tier = new_tier
+            self.commission_rate = new_commission
+            self.last_staking_update = timezone.now()
+            
+            # Log the change
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Updated teacher {self.user.email}: Tier={new_tier}, Commission={new_commission}%")
+        
+        return {
+            'tier': new_tier,
+            'commission_rate': new_commission,
+            'staked_amount': current_staked
+        }
 
 

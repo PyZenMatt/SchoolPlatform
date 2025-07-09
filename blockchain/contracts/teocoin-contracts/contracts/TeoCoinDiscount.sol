@@ -44,7 +44,7 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     address public platformAccount;
     
     // Discount request configuration
-    uint256 public constant REQUEST_TIMEOUT = 2 hours;
+    uint256 public constant REQUEST_TIMEOUT = 24 hours; // 24 hours for teacher decision
     uint256 public constant TEACHER_BONUS_PERCENT = 25; // 25% bonus on top of student payment
     uint256 public constant MAX_DISCOUNT_PERCENT = 15; // Maximum 15% discount
     
@@ -262,8 +262,8 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
     
     /**
      * @dev Decline discount request - Teacher refuses TEO payment
-     * Teacher gets: €50 (50% of course price)
-     * Platform gets: €40 + 100 TEO (absorbs discount cost and gets the TEO)
+     * Student still gets discount, platform absorbs cost
+     * TEO from student goes to reward pool (platform)
      * @param requestId Request ID to decline
      * @param reason Reason for declining
      */
@@ -276,9 +276,11 @@ contract TeoCoinDiscount is ReentrancyGuard, Ownable, Pausable {
         DiscountRequest storage request = discountRequests[requestId];
         request.status = DiscountStatus.Declined;
         
-        // In DECLINE scenario, platform keeps the TEO (already in contract)
-        // TEO stays in contract for platform to withdraw later
-        // Teacher gets 50% EUR payment (handled by backend)
+        // FIXED: Transfer TEO from contract escrow to reward pool (platform absorbs)
+        require(
+            teoToken.transfer(rewardPool, request.teoCost),
+            "TEO transfer to reward pool failed"
+        );
         
         emit DiscountDeclined(requestId, request.student, request.teacher, reason);
     }

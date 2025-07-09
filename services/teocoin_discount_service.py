@@ -67,7 +67,7 @@ class TeoCoinDiscountService:
         self.platform_account: Optional[Account] = None
         
         # Configuration
-        self.REQUEST_TIMEOUT_HOURS = 2
+        self.REQUEST_TIMEOUT_HOURS = 24  # 24 hours for teacher decision
         self.TEACHER_BONUS_PERCENT = 25
         self.MAX_DISCOUNT_PERCENT = 15
         # SIMPLIFIED CALCULATION: 1 TEO per €1 discount for reasonable amounts

@@ -1608,3 +1608,578 @@ def check_student_approval(request):
         return Response({
             'error': f'Failed to check approval: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================
+# PHASE 5.3: STAKING MANAGEMENT APIs
+# ============================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_teacher_staking_info(request):
+    """
+    Get comprehensive staking information for the authenticated teacher.
+    
+    Returns:
+        - Current staked amount
+        - Current staking tier (Bronze, Silver, Gold, Platinum, Diamond)
+        - Commission rate based on tier
+        - Next tier requirements
+        - Unstaking periods and penalties
+        - Available balance for staking
+    """
+    try:
+        user = request.user
+        
+        # Verify user is a teacher
+        from users.models import TeacherProfile
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return Response({
+                'error': 'User is not a registered teacher'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if not user.wallet_address:
+            return Response({
+                'error': 'Wallet not linked to teacher account'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get staking information from blockchain service
+        staking_info = teocoin_service.get_teacher_staking_info(user.wallet_address)
+        
+        # Add teacher profile information
+        staking_info.update({
+            'teacher_id': teacher_profile.id,
+            'current_tier': teacher_profile.staking_tier,
+            'commission_rate': teacher_profile.commission_rate,
+            'total_courses': teacher_profile.total_courses,
+            'total_earnings': str(teacher_profile.total_earnings)
+        })
+        
+        logger.info(f"Retrieved staking info for teacher {user.username}: Tier {teacher_profile.staking_tier}")
+        
+        return Response(staking_info)
+        
+    except Exception as e:
+        logger.error(f"Error getting teacher staking info for {user.username}: {e}")
+        return Response({
+            'error': 'Failed to retrieve staking information'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def stake_tokens(request):
+    """
+    Stake TEO tokens to improve teacher commission rate and tier.
+    
+    Request Body:
+        amount (str): Amount of TEO tokens to stake
+        
+    Returns:
+        - Transaction hash
+        - New staked amount
+        - New tier (if changed)
+        - New commission rate
+    """
+    try:
+        user = request.user
+        amount = request.data.get('amount')
+        
+        if not amount:
+            return Response({
+                'error': 'Amount is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify user is a teacher
+        from users.models import TeacherProfile
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return Response({
+                'error': 'User is not a registered teacher'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if not user.wallet_address:
+            return Response({
+                'error': 'Wallet not linked to teacher account'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert amount to Decimal
+        try:
+            amount_decimal = Decimal(str(amount))
+            if amount_decimal <= 0:
+                return Response({
+                    'error': 'Amount must be positive'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Invalid amount format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if teacher has enough tokens
+        balance = teocoin_service.get_balance(user.wallet_address)
+        if balance < amount_decimal:
+            return Response({
+                'error': f'Insufficient balance. Available: {balance} TEO, Required: {amount_decimal} TEO'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Execute staking transaction
+        logger.info(f"Teacher {user.username} staking {amount_decimal} TEO")
+        staking_result = teocoin_service.stake_tokens(user.wallet_address, amount_decimal)
+        
+        if not staking_result or not staking_result.get('success'):
+            error_msg = staking_result.get('error', 'Staking transaction failed') if staking_result else 'Staking transaction failed'
+            return Response({
+                'error': error_msg
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Update teacher profile with new staking information
+        old_tier = teacher_profile.staking_tier
+        old_commission = teacher_profile.commission_rate
+        
+        teacher_profile.staked_teo_amount = staking_result['total_staked']
+        teacher_profile.update_tier_and_commission()
+        teacher_profile.save()
+        
+        # Record transaction
+        BlockchainTransaction.objects.create(
+            user=user,
+            transaction_type='stake_tokens',
+            amount=amount_decimal,
+            transaction_hash=staking_result['tx_hash'],
+            from_address=user.wallet_address,
+            to_address=staking_result.get('staking_contract_address'),
+            status='completed',
+            notes=f'Staked {amount_decimal} TEO - Tier: {old_tier} → {teacher_profile.staking_tier}'
+        )
+        
+        tier_changed = old_tier != teacher_profile.staking_tier
+        commission_changed = old_commission != teacher_profile.commission_rate
+        
+        response_data = {
+            'success': True,
+            'message': f'Successfully staked {amount_decimal} TEO',
+            'transaction_hash': staking_result['tx_hash'],
+            'staked_amount': str(staking_result['total_staked']),
+            'new_tier': teacher_profile.staking_tier,
+            'new_commission_rate': teacher_profile.commission_rate,
+            'tier_changed': tier_changed,
+            'commission_changed': commission_changed
+        }
+        
+        if tier_changed:
+            response_data['tier_change_message'] = f'Congratulations! You have been promoted from {old_tier} to {teacher_profile.staking_tier} tier!'
+            logger.info(f"Teacher {user.username} promoted: {old_tier} → {teacher_profile.staking_tier}")
+        
+        return Response(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error staking tokens for teacher {user.username}: {e}")
+        return Response({
+            'error': 'Failed to stake tokens'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def unstake_tokens(request):
+    """
+    Unstake TEO tokens with appropriate waiting period and penalties.
+    
+    Request Body:
+        amount (str): Amount of TEO tokens to unstake
+        
+    Returns:
+        - Transaction hash
+        - Unstaking schedule (immediate vs waiting period)
+        - Penalty information (if applicable)
+        - New staked amount and tier
+    """
+    try:
+        user = request.user
+        amount = request.data.get('amount')
+        
+        if not amount:
+            return Response({
+                'error': 'Amount is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify user is a teacher
+        from users.models import TeacherProfile
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return Response({
+                'error': 'User is not a registered teacher'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if not user.wallet_address:
+            return Response({
+                'error': 'Wallet not linked to teacher account'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert amount to Decimal
+        try:
+            amount_decimal = Decimal(str(amount))
+            if amount_decimal <= 0:
+                return Response({
+                    'error': 'Amount must be positive'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Invalid amount format'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if teacher has enough staked tokens
+        current_staked = teacher_profile.staked_teo_amount or Decimal('0')
+        if current_staked < amount_decimal:
+            return Response({
+                'error': f'Insufficient staked tokens. Current staked: {current_staked} TEO, Requested: {amount_decimal} TEO'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Execute unstaking transaction
+        logger.info(f"Teacher {user.username} unstaking {amount_decimal} TEO")
+        unstaking_result = teocoin_service.unstake_tokens(user.wallet_address, amount_decimal)
+        
+        if not unstaking_result or not unstaking_result.get('success'):
+            error_msg = unstaking_result.get('error', 'Unstaking transaction failed') if unstaking_result else 'Unstaking transaction failed'
+            return Response({
+                'error': error_msg
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Update teacher profile with new staking information
+        old_tier = teacher_profile.staking_tier
+        old_commission = teacher_profile.commission_rate
+        
+        teacher_profile.staked_teo_amount = unstaking_result['remaining_staked']
+        teacher_profile.update_tier_and_commission()
+        teacher_profile.save()
+        
+        # Record transaction
+        BlockchainTransaction.objects.create(
+            user=user,
+            transaction_type='unstake_tokens',
+            amount=-amount_decimal,  # Negative for unstaking
+            transaction_hash=unstaking_result['tx_hash'],
+            from_address=unstaking_result.get('staking_contract_address'),
+            to_address=user.wallet_address,
+            status='pending' if unstaking_result.get('waiting_period') else 'completed',
+            notes=f'Unstaked {amount_decimal} TEO - Tier: {old_tier} → {teacher_profile.staking_tier}' + 
+                  (f' - Waiting period: {unstaking_result.get("waiting_period_days")} days' if unstaking_result.get('waiting_period') else '')
+        )
+        
+        tier_changed = old_tier != teacher_profile.staking_tier
+        commission_changed = old_commission != teacher_profile.commission_rate
+        
+        response_data = {
+            'success': True,
+            'message': f'Unstaking request submitted for {amount_decimal} TEO',
+            'transaction_hash': unstaking_result['tx_hash'],
+            'remaining_staked': str(unstaking_result['remaining_staked']),
+            'new_tier': teacher_profile.staking_tier,
+            'new_commission_rate': teacher_profile.commission_rate,
+            'tier_changed': tier_changed,
+            'commission_changed': commission_changed,
+            'immediate_unstake': not unstaking_result.get('waiting_period', False),
+            'waiting_period_days': unstaking_result.get('waiting_period_days', 0),
+            'penalty_rate': unstaking_result.get('penalty_rate', 0),
+            'penalty_amount': str(unstaking_result.get('penalty_amount', 0))
+        }
+        
+        if tier_changed:
+            response_data['tier_change_message'] = f'Your tier has been reduced from {old_tier} to {teacher_profile.staking_tier} due to unstaking.'
+            logger.info(f"Teacher {user.username} demoted: {old_tier} → {teacher_profile.staking_tier}")
+        
+        if unstaking_result.get('waiting_period'):
+            response_data['unstaking_message'] = f'Your tokens will be available for withdrawal in {unstaking_result["waiting_period_days"]} days.'
+        
+        return Response(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error unstaking tokens for teacher {user.username}: {e}")
+        return Response({
+            'error': 'Failed to unstake tokens'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_unstaking_schedule(request):
+    """
+    Get the teacher's pending unstaking schedule.
+    
+    Returns list of pending unstaking requests with unlock dates.
+    """
+    try:
+        user = request.user
+        
+        # Verify user is a teacher
+        from users.models import TeacherProfile
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return Response({
+                'error': 'User is not a registered teacher'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if not user.wallet_address:
+            return Response({
+                'error': 'Wallet not linked to teacher account'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get unstaking schedule from blockchain
+        unstaking_schedule = teocoin_service.get_unstaking_schedule(user.wallet_address)
+        
+        return Response({
+            'unstaking_requests': unstaking_schedule,
+            'total_pending': len(unstaking_schedule),
+            'total_amount_pending': str(sum(Decimal(request['amount']) for request in unstaking_schedule))
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting unstaking schedule for teacher {user.username}: {e}")
+        return Response({
+            'error': 'Failed to retrieve unstaking schedule'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def withdraw_unstaked_tokens(request):
+    """
+    Withdraw tokens that have completed their unstaking period.
+    
+    Request Body:
+        unstaking_id (str, optional): Specific unstaking request ID to withdraw
+                                     If not provided, withdraws all available tokens
+    """
+    try:
+        user = request.user
+        unstaking_id = request.data.get('unstaking_id')
+        
+        # Verify user is a teacher
+        from users.models import TeacherProfile
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return Response({
+                'error': 'User is not a registered teacher'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if not user.wallet_address:
+            return Response({
+                'error': 'Wallet not linked to teacher account'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Execute withdrawal
+        logger.info(f"Teacher {user.username} withdrawing unstaked tokens" + (f" (ID: {unstaking_id})" if unstaking_id else " (all available)"))
+        withdrawal_result = teocoin_service.withdraw_unstaked_tokens(user.wallet_address, unstaking_id)
+        
+        if not withdrawal_result or not withdrawal_result.get('success'):
+            error_msg = withdrawal_result.get('error', 'Withdrawal failed') if withdrawal_result else 'Withdrawal failed'
+            return Response({
+                'error': error_msg
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Record transaction
+        BlockchainTransaction.objects.create(
+            user=user,
+            transaction_type='withdraw_unstaked',
+            amount=withdrawal_result['withdrawn_amount'],
+            transaction_hash=withdrawal_result['tx_hash'],
+            from_address=withdrawal_result.get('staking_contract_address'),
+            to_address=user.wallet_address,
+            status='completed',
+            notes=f'Withdrawn {withdrawal_result["withdrawn_amount"]} TEO from unstaking'
+        )
+        
+        return Response({
+            'success': True,
+            'message': f'Successfully withdrawn {withdrawal_result["withdrawn_amount"]} TEO',
+            'transaction_hash': withdrawal_result['tx_hash'],
+            'withdrawn_amount': str(withdrawal_result['withdrawn_amount']),
+            'remaining_pending': withdrawal_result.get('remaining_pending_amount', '0')
+        })
+        
+    except Exception as e:
+        logger.error(f"Error withdrawing unstaked tokens for teacher {user.username}: {e}")
+        return Response({
+            'error': 'Failed to withdraw tokens'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_staking_tiers_info(request):
+    """
+    Get information about all staking tiers and requirements.
+    
+    Returns comprehensive tier information for teacher planning.
+    """
+    try:
+        # Define tier information based on TeacherProfile model logic
+        tiers_info = {
+            'Bronze': {
+                'min_staked': '0',
+                'commission_rate': '50.0',
+                'tier_level': 1,
+                'benefits': [
+                    'Basic teacher access',
+                    '50% commission rate',
+                    'Course creation and management'
+                ],
+                'next_tier': 'Silver',
+                'next_tier_requirement': '100'
+            },
+            'Silver': {
+                'min_staked': '100',
+                'commission_rate': '45.0',
+                'tier_level': 2,
+                'benefits': [
+                    'Reduced commission rate (45%)',
+                    'Priority course visibility',
+                    'Advanced analytics access'
+                ],
+                'next_tier': 'Gold',
+                'next_tier_requirement': '500'
+            },
+            'Gold': {
+                'min_staked': '500',
+                'commission_rate': '40.0',
+                'tier_level': 3,
+                'benefits': [
+                    'Reduced commission rate (40%)',
+                    'Featured course placement',
+                    'Marketing tools access',
+                    'Student discount participation'
+                ],
+                'next_tier': 'Platinum',
+                'next_tier_requirement': '1000'
+            },
+            'Platinum': {
+                'min_staked': '1000',
+                'commission_rate': '35.0',
+                'tier_level': 4,
+                'benefits': [
+                    'Reduced commission rate (35%)',
+                    'Premium support access',
+                    'Custom branding options',
+                    'Bulk discount capabilities'
+                ],
+                'next_tier': 'Diamond',
+                'next_tier_requirement': '2000'
+            },
+            'Diamond': {
+                'min_staked': '2000',
+                'commission_rate': '25.0',
+                'tier_level': 5,
+                'benefits': [
+                    'Lowest commission rate (25%)',
+                    'Exclusive teacher community',
+                    'Co-marketing opportunities',
+                    'Revenue sharing programs',
+                    'Custom platform features'
+                ],
+                'next_tier': None,
+                'next_tier_requirement': None
+            }
+        }
+        
+        # Add staking mechanics information
+        staking_info = {
+            'tiers': tiers_info,
+            'staking_mechanics': {
+                'minimum_stake_period': '30 days',
+                'early_unstaking_penalty': '10%',
+                'immediate_unstaking_limit': '10%',  # 10% can be unstaked immediately
+                'commission_calculation': 'Dynamic based on staked amount',
+                'tier_benefits_immediate': True
+            },
+            'unstaking_rules': {
+                'immediate_withdrawal': {
+                    'limit_percentage': 10,
+                    'penalty_rate': 0,
+                    'description': 'Up to 10% of staked tokens can be withdrawn immediately without penalty'
+                },
+                'standard_withdrawal': {
+                    'waiting_period_days': 30,
+                    'penalty_rate': 0,
+                    'description': 'Standard unstaking with 30-day waiting period, no penalties'
+                },
+                'emergency_withdrawal': {
+                    'waiting_period_days': 0,
+                    'penalty_rate': 10,
+                    'description': 'Immediate withdrawal with 10% penalty for urgent situations'
+                }
+            }
+        }
+        
+        return Response(staking_info)
+        
+    except Exception as e:
+        logger.error(f"Error getting staking tiers info: {e}")
+        return Response({
+            'error': 'Failed to retrieve staking tiers information'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_staking_statistics(request):
+    """
+    Get platform-wide staking statistics (admin only).
+    
+    Returns aggregated staking data for platform analytics.
+    """
+    try:
+        # Check if user is staff
+        if not request.user.is_staff:
+            return Response({
+                'error': 'Admin access required'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get staking statistics from blockchain and database
+        from users.models import TeacherProfile
+        from django.db.models import Sum, Count, Avg
+        
+        # Database statistics
+        teacher_stats = TeacherProfile.objects.aggregate(
+            total_teachers=Count('id'),
+            total_staked=Sum('staked_amount'),
+            avg_staked=Avg('staked_amount')
+        )
+        
+        # Tier distribution
+        tier_distribution = {}
+        for tier in ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond']:
+            count = TeacherProfile.objects.filter(staking_tier=tier).count()
+            tier_distribution[tier] = count
+        
+        # Blockchain statistics
+        blockchain_stats = teocoin_service.get_platform_staking_statistics()
+        
+        statistics = {
+            'teacher_statistics': {
+                'total_teachers': teacher_stats['total_teachers'] or 0,
+                'total_staked_db': str(teacher_stats['total_staked'] or 0),
+                'average_staked': str(teacher_stats['avg_staked'] or 0),
+                'tier_distribution': tier_distribution
+            },
+            'blockchain_statistics': blockchain_stats,
+            'commission_savings': {
+                'description': 'Platform commission savings from teacher staking',
+                'bronze_rate': '50%',
+                'diamond_rate': '25%',
+                'max_savings': '25%'
+            }
+        }
+        
+        return Response(statistics)
+        
+    except Exception as e:
+        logger.error(f"Error getting staking statistics: {e}")
+        return Response({
+            'error': 'Failed to retrieve staking statistics'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

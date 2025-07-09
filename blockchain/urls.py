@@ -29,7 +29,14 @@ from .views import (
     process_course_payment_direct,
     confirm_course_payment,
     get_reward_pool_address,
-    check_student_approval
+    check_student_approval,
+    # Phase 5.3: Staking Management APIs
+    get_teacher_staking_info,
+    stake_tokens,
+    unstake_tokens,
+    get_unstaking_schedule,
+    withdraw_unstaked_tokens,
+    get_staking_statistics
 )
 
 urlpatterns = [
@@ -54,6 +61,14 @@ urlpatterns = [
     path('check-course-payment-prerequisites/', check_course_payment_prerequisites, name='check-course-payment-prerequisites'),
     path('execute-course-payment/', execute_course_payment, name='execute-course-payment'),
     path('process-course-payment/', process_course_payment, name='process-course-payment'),  # Legacy endpoint
+    
+    # Phase 5.3: Staking Management APIs
+    path('staking/info/', get_teacher_staking_info, name='teacher-staking-info'),
+    path('staking/stake/', stake_tokens, name='stake-tokens'),
+    path('staking/unstake/', unstake_tokens, name='unstake-tokens'),
+    path('staking/schedule/', get_unstaking_schedule, name='unstaking-schedule'),
+    path('staking/withdraw/', withdraw_unstaked_tokens, name='withdraw-unstaked'),
+    path('staking/statistics/', get_staking_statistics, name='staking-statistics'),
     
     # Public token information
     path('token-info/', get_token_info, name='token-info'),

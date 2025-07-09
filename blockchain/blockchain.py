@@ -1082,6 +1082,504 @@ class TeoCoinService:
         """
         return getattr(settings, 'REWARD_POOL_ADDRESS', None)
 
+    # ============================================
+    # STAKING MANAGEMENT METHODS
+    # ============================================
+
+    def get_teacher_staking_info(self, teacher_address: str) -> Dict[str, Any]:
+        """
+        Get comprehensive staking information for a teacher.
+        
+        Args:
+            teacher_address: Teacher's wallet address
+            
+        Returns:
+            Dictionary with staking information
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(teacher_address)
+            
+            # Get current balance and staked amount
+            balance = self.get_balance(teacher_address)
+            
+            # For MVP implementation, we'll use a simple staking simulation
+            # In production, this would interact with a dedicated staking contract
+            staked_amount = self._get_simulated_staked_amount(teacher_address)
+            
+            # Calculate tier based on staked amount
+            tier_info = self._calculate_tier_from_staked_amount(staked_amount)
+            
+            return {
+                'wallet_address': teacher_address,
+                'available_balance': str(balance),
+                'staked_amount': str(staked_amount),
+                'staking_tier': tier_info['tier'],
+                'commission_rate': tier_info['commission_rate'],
+                'next_tier': tier_info['next_tier'],
+                'next_tier_requirement': str(tier_info['next_tier_requirement']),
+                'can_stake_more': balance > 0,
+                'minimum_stake_amount': '10',  # Minimum 10 TEO to stake
+                'unstaking_periods': {
+                    'immediate_withdrawal_limit': '10%',  # 10% can be withdrawn immediately
+                    'standard_waiting_period': '30 days',
+                    'emergency_penalty_rate': '10%'
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting staking info for {teacher_address}: {e}")
+            return {
+                'error': str(e),
+                'wallet_address': teacher_address,
+                'available_balance': '0',
+                'staked_amount': '0'
+            }
+
+    def stake_tokens(self, teacher_address: str, amount: Decimal) -> Dict[str, Any]:
+        """
+        Stake TEO tokens for a teacher to improve their commission rate.
+        
+        This MVP implementation simulates staking by transferring tokens to a staking pool.
+        In production, this would interact with a dedicated TeoCoin staking contract.
+        
+        Args:
+            teacher_address: Teacher's wallet address
+            amount: Amount of TEO to stake
+            
+        Returns:
+            Dictionary with staking result
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(teacher_address)
+            
+            # Check if teacher has enough balance
+            current_balance = self.get_balance(teacher_address)
+            if current_balance < amount:
+                return {
+                    'success': False,
+                    'error': f'Insufficient balance. Available: {current_balance} TEO, Required: {amount} TEO'
+                }
+            
+            # For MVP: Transfer tokens to staking pool to simulate staking
+            staking_pool_address = getattr(settings, 'STAKING_POOL_ADDRESS', None)
+            if not staking_pool_address:
+                # Fallback: use reward pool as staking pool
+                staking_pool_address = self.reward_pool_address
+            
+            if not staking_pool_address:
+                return {
+                    'success': False,
+                    'error': 'Staking pool not configured'
+                }
+            
+            # Execute transfer to staking pool (simulates staking)
+            # In production, this would call a staking contract method
+            amount_wei = Web3.to_wei(amount, 'ether')
+            
+            # Use reward pool to pay gas fees for staking transaction
+            tx_hash = self._execute_staking_transaction(teacher_address, staking_pool_address, amount_wei)
+            
+            if not tx_hash:
+                return {
+                    'success': False,
+                    'error': 'Staking transaction failed'
+                }
+            
+            # Calculate new total staked amount
+            current_staked = self._get_simulated_staked_amount(teacher_address)
+            new_total_staked = current_staked + amount
+            
+            # Update simulated staking record
+            self._update_simulated_staking_record(teacher_address, new_total_staked)
+            
+            logger.info(f"Staked {amount} TEO for teacher {teacher_address}. New total: {new_total_staked} TEO")
+            
+            return {
+                'success': True,
+                'tx_hash': tx_hash,
+                'staked_amount': str(amount),
+                'total_staked': str(new_total_staked),
+                'staking_contract_address': staking_pool_address
+            }
+            
+        except Exception as e:
+            logger.error(f"Error staking tokens for {teacher_address}: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def unstake_tokens(self, teacher_address: str, amount: Decimal) -> Dict[str, Any]:
+        """
+        Unstake TEO tokens with appropriate waiting periods and penalties.
+        
+        Args:
+            teacher_address: Teacher's wallet address
+            amount: Amount of TEO to unstake
+            
+        Returns:
+            Dictionary with unstaking result
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(teacher_address)
+            
+            # Get current staked amount
+            current_staked = self._get_simulated_staked_amount(teacher_address)
+            
+            if current_staked < amount:
+                return {
+                    'success': False,
+                    'error': f'Insufficient staked tokens. Current staked: {current_staked} TEO, Requested: {amount} TEO'
+                }
+            
+            # Calculate immediate withdrawal limit (10% of staked amount)
+            immediate_limit = current_staked * Decimal('0.1')
+            
+            # Determine if this requires waiting period
+            waiting_period = amount > immediate_limit
+            penalty_rate = Decimal('0')  # No penalty for standard unstaking
+            waiting_period_days = 30 if waiting_period else 0
+            
+            # For emergency unstaking (immediate large withdrawals), apply penalty
+            if amount > immediate_limit and not waiting_period:
+                penalty_rate = Decimal('0.1')  # 10% penalty
+                amount_after_penalty = amount * (Decimal('1') - penalty_rate)
+            else:
+                amount_after_penalty = amount
+            
+            # Execute unstaking transaction
+            staking_pool_address = getattr(settings, 'STAKING_POOL_ADDRESS', self.reward_pool_address)
+            
+            # For MVP: Transfer from staking pool back to teacher (simulates unstaking)
+            if waiting_period:
+                # Create unstaking request (would be handled by smart contract in production)
+                self._create_unstaking_request(teacher_address, amount, waiting_period_days)
+                tx_hash = f"0x{hash(f'{teacher_address}-{amount}-{waiting_period_days}'):064x}"  # Simulated hash
+            else:
+                # Immediate unstaking
+                tx_hash = self._execute_unstaking_transaction(staking_pool_address, teacher_address, amount_after_penalty)
+                if not tx_hash:
+                    return {
+                        'success': False,
+                        'error': 'Unstaking transaction failed'
+                    }
+            
+            # Update staked amount
+            new_staked_amount = current_staked - amount
+            self._update_simulated_staking_record(teacher_address, new_staked_amount)
+            
+            logger.info(f"Unstaked {amount} TEO for teacher {teacher_address}. Remaining: {new_staked_amount} TEO")
+            
+            return {
+                'success': True,
+                'tx_hash': tx_hash,
+                'unstaked_amount': str(amount),
+                'remaining_staked': str(new_staked_amount),
+                'waiting_period': waiting_period,
+                'waiting_period_days': waiting_period_days,
+                'penalty_rate': str(penalty_rate),
+                'penalty_amount': str(amount - amount_after_penalty) if penalty_rate > 0 else '0'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error unstaking tokens for {teacher_address}: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def get_unstaking_schedule(self, teacher_address: str) -> list:
+        """
+        Get pending unstaking requests for a teacher.
+        
+        Args:
+            teacher_address: Teacher's wallet address
+            
+        Returns:
+            List of pending unstaking requests
+        """
+        try:
+            # In MVP implementation, use Django cache or database to store unstaking requests
+            # In production, this would query the staking smart contract
+            from django.core.cache import cache
+            
+            cache_key = f"unstaking_schedule_{teacher_address.lower()}"
+            unstaking_requests = cache.get(cache_key, [])
+            
+            # Filter out expired requests
+            from datetime import datetime
+            current_time = datetime.now()
+            active_requests = []
+            
+            for request in unstaking_requests:
+                unlock_date = datetime.fromisoformat(request['unlock_date'])
+                if unlock_date > current_time:
+                    active_requests.append(request)
+            
+            # Update cache with filtered requests
+            cache.set(cache_key, active_requests, 86400 * 365)  # 1 year
+            
+            return active_requests
+            
+        except Exception as e:
+            logger.error(f"Error getting unstaking schedule for {teacher_address}: {e}")
+            return []
+
+    def withdraw_unstaked_tokens(self, teacher_address: str, unstaking_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Withdraw tokens that have completed their unstaking period.
+        
+        Args:
+            teacher_address: Teacher's wallet address
+            unstaking_id: Specific unstaking request ID (optional)
+            
+        Returns:
+            Dictionary with withdrawal result
+        """
+        try:
+            # Get unstaking schedule
+            unstaking_requests = self.get_unstaking_schedule(teacher_address)
+            
+            from datetime import datetime
+            current_time = datetime.now()
+            
+            # Find requests ready for withdrawal
+            withdrawable_requests = []
+            if unstaking_id:
+                # Specific request
+                for request in unstaking_requests:
+                    if request['id'] == unstaking_id:
+                        unlock_date = datetime.fromisoformat(request['unlock_date'])
+                        if unlock_date <= current_time:
+                            withdrawable_requests.append(request)
+                        break
+            else:
+                # All available requests
+                for request in unstaking_requests:
+                    unlock_date = datetime.fromisoformat(request['unlock_date'])
+                    if unlock_date <= current_time:
+                        withdrawable_requests.append(request)
+            
+            if not withdrawable_requests:
+                return {
+                    'success': False,
+                    'error': 'No tokens available for withdrawal'
+                }
+            
+            # Calculate total withdrawal amount
+            total_amount = sum(Decimal(request['amount']) for request in withdrawable_requests)
+            
+            # Execute withdrawal transaction from staking pool
+            staking_pool_address = getattr(settings, 'STAKING_POOL_ADDRESS', self.reward_pool_address)
+            tx_hash = self._execute_unstaking_transaction(staking_pool_address, teacher_address, total_amount)
+            
+            if not tx_hash:
+                return {
+                    'success': False,
+                    'error': 'Withdrawal transaction failed'
+                }
+            
+            # Remove withdrawn requests from cache
+            from django.core.cache import cache
+            cache_key = f"unstaking_schedule_{teacher_address.lower()}"
+            remaining_requests = [req for req in unstaking_requests if req not in withdrawable_requests]
+            cache.set(cache_key, remaining_requests, 86400 * 365)
+            
+            logger.info(f"Withdrew {total_amount} TEO for teacher {teacher_address}")
+            
+            return {
+                'success': True,
+                'tx_hash': tx_hash,
+                'withdrawn_amount': str(total_amount),
+                'withdrawn_requests': len(withdrawable_requests),
+                'remaining_pending_amount': str(sum(Decimal(req['amount']) for req in remaining_requests))
+            }
+            
+        except Exception as e:
+            logger.error(f"Error withdrawing unstaked tokens for {teacher_address}: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def get_platform_staking_statistics(self) -> Dict[str, Any]:
+        """
+        Get platform-wide staking statistics for admin dashboard.
+        
+        Returns:
+            Dictionary with staking statistics
+        """
+        try:
+            # In MVP implementation, aggregate from database records
+            # In production, this would query the staking contract directly
+            
+            staking_pool_address = getattr(settings, 'STAKING_POOL_ADDRESS', self.reward_pool_address)
+            
+            if staking_pool_address:
+                total_staked_blockchain = self.get_balance(staking_pool_address)
+            else:
+                total_staked_blockchain = Decimal('0')
+            
+            return {
+                'total_staked_blockchain': str(total_staked_blockchain),
+                'staking_pool_address': staking_pool_address,
+                'active_stakers': 0,  # Would be calculated from contract events
+                'average_stake_period': '90 days',  # Statistical data
+                'total_unstaking_requests': 0,  # From contract data
+                'last_updated': 'now'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting platform staking statistics: {e}")
+            return {
+                'error': str(e),
+                'total_staked_blockchain': '0'
+            }
+
+    # Helper methods for MVP staking implementation
+
+    def _get_simulated_staked_amount(self, teacher_address: str) -> Decimal:
+        """Get simulated staked amount from Django cache/database."""
+        try:
+            from django.core.cache import cache
+            cache_key = f"staked_amount_{teacher_address.lower()}"
+            staked_amount = cache.get(cache_key, '0')
+            return Decimal(str(staked_amount))
+        except:
+            return Decimal('0')
+
+    def _update_simulated_staking_record(self, teacher_address: str, new_amount: Decimal):
+        """Update simulated staking record in Django cache."""
+        try:
+            from django.core.cache import cache
+            cache_key = f"staked_amount_{teacher_address.lower()}"
+            cache.set(cache_key, str(new_amount), 86400 * 365)  # 1 year
+        except Exception as e:
+            logger.error(f"Error updating staking record: {e}")
+
+    def _calculate_tier_from_staked_amount(self, staked_amount: Decimal) -> Dict[str, Any]:
+        """Calculate tier and commission rate based on staked amount."""
+        if staked_amount >= 2000:
+            return {'tier': 'Diamond', 'commission_rate': '25.0', 'next_tier': None, 'next_tier_requirement': 0}
+        elif staked_amount >= 1000:
+            return {'tier': 'Platinum', 'commission_rate': '35.0', 'next_tier': 'Diamond', 'next_tier_requirement': 2000}
+        elif staked_amount >= 500:
+            return {'tier': 'Gold', 'commission_rate': '40.0', 'next_tier': 'Platinum', 'next_tier_requirement': 1000}
+        elif staked_amount >= 100:
+            return {'tier': 'Silver', 'commission_rate': '45.0', 'next_tier': 'Gold', 'next_tier_requirement': 500}
+        else:
+            return {'tier': 'Bronze', 'commission_rate': '50.0', 'next_tier': 'Silver', 'next_tier_requirement': 100}
+
+    def _execute_staking_transaction(self, from_address: str, staking_pool_address: str, amount_wei: int) -> Optional[str]:
+        """Execute staking transaction using reward pool for gas fees."""
+        try:
+            # For MVP: Use reward pool to facilitate staking transaction
+            # In production: Teacher would approve and call staking contract directly
+            
+            reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
+            if not reward_pool_private_key:
+                logger.error("REWARD_POOL_PRIVATE_KEY not configured for staking")
+                return None
+            
+            # Simulate staking by transferring to staking pool
+            # This is a simplified implementation - production would use a proper staking contract
+            
+            checksum_from = Web3.to_checksum_address(from_address)
+            checksum_to = Web3.to_checksum_address(staking_pool_address)
+            
+            reward_pool_account = self.w3.eth.account.from_key(reward_pool_private_key)
+            
+            # Build transferFrom transaction (teacher must have approved reward pool)
+            transaction = self.contract.functions.transferFrom(
+                checksum_from,
+                checksum_to,
+                amount_wei
+            ).build_transaction({
+                'from': reward_pool_account.address,
+                'gas': 100000,
+                'gasPrice': self.get_optimized_gas_price(),
+                'nonce': self.w3.eth.get_transaction_count(reward_pool_account.address),
+            })
+            
+            # Sign and send
+            signed_txn = self.w3.eth.account.sign_transaction(transaction, reward_pool_private_key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"Error executing staking transaction: {e}")
+            return None
+
+    def _execute_unstaking_transaction(self, staking_pool_address: str, teacher_address: str, amount: Decimal) -> Optional[str]:
+        """Execute unstaking transaction from staking pool to teacher."""
+        try:
+            reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
+            if not reward_pool_private_key:
+                logger.error("REWARD_POOL_PRIVATE_KEY not configured for unstaking")
+                return None
+            
+            # Transfer from staking pool back to teacher
+            amount_wei = Web3.to_wei(amount, 'ether')
+            
+            checksum_from = Web3.to_checksum_address(staking_pool_address)
+            checksum_to = Web3.to_checksum_address(teacher_address)
+            
+            reward_pool_account = self.w3.eth.account.from_key(reward_pool_private_key)
+            
+            # Build transfer transaction
+            transaction = self.contract.functions.transfer(
+                checksum_to,
+                amount_wei
+            ).build_transaction({
+                'from': reward_pool_account.address,
+                'gas': 100000,
+                'gasPrice': self.get_optimized_gas_price(),
+                'nonce': self.w3.eth.get_transaction_count(reward_pool_account.address),
+            })
+            
+            # Sign and send
+            signed_txn = self.w3.eth.account.sign_transaction(transaction, reward_pool_private_key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+            
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"Error executing unstaking transaction: {e}")
+            return None
+
+    def _create_unstaking_request(self, teacher_address: str, amount: Decimal, waiting_period_days: int):
+        """Create an unstaking request with waiting period."""
+        try:
+            from django.core.cache import cache
+            from datetime import datetime, timedelta
+            import uuid
+            
+            # Create unstaking request
+            request_id = str(uuid.uuid4())
+            unlock_date = datetime.now() + timedelta(days=waiting_period_days)
+            
+            request = {
+                'id': request_id,
+                'teacher_address': teacher_address,
+                'amount': str(amount),
+                'created_date': datetime.now().isoformat(),
+                'unlock_date': unlock_date.isoformat(),
+                'waiting_period_days': waiting_period_days,
+                'status': 'pending'
+            }
+            
+            # Add to unstaking schedule
+            cache_key = f"unstaking_schedule_{teacher_address.lower()}"
+            current_requests = cache.get(cache_key, [])
+            current_requests.append(request)
+            cache.set(cache_key, current_requests, 86400 * 365)  # 1 year
+            
+            logger.info(f"Created unstaking request {request_id} for {teacher_address}: {amount} TEO")
+            
+        except Exception as e:
+            logger.error(f"Error creating unstaking request: {e}")
+
 
 # Funzione di convenienza globale per BlockchainService compatibility
 def check_course_payment_prerequisites(student_address: str, course_price: Decimal):
