@@ -14,6 +14,7 @@ import PaymentModal from '../PaymentModal';
  */
 const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) => {
   const { user } = useAuth();
+  console.log('🔥 CourseCheckoutModal RENDER:', { course: course?.id, show, walletAddress: user?.wallet_address });
   const [activeTab, setActiveTab] = useState('fiat'); // 'fiat' or 'teocoin'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +102,14 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
 
   // Handle TeoCoin DISCOUNT (not full purchase)
   const handleTeoCoinDiscount = async () => {
+    console.log('🔥 DEBUGGING: TeoCoin button clicked!', {
+      user: user?.wallet_address,
+      walletAddress,
+      walletConnected,
+      course: course?.id,
+      teacher: course?.teacher?.wallet_address
+    });
+    
     if (!user?.wallet_address) {
       setError('Devi collegare un wallet dal tuo profilo prima di procedere con lo sconto');
       return;
@@ -114,15 +123,17 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
       return;
     }
 
-    console.log('🚀 Applying TeoCoin discount via Layer 2...');
+    console.log('🚀 Applying TeoCoin discount via Gas-Free V2 system...');
     console.log(`💰 Using ${teoNeededForDiscount} TEO for €${(fiatPrice * teoDiscount / 100).toFixed(2)} discount`);
 
     setLoading(true);
     setError('');
     
     try {
-      // Use Layer 2 API for gas-free discount
-      const response = await fetch('/api/v1/services/discount/layer2/create/', {
+      console.log('🚀 Making API call to V2 endpoint...');
+      
+      // Call the V2 Gas-Free API endpoint
+      const response = await fetch('/api/v2/discount/create/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,16 +141,19 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         },
         body: JSON.stringify({
           course_id: parseInt(course.id),
-          discount_amount: Math.round(fiatPrice * teoDiscount / 100 * 100) / 100, // Round to 2 decimals
-          discount_percentage: parseInt(teoDiscount),
-          student_wallet: walletAddress
+          discount_percent: parseInt(teoDiscount),
+          student_address: walletAddress,
+          teacher_address: course.teacher?.wallet_address || course.teacher?.amoy_address,
+          student_signature: 'will_be_signed' // Placeholder, backend will handle MetaMask signing
         })
       });
 
+      console.log('📡 API Response Status:', response.status);
       const data = await response.json();
+      console.log('📨 API Response Data:', data);
       
       if (data.success) {
-        console.log('✅ Layer 2 TeoCoin discount applied successfully!');
+        console.log('✅ Gas-Free V2 TeoCoin discount applied successfully!');
         
         // Store discount info and switch to Stripe payment for remaining amount
         const discountInfo = {
@@ -147,7 +161,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
           discount_amount: fiatPrice * teoDiscount / 100,
           discount_percentage: teoDiscount,
           final_price: fiatPrice - (fiatPrice * teoDiscount / 100),
-          transaction_hash: data.data.transaction_hash,
+          request_id: data.request_id,
           layer2_processed: true
         };
 
@@ -156,7 +170,7 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
         setStep('discount_applied');
         setPaymentResult(discountInfo);
         
-        alert(`✅ Sconto TeoCoin applicato!
+        alert(`✅ Sconto TeoCoin applicato (Gas-Free V2)!
         
 💰 TEO utilizzati: ${teoNeededForDiscount} TEO
 💸 Sconto ottenuto: €${discountInfo.discount_amount.toFixed(2)}
@@ -252,6 +266,14 @@ Completa ora il pagamento con carta di credito per il prezzo scontato.`);
   };
 
   const renderTeoCoinPaymentTab = () => {
+    console.log('🔍 Button state:', {
+      loading,
+      walletConnected,
+      blockchainBalance,
+      teoNeeded: Math.floor(fiatPrice * teoDiscount / 100),
+      disabled: loading || !walletConnected || blockchainBalance < Math.floor(fiatPrice * teoDiscount / 100)
+    });
+    
     if (step === 'purchasing') {
       return (
         <div className="text-center p-4">
@@ -350,7 +372,10 @@ Completa ora il pagamento con carta di credito per il prezzo scontato.`);
           <Button
             variant="success"
             size="lg"
-            onClick={handleTeoCoinDiscount}
+            onClick={() => {
+              console.log('🔥 BUTTON CLICKED!');
+              handleTeoCoinDiscount();
+            }}
             disabled={loading || !walletConnected || blockchainBalance < Math.floor(fiatPrice * teoDiscount / 100)}
           >
             {loading ? (

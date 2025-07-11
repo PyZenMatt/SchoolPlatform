@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 
 import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
-import StakingInterface from '../../components/StakingInterface';
+import ZeroMaticStakingInterface from '../../components/ZeroMaticStakingInterface';
 import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
@@ -312,14 +312,21 @@ const TeacherDashboard = () => {
                 <Card.Header>
                   <Card.Title as="h5">
                     <i className="feather icon-trending-up me-2"></i>
-                    TeoCoin Staking System
+                    Gas-Free TeoCoin Staking System
+                    <Badge bg="success" className="ms-2">0 MATIC Cost</Badge>
                   </Card.Title>
                   <p className="mb-0 text-muted">
-                    Stake your TeoCoin to reduce platform commission rates
+                    Stake your TeoCoin to reduce platform commission rates - No gas fees required!
                   </p>
                 </Card.Header>
                 <Card.Body>
-                  <StakingInterface />
+                  <ZeroMaticStakingInterface 
+                    walletAddress={userProfile?.wallet_address}
+                    onStakingUpdate={(data) => {
+                      // Refresh dashboard data after staking operation
+                      fetchDashboardData();
+                    }}
+                  />
                 </Card.Body>
               </Card>
             </Col>
@@ -329,6 +336,31 @@ const TeacherDashboard = () => {
           <Row className="mb-4">
             <Col lg={12}>
               <TeacherDiscountDashboard />
+            </Col>
+          </Row>
+
+          {/* Teacher Choice Dashboard */}
+          <Row className="mb-4">
+            <Col lg={12}>
+              <Card>
+                <Card.Header>
+                  <Card.Title as="h5">
+                    <i className="feather icon-target me-2"></i>
+                    TeoCoin Choice Dashboard
+                    <Badge bg="warning" className="ms-2">Layer 2</Badge>
+                  </Card.Title>
+                  <p className="mb-0 text-muted">
+                    Make decisions on student discount requests - TEO payment or full fiat
+                  </p>
+                </Card.Header>
+                <Card.Body className="text-center">
+                  <p>View and decide on pending TeoCoin payment choices from students.</p>
+                  <Link to="/teacher/choices" className="btn btn-primary">
+                    <i className="feather icon-target me-2"></i>
+                    Open Choice Dashboard
+                  </Link>
+                </Card.Body>
+              </Card>
             </Col>
           </Row>
 

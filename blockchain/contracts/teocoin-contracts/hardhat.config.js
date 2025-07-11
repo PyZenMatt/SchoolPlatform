@@ -1,6 +1,12 @@
+require("dotenv").config();
 require("@matterlabs/hardhat-zksync-solc");
-require("@matterlabs/hardhat-zksync-verify");
 require("@nomiclabs/hardhat-ethers");
+// Only require etherscan plugin for Polygon networks
+if (process.env.HARDHAT_NETWORK === 'polygon' || process.env.HARDHAT_NETWORK === 'polygonAmoy') {
+  require("@nomiclabs/hardhat-etherscan");
+} else {
+  require("@matterlabs/hardhat-zksync-verify");
+}
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -48,6 +54,22 @@ module.exports = {
     hardhat: {
       chainId: 31337
     }
+  },
+  etherscan: {
+    apiKey: {
+      polygon: process.env.POLYGONSCAN_API_KEY || "",
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || ""
+    },
+    customChains: [
+      {
+        network: "polygonAmoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com"
+        }
+      }
+    ]
   },
   paths: {
     artifacts: "./artifacts-zk",

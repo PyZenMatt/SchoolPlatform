@@ -15,6 +15,8 @@ urlpatterns = [
     path('api/v1/', include('notifications.urls')),
     path('api/v1/blockchain/', include('blockchain.urls')),
     path('api/v1/services/', include('services.urls')),
+    # Gas-Free V2 System URLs - TODO: Implement proper V2 endpoints
+    # path('', include('urls_v2')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),

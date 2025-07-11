@@ -12,12 +12,13 @@
     "@matterlabs/hardhat-zksync-solc": "^1.1.14",
     "@matterlabs/hardhat-zksync-verify": "^1.7.1",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "hardhat": "^2.19.1"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.0",
     "@thirdweb-dev/contracts": "^3.8.0",
+    "dotenv": "^17.1.0",
     "ethers": "^5.7.2",
     "zksync-ethers": "^5.7.0"
   }

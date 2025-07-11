@@ -8,6 +8,8 @@ import NotificationDisplay from './components/ui/NotificationDisplay';
 
 // Import mobile-responsive styles
 import './styles/mobile-responsive.css';
+// Import gas-free system styles
+import './styles/gasFreeSystem.css';
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);

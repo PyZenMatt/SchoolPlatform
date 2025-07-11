@@ -446,18 +446,3 @@ if not DEBUG and TEOCOIN_DISCOUNT_CONTRACT_ADDRESS and not PLATFORM_PRIVATE_KEY:
     raise ImproperlyConfigured("PLATFORM_PRIVATE_KEY is required when discount system is enabled")
 
 # ========== END TEOCOIN DISCOUNT CONFIGURATION ==========
-
-# Gas-Free V2 Contract Addresses (DEPLOYED)
-DISCOUNT_CONTRACT_V2_ADDRESS = os.getenv('DISCOUNT_CONTRACT_V2_ADDRESS', '')
-STAKING_CONTRACT_V2_ADDRESS = os.getenv('STAKING_CONTRACT_V2_ADDRESS', '')
-TEO_TOKEN_ADDRESS = os.getenv('TEO_TOKEN_ADDRESS', '')
-REWARD_POOL_ADDRESS = os.getenv('REWARD_POOL_ADDRESS', '')
-
-# Enable gas-free mode
-GAS_FREE_MODE_ENABLED = os.getenv('GAS_FREE_MODE_ENABLED', 'True').lower() == 'true'
-
-# Platform gas monitoring
-PLATFORM_MATIC_THRESHOLD = float(os.getenv('PLATFORM_MATIC_THRESHOLD', '1.0'))
-
-# Test mode indicator
-GAS_FREE_TEST_MODE = os.getenv('GAS_FREE_TEST_MODE', 'True').lower() == 'true'

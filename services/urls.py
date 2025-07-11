@@ -4,6 +4,7 @@ URL patterns for services app including TEO earning, staking, and TeoCoin discou
 
 from django.urls import path, include
 from . import api_views
+from .gas_free_urls import gas_free_urlpatterns
 
 urlpatterns = [
     # TEO Earning endpoints
@@ -18,4 +19,7 @@ urlpatterns = [
     
     # TeoCoin Discount endpoints
     path('discount/', include('api.discount_urls')),
+    
+    # Gas-Free Operations (Phase 2)
+    *gas_free_urlpatterns,
 ]

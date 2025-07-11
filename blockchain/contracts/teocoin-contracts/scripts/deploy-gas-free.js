@@ -8,10 +8,10 @@ async function main() {
   console.log("Deploying contracts with account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  // Contract addresses from existing system (you'll need to update these)
-  const TEO_TOKEN_ADDRESS = process.env.TEOCOIN_CONTRACT_ADDRESS || "0x..."; // Your existing TEO token
-  const REWARD_POOL_ADDRESS = process.env.REWARD_POOL_ADDRESS || "0x..."; // Your existing reward pool
-  const PLATFORM_ACCOUNT = deployer.address; // Platform account that pays gas fees
+  // Contract addresses from existing system
+  const TEO_TOKEN_ADDRESS = "0x20D6656A31297ab3b8A87291Ed562D4228Be9ff8"; // Existing TEO token
+  const REWARD_POOL_ADDRESS = "0x3b72a4E942CF1467134510cA3952F01b63005044"; // Existing reward pool
+  const PLATFORM_ACCOUNT = "0x17051AB7603B0F7263BC86bF1b0ce137EFfdEcc1"; // Platform account that pays gas fees
 
   console.log("\nUsing existing addresses:");
   console.log("TEO Token:", TEO_TOKEN_ADDRESS);
