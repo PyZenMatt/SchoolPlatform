@@ -2,8 +2,8 @@
 Staking Contract Configuration
 
 This file contains the TeoCoin staking configuration with progressive commission rates.
-FIXED: Updated to match smart contract rates (25% → 15% progressive commission reduction).
-Commission rates now align with deployed smart contract on Polygon Amoy.
+CORRECTED: Updated to match business logic (50% → 25% progressive commission reduction).
+NOTE: Smart contract will be updated in Phase 2 to match these rates.
 """
 
 # Contract deployment info (LIVE CONTRACTS - July 1, 2025)
@@ -13,13 +13,13 @@ STAKING_ABI = None  # Will be loaded from ThirdWeb artifacts
 # Production Configuration - Live Contracts
 DEVELOPMENT_MODE = False
 
-# FIXED: Staking tier configuration to match smart contract (25% → 15% progressive commission reduction)
+# CORRECTED: Staking tier configuration to match business logic (50% → 25% progressive commission reduction)
 TIER_CONFIG = {
-    0: {'min_stake': 0, 'commission_rate': 2500, 'name': 'Bronze'},      # 25% (matches smart contract)
-    1: {'min_stake': 100, 'commission_rate': 2200, 'name': 'Silver'},    # 22% (matches smart contract)
-    2: {'min_stake': 300, 'commission_rate': 1900, 'name': 'Gold'},      # 19% (matches smart contract)
-    3: {'min_stake': 600, 'commission_rate': 1600, 'name': 'Platinum'},  # 16% (matches smart contract)
-    4: {'min_stake': 1000, 'commission_rate': 1500, 'name': 'Diamond'},  # 15% (matches smart contract)
+    0: {'min_stake': 0, 'commission_rate': 5000, 'name': 'Bronze'},        # 50% platform commission
+    1: {'min_stake': 100, 'commission_rate': 4500, 'name': 'Silver'},      # 45% platform commission
+    2: {'min_stake': 300, 'commission_rate': 4000, 'name': 'Gold'},        # 40% platform commission
+    3: {'min_stake': 600, 'commission_rate': 3500, 'name': 'Platinum'},    # 35% platform commission
+    4: {'min_stake': 1000, 'commission_rate': 2500, 'name': 'Diamond'},    # 25% platform commission
 }
 
 # Sample ABI for reference (will be replaced with actual after compilation)

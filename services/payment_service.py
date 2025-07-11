@@ -327,8 +327,8 @@ class PaymentService(TransactionalService):
     blockchain verification, and transaction recording.
     """
     
-    # FIXED: Fallback commission rate for non-teachers (matches smart contract Bronze tier)
-    DEFAULT_COMMISSION_RATE = Decimal('0.25')  # 25% fallback (matches Bronze tier)
+    # CORRECTED: Fallback commission rate for non-teachers (matches Bronze tier business logic)
+    DEFAULT_COMMISSION_RATE = Decimal('0.50')  # 50% fallback (matches Bronze tier)
     
     def __init__(self):
         super().__init__()

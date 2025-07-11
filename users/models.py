@@ -372,13 +372,13 @@ class TeacherProfile(models.Model):
         This method calculates the appropriate tier based on the staked amount
         and updates both the tier and commission rate accordingly.
         """
-        # Define tier thresholds and commission rates (matches staking_config.py)
+        # Define tier thresholds and commission rates (CORRECTED to match business logic)
         tier_config = {
-            'Bronze': {'min_stake': Decimal('0'), 'commission_rate': Decimal('50.00')},
-            'Silver': {'min_stake': Decimal('100.00'), 'commission_rate': Decimal('44.00')},
-            'Gold': {'min_stake': Decimal('300.00'), 'commission_rate': Decimal('38.00')},
-            'Platinum': {'min_stake': Decimal('600.00'), 'commission_rate': Decimal('31.00')},
-            'Diamond': {'min_stake': Decimal('1000.00'), 'commission_rate': Decimal('25.00')},
+            'Bronze': {'min_stake': Decimal('0'), 'commission_rate': Decimal('50.00')},     # 50% platform
+            'Silver': {'min_stake': Decimal('100.00'), 'commission_rate': Decimal('45.00')}, # 45% platform  
+            'Gold': {'min_stake': Decimal('300.00'), 'commission_rate': Decimal('40.00')},   # 40% platform
+            'Platinum': {'min_stake': Decimal('600.00'), 'commission_rate': Decimal('35.00')}, # 35% platform
+            'Diamond': {'min_stake': Decimal('1000.00'), 'commission_rate': Decimal('25.00')}, # 25% platform
         }
         
         # Determine the appropriate tier based on staked amount
@@ -409,5 +409,52 @@ class TeacherProfile(models.Model):
             'commission_rate': new_commission,
             'staked_amount': current_staked
         }
+
+    def sync_with_staking_service(self):
+        """
+        PHASE 2.1: Auto-sync commission rate with TeoCoin staking service
+        
+        This method fetches the latest staking information from the blockchain
+        and updates the teacher's profile automatically.
+        """
+        try:
+            from services.teocoin_staking_service import TeoCoinStakingService
+            
+            # Skip if no wallet address
+            if not self.user.wallet_address:
+                return False, "No wallet address found"
+            
+            # Initialize staking service
+            staking_service = TeoCoinStakingService()
+            
+            # Get current staking information from blockchain
+            staking_info = staking_service.get_user_staking_info(
+                self.user.wallet_address
+            )
+            
+            if staking_info and staking_info.get('success'):
+                # Update staked amount from blockchain
+                self.staked_teo_amount = Decimal(str(staking_info.get('staked_amount_formatted', '0.00')))
+                
+                # Update tier and commission based on actual staked amount
+                update_result = self.update_tier_and_commission()
+                
+                # Save changes
+                self.save()
+                
+                return True, {
+                    'message': 'Profile synced successfully',
+                    'tier': update_result['tier'],
+                    'commission_rate': update_result['commission_rate'],
+                    'staked_amount': update_result['staked_amount']
+                }
+            else:
+                return False, "Failed to fetch staking info from blockchain"
+                
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Staking sync failed for {self.user.email}: {str(e)}")
+            return False, f"Sync error: {str(e)}"
 
 

@@ -1082,6 +1082,20 @@ class TeoCoinService:
         """
         return getattr(settings, 'REWARD_POOL_ADDRESS', None)
 
+    def get_reward_pool_account(self):
+        """
+        PHASE 2.2: Get reward pool account for gas-free transactions
+        
+        Returns:
+            Account object for reward pool that can sign transactions
+        """
+        reward_pool_private_key = getattr(settings, 'REWARD_POOL_PRIVATE_KEY', None)
+        
+        if not reward_pool_private_key:
+            raise ValueError("REWARD_POOL_PRIVATE_KEY not configured")
+            
+        return self.w3.eth.account.from_key(reward_pool_private_key)
+
     # ============================================
     # STAKING MANAGEMENT METHODS
     # ============================================
