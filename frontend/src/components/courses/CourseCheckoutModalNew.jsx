@@ -100,14 +100,12 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
     setStep('confirm');
   };
 
-  // Handle TeoCoin DISCOUNT (not full purchase)
+  // PHASE 3.1: Consolidated TeoCoin Discount Flow - Use Backend API
   const handleTeoCoinDiscount = async () => {
-    console.log('🔥 DEBUGGING: TeoCoin button clicked!', {
+    console.log('🔥 PHASE 3.1: TeoCoin discount - using backend API', {
       user: user?.wallet_address,
-      walletAddress,
-      walletConnected,
       course: course?.id,
-      teacher: course?.teacher?.wallet_address
+      discount_percent: teoDiscount
     });
     
     if (!user?.wallet_address) {
@@ -115,76 +113,54 @@ const CourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }) 
       return;
     }
 
-    // Calculate TEO needed for discount (10 TEO for 10% discount)
-    const teoNeededForDiscount = Math.floor(fiatPrice * teoDiscount / 100); // 10 TEO for 10% of €100
-    
-    if (blockchainBalance < teoNeededForDiscount) {
-      setError(`TeoCoin insufficienti per lo sconto. Necessari: ${teoNeededForDiscount} TEO, Disponibili: ${blockchainBalance.toFixed(2)} TEO`);
-      return;
-    }
-
-    console.log('🚀 Applying TeoCoin discount via Gas-Free V2 system...');
-    console.log(`💰 Using ${teoNeededForDiscount} TEO for €${(fiatPrice * teoDiscount / 100).toFixed(2)} discount`);
-
     setLoading(true);
     setError('');
     
     try {
-      console.log('🚀 Making API call to V2 endpoint...');
-      
-      // Call the V2 Gas-Free API endpoint
-      const response = await fetch('/api/v2/discount/create/', {
+      // PHASE 3.1: Call backend API instead of frontend logic
+      const response = await fetch('/api/v1/services/gas-free/permit-discount/signatures/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({
-          course_id: parseInt(course.id),
-          discount_percent: parseInt(teoDiscount),
-          student_address: walletAddress,
-          teacher_address: course.teacher?.wallet_address || course.teacher?.amoy_address,
-          student_signature: 'will_be_signed' // Placeholder, backend will handle MetaMask signing
+          course_id: course.id,
+          discount_percentage: teoDiscount,
+          student_wallet: user.wallet_address
         })
       });
-
-      console.log('📡 API Response Status:', response.status);
+      
       const data = await response.json();
-      console.log('📨 API Response Data:', data);
+      console.log('📨 Backend response:', data);
       
       if (data.success) {
-        console.log('✅ Gas-Free V2 TeoCoin discount applied successfully!');
+        console.log('✅ TeoCoin discount applied successfully!');
         
-        // Store discount info and switch to Stripe payment for remaining amount
+        // Store discount info and switch to Stripe payment
         const discountInfo = {
-          teo_used: teoNeededForDiscount,
-          discount_amount: fiatPrice * teoDiscount / 100,
-          discount_percentage: teoDiscount,
-          final_price: fiatPrice - (fiatPrice * teoDiscount / 100),
-          request_id: data.request_id,
-          layer2_processed: true
+          teo_used: data.teo_amount,
+          discount_amount_eur: data.discount_amount,
+          final_price: data.final_price,
+          request_id: data.request_id
         };
-
-        // Switch to fiat tab to complete payment with discounted price
+        
+        // Switch to fiat payment with applied discount
         setActiveTab('fiat');
-        setStep('discount_applied');
-        setPaymentResult(discountInfo);
-        
-        alert(`✅ Sconto TeoCoin applicato (Gas-Free V2)!
-        
-💰 TEO utilizzati: ${teoNeededForDiscount} TEO
-💸 Sconto ottenuto: €${discountInfo.discount_amount.toFixed(2)}
-💳 Prezzo finale: €${discountInfo.final_price.toFixed(2)}
-
-Completa ora il pagamento con carta di credito per il prezzo scontato.`);
-
+        // Pass discount info to parent for Stripe payment
+        if (onPurchaseComplete) {
+          onPurchaseComplete({
+            type: 'discount_applied',
+            discountInfo,
+            nextStep: 'stripe_payment'
+          });
+        }
       } else {
-        throw new Error(data.error || 'Sconto TeoCoin fallito');
+        setError(data.error || 'Errore durante l\'applicazione dello sconto TeoCoin');
       }
-      
-    } catch (err) {
-      console.error('Error applying TeoCoin discount:', err);
-      setError(err.message || 'Errore durante l\'applicazione dello sconto TeoCoin.');
+    } catch (error) {
+      console.error('❌ TeoCoin discount error:', error);
+      setError('Errore di connessione durante l\'applicazione dello sconto');
     } finally {
       setLoading(false);
     }

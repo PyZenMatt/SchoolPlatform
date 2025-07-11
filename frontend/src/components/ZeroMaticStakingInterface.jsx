@@ -25,13 +25,13 @@ const ZeroMaticStakingInterface = ({
     const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
 
-    // Tier information
+    // PHASE 3.2: Updated tier information to match corrected business logic  
     const tierInfo = {
-        0: { name: 'Bronze', required: 0, commission: 25, color: '#CD7F32' },
-        1: { name: 'Silver', required: 100, commission: 22, color: '#C0C0C0' },
-        2: { name: 'Gold', required: 300, commission: 19, color: '#FFD700' },
-        3: { name: 'Platinum', required: 600, commission: 16, color: '#E5E4E2' },
-        4: { name: 'Diamond', required: 1000, commission: 15, color: '#B9F2FF' }
+        0: { name: 'Bronze', required: 0, commission: 50, color: '#CD7F32' },     // 50% platform
+        1: { name: 'Silver', required: 100, commission: 45, color: '#C0C0C0' },   // 45% platform
+        2: { name: 'Gold', required: 300, commission: 40, color: '#FFD700' },     // 40% platform
+        3: { name: 'Platinum', required: 600, commission: 35, color: '#E5E4E2' }, // 35% platform
+        4: { name: 'Diamond', required: 1000, commission: 25, color: '#B9F2FF' }  // 25% platform
     };
 
     // Load teacher staking information
