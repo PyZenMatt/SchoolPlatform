@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Row, Col, Spinner, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
 import { fetchCourses } from '../../services/api/courses';
-import CourseCheckoutModal from '../../components/courses/CourseCheckoutModalNew';
+import CourseCheckoutModal from '../../components/courses/DBCourseCheckoutModal';
 
 const AllCourses = () => {
   const [courses, setCourses] = useState([]);

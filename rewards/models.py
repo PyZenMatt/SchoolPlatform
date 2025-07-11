@@ -256,3 +256,160 @@ class TeoCoinEscrow(models.Model):
                 'description': f"€{self.standard_euro_commission} (standard commission)"
             }
         }
+
+
+class TeacherDiscountAbsorption(models.Model):
+    """
+    Tracks opportunities for teachers to absorb student discounts in exchange for TEO
+    Teachers have 24 hours to decide per transaction
+    Database-based system - simpler than blockchain escrow
+    """
+    CHOICE_STATUS = [
+        ('pending', 'Pending Decision'),
+        ('absorbed', 'TEO Absorbed'),
+        ('refused', 'EUR Preferred'),
+        ('expired', 'Expired (Auto-EUR)')
+    ]
+    
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discount_absorptions')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='generated_absorptions')
+    
+    # Transaction details
+    course_price_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_percentage = models.IntegerField()  # 5, 10, 15
+    teo_used_by_student = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Teacher commission calculation
+    teacher_tier = models.IntegerField(default=0)  # 0=Bronze, 1=Silver, etc.
+    teacher_commission_rate = models.DecimalField(max_digits=5, decimal_places=2)  # 50.00, 55.00, etc.
+    
+    # Option A (Default EUR)
+    option_a_teacher_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    option_a_platform_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Option B (Absorb Discount for TEO)
+    option_b_teacher_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    option_b_teacher_teo = models.DecimalField(max_digits=10, decimal_places=2)  # includes 25% bonus
+    option_b_platform_eur = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Decision tracking
+    status = models.CharField(max_length=20, choices=CHOICE_STATUS, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()  # 24 hours from creation
+    decided_at = models.DateTimeField(null=True, blank=True)
+    
+    # Final payout (after decision or expiration)
+    final_teacher_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    final_teacher_teo = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    final_platform_eur = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    class Meta:
+        db_table = 'rewards_teacher_discount_absorption'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['teacher', 'status']),
+            models.Index(fields=['status', 'expires_at']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=24)
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    @property
+    def time_remaining(self):
+        if self.is_expired:
+            return timedelta(0)
+        return self.expires_at - timezone.now()
+    
+    @property
+    def hours_remaining(self):
+        remaining = self.time_remaining
+        if remaining.total_seconds() <= 0:
+            return 0
+        return round(remaining.total_seconds() / 3600, 1)
+    
+    def calculate_options(self):
+        """Calculate both options for teacher choice"""
+        # Option A: Standard commission, platform absorbs discount
+        self.option_a_teacher_eur = (self.course_price_eur * self.teacher_commission_rate / 100)
+        self.option_a_platform_eur = self.course_price_eur - self.option_a_teacher_eur
+        
+        # Option B: Teacher absorbs discount, gets TEO + 25% bonus
+        self.option_b_teacher_eur = self.option_a_teacher_eur - self.discount_amount_eur
+        self.option_b_teacher_teo = self.teo_used_by_student * Decimal('1.25')  # 25% bonus
+        self.option_b_platform_eur = self.option_a_platform_eur + self.discount_amount_eur
+    
+    def make_choice(self, choice):
+        """Process teacher's choice"""
+        if self.status != 'pending':
+            raise ValueError("Choice already made or expired")
+        
+        if self.is_expired:
+            self.auto_expire()
+            return
+        
+        self.decided_at = timezone.now()
+        
+        if choice == 'absorb':
+            self.status = 'absorbed'
+            self.final_teacher_eur = self.option_b_teacher_eur
+            self.final_teacher_teo = self.option_b_teacher_teo
+            self.final_platform_eur = self.option_b_platform_eur
+        else:  # refuse
+            self.status = 'refused'
+            self.final_teacher_eur = self.option_a_teacher_eur
+            self.final_teacher_teo = 0
+            self.final_platform_eur = self.option_a_platform_eur
+        
+        self.save()
+    
+    def auto_expire(self):
+        """Automatically expire to Option A after 24 hours"""
+        self.status = 'expired'
+        self.decided_at = timezone.now()
+        self.final_teacher_eur = self.option_a_teacher_eur
+        self.final_teacher_teo = 0
+        self.final_platform_eur = self.option_a_platform_eur
+        self.save()
+    
+    def __str__(self):
+        return f"Absorption {self.pk}: {self.teacher.username} - {self.course.title} ({self.status})"
+
+
+class TeacherPayoutSummary(models.Model):
+    """
+    Monthly/Weekly payout summaries for admin dashboard
+    """
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    period_type = models.CharField(max_length=10, choices=[('weekly', 'Weekly'), ('monthly', 'Monthly')])
+    
+    # Summary totals
+    total_eur_earned = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    total_teo_earned = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    total_discounts_absorbed = models.IntegerField(default=0)
+    total_transactions = models.IntegerField(default=0)
+    
+    # Breakdown
+    eur_from_standard_sales = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    eur_from_absorbed_discounts = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    teo_from_absorbed_discounts = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'rewards_teacher_payout_summary'
+        unique_together = ['teacher', 'period_start', 'period_end', 'period_type']
+        ordering = ['-period_start']
+    
+    def __str__(self):
+        return f"{self.teacher.username} - {self.period_type} {self.period_start} to {self.period_end}"

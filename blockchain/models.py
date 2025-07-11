@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from decimal import Decimal
 
 
 class UserWallet(models.Model):
@@ -177,4 +178,172 @@ class TeoCoinDiscountRequest(models.Model):
             self.teacher_decision_at = timezone.now()
             self.save()
             return True
+        return False
+
+
+# ===================================================================
+# DB-BASED TEOCOIN SYSTEM - NEW MODELS
+# ===================================================================
+
+class DBTeoCoinBalance(models.Model):
+    """
+    Database-based TeoCoin balance for instant operations
+    
+    This replaces blockchain-based balances for internal platform operations.
+    Users can still withdraw to MetaMask anytime via the withdrawal system.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='db_teocoin_balance'
+    )
+    
+    # Balance tracking
+    available_balance = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="TEO available for spending (discounts/staking)"
+    )
+    
+    staked_balance = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="TEO currently staked (affects commission rates)"
+    )
+    
+    pending_withdrawal = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="TEO pending withdrawal to MetaMask"
+    )
+    
+    # Metadata
+    last_blockchain_sync = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "DB TeoCoin Balance"
+        verbose_name_plural = "DB TeoCoin Balances"
+        db_table = "blockchain_db_teocoin_balance"
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.total_balance} TEO"
+    
+    @property
+    def total_balance(self):
+        """Total TEO owned by user"""
+        return self.available_balance + self.staked_balance + self.pending_withdrawal
+
+
+class DBTeoCoinTransaction(models.Model):
+    """
+    Track all internal TeoCoin movements in the DB system
+    """
+    TRANSACTION_TYPES = [
+        ('earned', 'Earned (Rewards/Teaching)'),
+        ('spent_discount', 'Spent on Discount'),
+        ('staked', 'Staked for Commission'),
+        ('unstaked', 'Unstaked'),
+        ('withdrawn', 'Withdrawn to MetaMask'),
+        ('deposit', 'Deposited from MetaMask'),
+        ('bonus', 'Platform Bonus'),
+        ('migration', 'Migrated from Blockchain'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='db_teocoin_transactions'
+    )
+    
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    description = models.TextField()
+    
+    # Related objects
+    course = models.ForeignKey(
+        'courses.Course', 
+        null=True, blank=True, 
+        on_delete=models.SET_NULL
+    )
+    related_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='related_teocoin_transactions',
+        help_text="Other user involved (e.g., teacher in discount)"
+    )
+    
+    # Blockchain integration
+    blockchain_tx_hash = models.CharField(max_length=66, blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "DB TeoCoin Transaction"
+        verbose_name_plural = "DB TeoCoin Transactions"
+        db_table = "blockchain_db_teocoin_transaction"
+        indexes = [
+            models.Index(fields=['user', 'transaction_type']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['blockchain_tx_hash']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.transaction_type} - {self.amount} TEO"
+
+
+class TeoCoinWithdrawalRequest(models.Model):
+    """
+    Handle MetaMask withdrawal requests from DB balance to blockchain
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='withdrawal_requests'
+    )
+    
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    wallet_address = models.CharField(max_length=42)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Processing data
+    blockchain_tx_hash = models.CharField(max_length=66, blank=True, null=True)
+    gas_fee_paid = models.DecimalField(max_digits=8, decimal_places=6, null=True, blank=True)
+    error_message = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "TeoCoin Withdrawal Request"
+        verbose_name_plural = "TeoCoin Withdrawal Requests"
+        db_table = "blockchain_teocoin_withdrawal_request"
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.amount} TEO - {self.status}"
+    
+    @property
+    def is_processing_too_long(self):
+        """Check if withdrawal has been processing for too long (>24h)"""
+        if self.status == 'processing':
+            return timezone.now() - self.created_at > timezone.timedelta(hours=24)
         return False

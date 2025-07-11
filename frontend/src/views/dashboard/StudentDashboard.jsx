@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDisplay';
 import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
-import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
+import StudentTeoCoinDashboard from '../../components/blockchain/DBStudentTeoCoinDashboard';
 import RewardNotifications from '../../components/blockchain/RewardNotifications';
 import { fetchStudentDashboard, fetchUserProfile } from '../../services/api/dashboard';
 import StudentSubmissions from './StudentSubmissions';

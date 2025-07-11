@@ -5,7 +5,7 @@ import PendingTeachersCard from '../../components/PendingTeachersCard';
 import PendingCoursesCard from '../../components/PendingCoursesCard';
 import ApprovalStats from '../../components/ApprovalStats';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
-import AdminTeoCoinDashboard from '../../components/blockchain/AdminTeoCoinDashboard';
+import AdminTeoCoinDashboard from '../../components/blockchain/DBAdminTeoCoinDashboard';
 import RevenueAnalytics from '../../components/admin/RevenueAnalytics';
 import { fetchAdminDashboard } from '../../services/api/admin';
 import { fetchUserProfile } from '../../services/api/dashboard';

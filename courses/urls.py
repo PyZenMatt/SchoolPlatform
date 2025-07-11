@@ -13,6 +13,7 @@ from courses.views.courses import (
 
 from courses.views.enrollments import (
     PurchaseCourseView,
+    CourseEnrollmentView,
     StudentEnrolledCoursesView,
     TeacherCourseStudentsView
 )
@@ -82,6 +83,7 @@ urlpatterns = [
     path('courses-service/<int:pk>/', CourseDetailAPIView.as_view(), name='course-detail-api'),
 
     # === ENROLLMENTS ===
+    path('courses/<int:course_id>/enroll/', CourseEnrollmentView.as_view(), name='course-enroll'),
     path('student/enrolled_courses/', StudentEnrolledCoursesView.as_view(), name='student-enrolled-courses'),
     path('teacher/courses/students/', TeacherCourseStudentsView.as_view(), name='teacher-course-students'),
 

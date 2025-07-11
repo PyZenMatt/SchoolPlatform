@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Spinner, Alert, Form, Button, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { fetchUserProfile, updateUserProfile } from '../../services/api/dashboard';
-import TeoCoinBalance from '../../components/blockchain/TeoCoinBalance';
+import TeoCoinBalance from '../../components/blockchain/DBTeoCoinBalance';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);

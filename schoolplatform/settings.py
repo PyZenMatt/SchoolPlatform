@@ -461,3 +461,7 @@ PLATFORM_MATIC_THRESHOLD = float(os.getenv('PLATFORM_MATIC_THRESHOLD', '1.0'))
 
 # Test mode indicator
 GAS_FREE_TEST_MODE = os.getenv('GAS_FREE_TEST_MODE', 'True').lower() == 'true'
+
+# ===== DB-BASED TEOCOIN SYSTEM =====
+# Enable DB-based TeoCoin system instead of blockchain operations
+USE_DB_TEOCOIN_SYSTEM = os.getenv('USE_DB_TEOCOIN_SYSTEM', 'True').lower() == 'true'

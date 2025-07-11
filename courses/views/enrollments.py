@@ -58,8 +58,8 @@ class PurchaseCourseView(APIView):
                 except InsufficientTeoCoinsError as e:
                     return Response({
                         "error": str(e),
-                        "required": e.required if hasattr(e, 'required') else None,
-                        "available": e.available if hasattr(e, 'available') else None
+                        "required": getattr(e, 'required', None),
+                        "available": getattr(e, 'available', None)
                     }, status=status.HTTP_400_BAD_REQUEST)
                     
                 except (UserNotFoundError, CourseNotFoundError, TeoArtServiceException) as e:
@@ -98,12 +98,6 @@ class PurchaseCourseView(APIView):
                 return Response({
                     "error": str(e)
                 }, status=getattr(e, 'status_code', 400))
-            except Exception as e:
-                logger.error(f"Unexpected error during purchase completion: {str(e)}")
-                return Response({
-                    "error": "Payment completion failed. Please try again later.",
-                    "details": str(e) if settings.DEBUG else None
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
             logger.error(f"PurchaseCourseView service failed: {str(e)}")
@@ -112,90 +106,6 @@ class PurchaseCourseView(APIView):
                 "error": "Payment service temporarily unavailable. Please try again later.",
                 "details": str(e) if settings.DEBUG else None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            with transaction.atomic():
-                # Verifica che la transazione non sia già stata processata
-                if BlockchainTransaction.objects.filter(transaction_hash=transaction_hash).exists():
-                    return Response({
-                        "error": "Transazione già processata"
-                    }, status=status.HTTP_400_BAD_REQUEST)
-
-                # Add student to course
-                course.students.add(student)
-                
-                # Record purchase transaction (studente paga il prezzo totale)
-                purchase_transaction = BlockchainTransaction.objects.create(
-                    user=student,
-                    amount=-course.price,  # Negativo = uscita dallo studente per il prezzo totale
-                    transaction_type='course_purchase',
-                    status='completed',
-                    transaction_hash=transaction_hash,
-                    from_address=wallet_address,
-                    to_address=course.teacher.wallet_address if course.teacher.wallet_address else "unknown",
-                    related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"Course purchase: {course.title} - Total price paid by student"
-                )
-                
-                # Calcola commissione e importo netto teacher
-                commission_amount = course.price * Decimal('0.50')  # 50% di commissione (base rate)
-                teacher_net_amount = course.price - commission_amount  # 50% rimane al teacher (75% with staking)
-                
-                # Record teacher earnings transaction (teacher riceve)
-                teacher_earning_transaction = BlockchainTransaction.objects.create(
-                    user=course.teacher,
-                    amount=teacher_net_amount,  # Positivo = entrata per il teacher
-                    transaction_type='course_earned',
-                    status='completed',
-                    transaction_hash=transaction_hash,
-                    from_address=wallet_address,
-                    to_address=course.teacher.wallet_address,
-                    related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"Earnings from course sale: {course.title}"
-                )
-                
-                # Record commission transaction (commissione alla reward pool)
-                # La commissione viene pagata dallo studente come parte del prezzo del corso
-                commission_transaction = BlockchainTransaction.objects.create(
-                    user=student,  # Lo studente paga la commissione
-                    amount=-commission_amount,  # Negativo = uscita dallo studente
-                    transaction_type='platform_commission',
-                    status='completed',
-                    transaction_hash=transaction_hash,
-                    from_address=wallet_address,  # Dal wallet studente
-                    to_address=getattr(settings, 'REWARD_POOL_ADDRESS', 'reward_pool'),
-                    related_object_id=str(course.pk) if course.pk else None,
-                    notes=f"Platform commission (15%) from course purchase: {course.title}"
-                )
-                
-                logger.info(f"Commission registered: {commission_amount} TEO paid by student {student.wallet_address} to reward pool")
-                
-                # Chiama funzioni per le notifiche
-                from courses.signals import notify_course_purchase
-                notify_course_purchase(course, student, course.teacher)
-
-                logger.info(f"Course purchase completed: {student.username} -> {course.title} (TX: {transaction_hash})")
-
-                return Response({
-                    "message": "Corso acquistato con successo!",
-                    "course_title": course.title,
-                    "total_paid": str(course.price),
-                    "teacher_net_amount": str(teacher_net_amount),
-                    "commission_amount": str(commission_amount),
-                    "transaction_hash": transaction_hash,
-                    "wallet_address": wallet_address,
-                    "blockchain_verified": True,
-                    "payment_breakdown": {
-                        "student_paid": str(course.price),
-                        "teacher_received": str(teacher_net_amount),
-                        "platform_commission": str(commission_amount),
-                        "commission_rate": "50%"  # Updated to new business model
-                    },
-                    "commission_status": "completed"  # Ora le commissioni sono gestite automaticamente
-                }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.error(f"Course purchase error: {str(e)}")
-            return Response({"error": f"Errore durante l'acquisto: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
     def _verify_course_payment_transaction(self, tx_hash, student_address, teacher_address, course_price):
         """
@@ -334,3 +244,99 @@ class TeacherCourseStudentsView(APIView):
             })
 
         return Response(data)
+
+
+class CourseEnrollmentView(APIView):
+    """Handle course enrollment with Stripe payment"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, course_id):
+        """Enroll student in course with payment processing"""
+        try:
+            course = get_object_or_404(Course, id=course_id)
+            
+            payment_method = request.data.get('payment_method', 'stripe')
+            amount = Decimal(str(request.data.get('amount', course.price_eur)))
+            discount_applied = request.data.get('discount_applied', False)
+            discount_info = request.data.get('discount_info', None)
+            
+            logger.info(f"Course enrollment request - Course: {course_id}, User: {request.user.id}, Amount: {amount}")
+            
+            # Check if user is already enrolled
+            if course.students.filter(id=request.user.id).exists():
+                return Response({
+                    'success': False,
+                    'error': 'Sei già iscritto a questo corso'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                # Enroll student in course
+                course.students.add(request.user)
+                
+                # Create enrollment record/transaction
+                enrollment_data = {
+                    'course_id': course_id,
+                    'student_id': request.user.id,
+                    'amount_paid': float(amount),
+                    'payment_method': payment_method,
+                    'discount_applied': discount_applied,
+                    'discount_info': discount_info
+                }
+                
+                logger.info(f"Student {request.user.id} successfully enrolled in course {course_id}")
+                
+                # Award TeoCoin reward if configured
+                if course.teocoin_reward > 0:
+                    try:
+                        from services.hybrid_teocoin_service import hybrid_teocoin_service
+                        reward_result = hybrid_teocoin_service.credit_user(
+                            user=request.user,
+                            amount=course.teocoin_reward,
+                            reason=f'Course enrollment reward: {course.title}'
+                        )
+                        logger.info(f"TeoCoin reward granted: {course.teocoin_reward} TEO")
+                    except Exception as e:
+                        logger.error(f"Failed to grant TeoCoin reward: {e}")
+                
+                # Create discount absorption opportunity if discount was applied
+                if discount_applied and discount_info and course.teacher:
+                    try:
+                        from services.teacher_discount_absorption_service import TeacherDiscountAbsorptionService
+                        
+                        absorption_data = {
+                            'course_price_eur': float(course.price_eur),
+                            'discount_percentage': discount_info.get('discount_percentage', 0),
+                            'teo_used': discount_info.get('teo_used', 0),
+                            'discount_amount_eur': discount_info.get('discount_amount_eur', 0)
+                        }
+                        
+                        absorption = TeacherDiscountAbsorptionService.create_absorption_opportunity(
+                            student=request.user,
+                            teacher=course.teacher,
+                            course=course,
+                            discount_data=absorption_data
+                        )
+                        
+                        logger.info(f"Discount absorption opportunity created: {absorption.pk}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to create discount absorption opportunity: {e}")
+                        # Don't fail the enrollment if this fails
+                
+                return Response({
+                    'success': True,
+                    'message': 'Iscrizione al corso completata con successo',
+                    'enrollment': enrollment_data,
+                    'course': {
+                        'id': course.pk,
+                        'title': course.title,
+                        'description': course.description
+                    }
+                })
+                
+        except Exception as e:
+            logger.error(f"Error in course enrollment: {e}")
+            return Response({
+                'success': False,
+                'error': 'Errore durante l\'iscrizione al corso'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

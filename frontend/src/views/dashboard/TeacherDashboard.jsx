@@ -3,8 +3,8 @@ import { Row, Col, Card, Button, Modal, Spinner, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 
-import StudentTeoCoinDashboard from '../../components/blockchain/StudentTeoCoinDashboard';
-import ZeroMaticStakingInterface from '../../components/ZeroMaticStakingInterface';
+import StudentTeoCoinDashboard from '../../components/blockchain/DBStudentTeoCoinDashboard';
+import ZeroMaticStakingInterface from '../../components/blockchain/DBStakingInterface';
 import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
@@ -12,7 +12,8 @@ import { fetchLessonsForCourse, fetchExercisesForLesson } from '../../services/a
 import CourseCreateModal from '../../components/CourseCreateModal';
 import LessonCreateModal from '../../components/LessonCreateModal';
 import ExerciseCreateModal from '../../components/ExerciseCreateModal';
-import { TeacherDiscountDashboard } from '../../components/discount';
+import TeacherDiscountDashboard from '../../components/discount/DBTeacherDiscountDashboard';
+import TeacherDiscountAbsorptionDashboard from '../../components/discount/TeacherDiscountAbsorptionDashboard';
 
 // Import dashboard styles
 import './dashboard-styles.css';
@@ -324,7 +325,7 @@ const TeacherDashboard = () => {
                     walletAddress={userProfile?.wallet_address}
                     onStakingUpdate={(data) => {
                       // Refresh dashboard data after staking operation
-                      fetchDashboardData();
+                      loadDashboard();
                     }}
                   />
                 </Card.Body>
@@ -336,6 +337,13 @@ const TeacherDashboard = () => {
           <Row className="mb-4">
             <Col lg={12}>
               <TeacherDiscountDashboard />
+            </Col>
+          </Row>
+
+          {/* Teacher Discount Absorption System */}
+          <Row className="mb-4">
+            <Col lg={12}>
+              <TeacherDiscountAbsorptionDashboard />
             </Col>
           </Row>
 
