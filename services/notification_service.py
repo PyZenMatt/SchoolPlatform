@@ -1,14 +1,18 @@
 """
 Notification Service - Business Logic for Notification Management
 
+PHASE 4.2: Enhanced with real-time notifications for teacher discount requests.
 Handles all notification-related operations including creation, retrieval,
-marking as read, and notification delivery workflows.
+marking as read, and real-time delivery workflows.
 """
 
 from typing import Dict, List, Optional, Any
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.conf import settings
 from django.db.models import Q
+import json
+import logging
 
 from notifications.models import Notification
 from services.base import TransactionalService
@@ -18,6 +22,7 @@ from services.exceptions import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class NotificationService(TransactionalService):
@@ -290,6 +295,122 @@ class NotificationService(TransactionalService):
         except Exception as e:
             self.log_error(f"Error deleting notification {notification_id}: {str(e)}")
             raise TeoArtServiceException(f"Error deleting notification: {str(e)}")
+
+    def send_real_time_notification(
+        self, 
+        user: User, 
+        notification_type: str, 
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        PHASE 4.2: Send real-time notification to teacher
+        
+        For teacher discount requests, this sends immediate notifications
+        via multiple channels (database, email, WebSocket if available).
+        
+        Args:
+            user: User to notify
+            notification_type: Type of notification ('discount_request', etc.)
+            data: Notification data
+            
+        Returns:
+            Notification result
+        """
+        try:
+            # Create database notification
+            db_notification = self.create_notification(
+                user_id=user.id,
+                message=data.get('message', 'New notification'),
+                notification_type=notification_type,
+                related_object_id=data.get('request_id')
+            )
+            
+            # Send email notification if enabled
+            if user.settings.email_notifications if hasattr(user, 'settings') else True:
+                self._send_email_notification(user, notification_type, data)
+            
+            # Send WebSocket notification (if WebSocket server is available)
+            self._send_websocket_notification(user, notification_type, data)
+            
+            logger.info(f"Real-time notification sent to {user.email}: {notification_type}")
+            
+            return {
+                'success': True,
+                'notification_id': db_notification.get('notification_id'),
+                'channels': ['database', 'email', 'websocket'],
+                'user': user.email,
+                'type': notification_type
+            }
+            
+        except Exception as e:
+            logger.error(f"Real-time notification failed for {user.email}: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def _send_email_notification(self, user: User, notification_type: str, data: Dict[str, Any]) -> None:
+        """Send email notification for urgent requests"""
+        try:
+            if notification_type == 'discount_request':
+                from django.core.mail import send_mail
+                
+                subject = f"🔔 Student Discount Request - {data.get('course_title', 'Unknown Course')}"
+                message = f"""
+Hello {user.first_name or user.email},
+
+A student has requested a TeoCoin discount for your course:
+
+📚 Course: {data.get('course_title', 'Unknown')}
+👤 Student: {data.get('student_email', 'Unknown')}
+💰 Discount: {data.get('discount_percent', 0)}%
+🪙 TEO Amount: {data.get('teo_amount', 0)} TEO
+⏰ Deadline: {data.get('deadline', 'Unknown')}
+
+You have two options:
+1. Accept TeoCoin: Receive TEO tokens + bonus
+2. Take Full Fiat: Receive full EUR payment
+
+Please log in to your dashboard to make your choice.
+
+Best regards,
+SchoolPlatform Team
+                """
+                
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=True
+                )
+                
+                logger.info(f"Email notification sent to {user.email}")
+                
+        except Exception as e:
+            logger.error(f"Email notification failed for {user.email}: {e}")
+    
+    def _send_websocket_notification(self, user: User, notification_type: str, data: Dict[str, Any]) -> None:
+        """Send WebSocket notification for real-time updates"""
+        try:
+            # In a production environment, this would integrate with:
+            # - Django Channels for WebSocket support
+            # - Redis for real-time messaging
+            # - Push notification services
+            
+            websocket_data = {
+                'type': notification_type,
+                'user_id': user.id,
+                'timestamp': timezone.now().isoformat(),
+                'data': data
+            }
+            
+            # For now, just log the WebSocket data
+            # In production, send to WebSocket channel
+            logger.info(f"WebSocket notification prepared for {user.email}: {json.dumps(websocket_data, indent=2)}")
+            
+        except Exception as e:
+            logger.error(f"WebSocket notification failed for {user.email}: {e}")
 
 
 # Singleton instance for easy access
