@@ -19,6 +19,7 @@ from datetime import timedelta
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from decimal import Decimal
+from services.db_teocoin_service import db_teocoin_service
 
 
 class StudentDashboardView(APIView):
@@ -69,9 +70,32 @@ class StudentDashboardView(APIView):
                 logger.error(f"Error getting blockchain balance: {e}")
                 blockchain_balance = "0"
 
+        # 🎯 NEW: Get TeoCoin DB balance for withdrawal functionality
+        try:
+            db_balance_data = db_teocoin_service.get_user_balance(user)
+            teocoin_balance = {
+                'available': str(db_balance_data['available_balance']),
+                'staked': str(db_balance_data['staked_balance']),
+                'pending_withdrawal': str(db_balance_data['pending_withdrawal']),
+                'total': str(db_balance_data['total_balance']),
+                'can_withdraw': float(db_balance_data['available_balance']) >= 10.0  # Minimum withdrawal
+            }
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting TeoCoin DB balance: {e}")
+            teocoin_balance = {
+                'available': '0.00',
+                'staked': '0.00',
+                'pending_withdrawal': '0.00',
+                'total': '0.00',
+                'can_withdraw': False
+            }
+
         data = {
             "username": user.username,
             "blockchain_balance": blockchain_balance,
+            "teocoin_balance": teocoin_balance,  # 🎯 NEW: DB balance for withdrawal
             "wallet_address": user.wallet_address,
             "courses": courses_data,
             "recent_transactions": transactions_data,
@@ -152,8 +176,31 @@ class TeacherDashboardAPI(APIView):
                 logger.error(f"Error getting blockchain balance: {e}")
                 blockchain_balance = "0"
     
+        # 🎯 NEW: Get TeoCoin DB balance for withdrawal functionality
+        try:
+            db_balance_data = db_teocoin_service.get_user_balance(user)
+            teocoin_balance = {
+                'available': str(db_balance_data['available_balance']),
+                'staked': str(db_balance_data['staked_balance']),
+                'pending_withdrawal': str(db_balance_data['pending_withdrawal']),
+                'total': str(db_balance_data['total_balance']),
+                'can_withdraw': float(db_balance_data['available_balance']) >= 10.0  # Minimum withdrawal
+            }
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting TeoCoin DB balance: {e}")
+            teocoin_balance = {
+                'available': '0.00',
+                'staked': '0.00',
+                'pending_withdrawal': '0.00',
+                'total': '0.00',
+                'can_withdraw': False
+            }
+    
         data = {
             "blockchain_balance": blockchain_balance,
+            "teocoin_balance": teocoin_balance,  # 🎯 NEW: DB balance for withdrawal
             "wallet_address": user.wallet_address,
             "stats": {
                 "total_courses": total_courses,
@@ -221,11 +268,34 @@ class AdminDashboardAPI(APIView):
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error getting blockchain balance: {e}")
+
+        # 🎯 NEW: Get TeoCoin DB balance for withdrawal functionality
+        try:
+            db_balance_data = db_teocoin_service.get_user_balance(user)
+            teocoin_balance = {
+                'available': str(db_balance_data['available_balance']),
+                'staked': str(db_balance_data['staked_balance']),
+                'pending_withdrawal': str(db_balance_data['pending_withdrawal']),
+                'total': str(db_balance_data['total_balance']),
+                'can_withdraw': float(db_balance_data['available_balance']) >= 10.0  # Minimum withdrawal
+            }
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting TeoCoin DB balance: {e}")
+            teocoin_balance = {
+                'available': '0.00',
+                'staked': '0.00',
+                'pending_withdrawal': '0.00',
+                'total': '0.00',
+                'can_withdraw': False
+            }
         
         # Mostra saldo blockchain e info admin
         return Response({
             "username": user.username,
             "blockchain_balance": blockchain_balance,
+            "teocoin_balance": teocoin_balance,  # 🎯 NEW: DB balance for withdrawal
             "wallet_address": user.wallet_address,
             "is_staff": user.is_staff,
             "is_superuser": user.is_superuser,

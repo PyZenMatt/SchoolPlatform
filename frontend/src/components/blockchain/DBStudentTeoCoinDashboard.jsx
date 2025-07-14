@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Badge, Spinner, Alert, Button, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
+import PendingWithdrawals from './PendingWithdrawals';
+import BurnDepositInterface from './BurnDepositInterface';
 import './StudentTeoCoinDashboard.scss';
 
 /**
@@ -45,8 +47,8 @@ const DBStudentTeoCoinDashboard = () => {
         throw new Error('No authentication token found');
       }
 
-      // Load balance
-      const balanceResponse = await fetch('/api/v1/teocoin/balance/', {
+      // Load balance using withdrawal API for consistency
+      const balanceResponse = await fetch('/api/v1/teocoin/withdrawals/balance/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -54,15 +56,20 @@ const DBStudentTeoCoinDashboard = () => {
       });
 
       if (!balanceResponse.ok) {
-        throw new Error('Failed to fetch balance');
+        throw new Error(`Balance API error! status: ${balanceResponse.status}`);
       }
 
       const balanceData = await balanceResponse.json();
       console.log('🔍 Balance API Response:', balanceData);
 
-      // Extract balance data correctly
+      // Extract balance data correctly from withdrawal API format
       const balance = balanceData.success && balanceData.balance 
-        ? balanceData.balance 
+        ? {
+            available_balance: parseFloat(balanceData.balance.available || 0).toFixed(2),
+            staked_balance: parseFloat(balanceData.balance.staked || 0).toFixed(2),
+            pending_withdrawal: parseFloat(balanceData.balance.pending_withdrawal || 0).toFixed(2),
+            total_balance: parseFloat(balanceData.balance.total || 0).toFixed(2)
+          }
         : {
             available_balance: '0.00',
             staked_balance: '0.00', 
@@ -285,6 +292,40 @@ const DBStudentTeoCoinDashboard = () => {
                   <div className="stat-label">Transazioni</div>
                 </div>
               </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Pending Withdrawals Section */}
+      {parseFloat(dashboardData.balance.pending_withdrawal) > 0 && (
+        <Row className="mb-3">
+          <Col>
+            <PendingWithdrawals 
+              onTransactionComplete={(data) => {
+                // Refresh dashboard when transaction completes
+                loadDashboardData();
+              }}
+            />
+          </Col>
+        </Row>
+      )}
+
+      {/* Burn Deposit Interface */}
+      <Row className="mb-3">
+        <Col>
+          <Card className="burn-deposit-card">
+            <Card.Header>
+              <h5>🔥 Add TEOcoins</h5>
+              <small className="text-muted">Burn tokens from MetaMask to increase your platform balance</small>
+            </Card.Header>
+            <Card.Body>
+              <BurnDepositInterface 
+                onTransactionComplete={(data) => {
+                  // Refresh dashboard when burn deposit completes
+                  loadDashboardData();
+                }}
+              />
             </Card.Body>
           </Card>
         </Col>

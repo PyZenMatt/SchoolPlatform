@@ -353,7 +353,7 @@ class WithdrawTokensView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        """Create withdrawal request"""
+        """Create withdrawal request and auto-process it immediately"""
         try:
             amount = request.data.get('amount')
             wallet_address = request.data.get('wallet_address')
@@ -363,23 +363,93 @@ class WithdrawTokensView(APIView):
                     'success': False,
                     'error': 'Amount and wallet address required'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Import services
+            from services.teocoin_withdrawal_service import teocoin_withdrawal_service
+            from decimal import Decimal
             
-            db_service = DBTeoCoinService()
-            success = db_service.request_withdrawal(
+            try:
+                amount_decimal = Decimal(str(amount))
+            except (ValueError, TypeError):
+                return Response({
+                    'success': False,
+                    'error': 'Invalid amount format'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Get client IP for security
+            ip_address = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0] or request.META.get('REMOTE_ADDR')
+            
+            # Create withdrawal request using the enhanced service
+            result = teocoin_withdrawal_service.create_withdrawal_request(
                 user=request.user,
-                amount=amount,
-                metamask_address=wallet_address
+                amount=amount_decimal,
+                wallet_address=wallet_address,
+                ip_address=ip_address,
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
             
-            if success:
-                return Response({
-                    'success': True,
-                    'message': 'Withdrawal request created successfully'
-                })
+            if result['success']:
+                withdrawal_id = result['withdrawal_id']
+                
+                # 🚀 AUTO-PROCESS: Immediately mint the tokens
+                logger.info(f"🎯 Auto-processing withdrawal #{withdrawal_id} for {request.user.email}")
+                
+                mint_result = teocoin_withdrawal_service.mint_tokens_to_address(
+                    amount=amount_decimal,
+                    to_address=wallet_address,
+                    withdrawal_id=withdrawal_id
+                )
+                
+                if mint_result['success']:
+                    # Update withdrawal to completed
+                    from blockchain.models import TeoCoinWithdrawalRequest, DBTeoCoinBalance
+                    
+                    withdrawal = TeoCoinWithdrawalRequest.objects.get(id=withdrawal_id)
+                    withdrawal.status = 'completed'
+                    withdrawal.transaction_hash = mint_result.get('transaction_hash', 'demo')
+                    withdrawal.save()
+                    
+                    # Update user balance
+                    balance_obj, created = DBTeoCoinBalance.objects.get_or_create(
+                        user=request.user,
+                        defaults={
+                            'available_balance': Decimal('0.00'),
+                            'staked_balance': Decimal('0.00'),
+                            'pending_withdrawal': Decimal('0.00')
+                        }
+                    )
+                    balance_obj.pending_withdrawal -= amount_decimal
+                    balance_obj.save()
+                    
+                    logger.info(f"✅ Auto-processed withdrawal #{withdrawal_id} successfully")
+                    
+                    return Response({
+                        'success': True,
+                        'message': f'✅ {amount_decimal} TEO minted successfully to your MetaMask wallet!',
+                        'withdrawal_id': withdrawal_id,
+                        'amount': str(amount_decimal),
+                        'wallet_address': wallet_address,
+                        'status': 'completed',
+                        'transaction_hash': mint_result.get('transaction_hash'),
+                        'gas_used': mint_result.get('gas_used'),
+                        'auto_processed': True
+                    })
+                else:
+                    logger.warning(f"⚠️ Auto-processing failed for #{withdrawal_id}: {mint_result.get('error')}")
+                    
+                    # Return pending status as fallback
+                    return Response({
+                        'success': True,
+                        'message': 'Withdrawal request created - processing in background',
+                        'withdrawal_id': withdrawal_id,
+                        'status': 'pending',
+                        'auto_processed': False,
+                        'note': 'Auto-processing failed, will be processed manually'
+                    })
             else:
                 return Response({
                     'success': False,
-                    'error': 'Failed to create withdrawal request'
+                    'error': result['error']
                 }, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:

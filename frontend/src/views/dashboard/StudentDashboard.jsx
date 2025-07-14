@@ -6,6 +6,7 @@ import WalletBalanceDisplay from '../../components/blockchain/WalletBalanceDispl
 import ProfileWalletDisplay from '../../components/blockchain/ProfileWalletDisplay';
 import StudentTeoCoinDashboard from '../../components/blockchain/DBStudentTeoCoinDashboard';
 import RewardNotifications from '../../components/blockchain/RewardNotifications';
+import TeoCoinBalanceWidget from '../../components/TeoCoinBalanceWidget';
 import { fetchStudentDashboard, fetchUserProfile } from '../../services/api/dashboard';
 import StudentSubmissions from './StudentSubmissions';
 
@@ -201,12 +202,22 @@ const StudentDashboard = () => {
       {/* Reward Notifications */}
       <RewardNotifications />
 
+      {/* TeoCoin Withdrawal Widget */}
+      <Row className="mb-4">
+        <Col lg={6} className="mb-4">
+          {/* Enhanced TeoCoin Dashboard */}
+          <StudentTeoCoinDashboard />
+        </Col>
+        <Col lg={6} className="mb-4">
+          {/* TeoCoin Withdrawal Widget */}
+          <TeoCoinBalanceWidget />
+        </Col>
+      </Row>
+
       {/* Main Content Row */}
       <Row>
         {/* Full Width Column */}
         <Col lg={12} className="mb-4">
-          {/* Enhanced TeoCoin Dashboard */}
-          <StudentTeoCoinDashboard />
 
           {/* Courses */}
           <Card className="mb-4">

@@ -22,7 +22,8 @@ const DBDiscountInterface = ({
   // Load user's DB balance
   const loadUserBalance = async () => {
     try {
-      const response = await fetch('/api/v1/teocoin/balance/', {
+      // Use withdrawal API for consistency
+      const response = await fetch('/api/v1/teocoin/withdrawals/balance/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json'
@@ -31,10 +32,22 @@ const DBDiscountInterface = ({
 
       if (response.ok) {
         const data = await response.json();
-        setUserBalance(data.balance.available_balance);
+        console.log('🔍 Discount Balance API Response:', data);
+        
+        if (data.success && data.balance) {
+          // Convert withdrawal API format
+          setUserBalance(parseFloat(data.balance.available || 0));
+        } else {
+          console.warn('Balance API returned no data:', data);
+          setUserBalance(0);
+        }
+      } else {
+        console.error('Failed to fetch balance');
+        setUserBalance(0);
       }
     } catch (error) {
       console.error('Error loading user balance:', error);
+      setUserBalance(0);
     }
   };
 

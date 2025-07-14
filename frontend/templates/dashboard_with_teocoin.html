@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard with TeoCoin Withdrawal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-card h2 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .user-info {
+            grid-column: 1 / -1;
+            text-align: center;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+        
+        .balance-display {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .balance-item {
+            text-align: center;
+        }
+        
+        .balance-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .balance-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        /* Full width for TeoCoin widget */
+        .teocoin-section {
+            grid-column: 1 / -1;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- User Info Section -->
+        <div class="dashboard-card user-info">
+            <h1>Welcome to Your Dashboard</h1>
+            <div class="balance-display">
+                <div class="balance-item">
+                    <div class="balance-value" id="blockchain-balance">0</div>
+                    <div class="balance-label">Blockchain TEO</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-value" id="db-balance">0</div>
+                    <div class="balance-label">Platform TEO</div>
+                </div>
+            </div>
+            <p id="user-wallet">Wallet: Not connected</p>
+        </div>
+
+        <!-- Existing Dashboard Content -->
+        <div class="dashboard-card">
+            <h2>📚 Your Courses</h2>
+            <div id="courses-content">
+                <p>Loading courses...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <h2>📊 Statistics</h2>
+            <div id="stats-content">
+                <p>Loading statistics...</p>
+            </div>
+        </div>
+
+        <!-- TeoCoin Withdrawal Widget - EMBEDDED HERE -->
+        <div class="dashboard-card teocoin-section">
+            <div id="teocoin-withdrawal-widget"></div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="dashboard-card">
+            <h2>💳 Recent Transactions</h2>
+            <div id="transactions-content">
+                <p>Loading transactions...</p>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="dashboard-card">
+            <h2>🔔 Notifications</h2>
+            <div id="notifications-content">
+                <p>Loading notifications...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the TeoCoin Widget -->
+    <script src="/static/js/teocoin-widget.js"></script>
+    
+    <script>
+        // Simulate loading dashboard data
+        async function loadDashboardData() {
+            try {
+                console.log('🔄 Loading dashboard data...');
+                
+                // Try different dashboard endpoints
+                const endpoints = [
+                    '/api/v1/dashboard/student/',
+                    '/api/v1/dashboard/teacher/',
+                    '/api/v1/dashboard/admin/'
+                ];
+
+                let dashboardData = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint);
+                        if (response.ok) {
+                            dashboardData = await response.json();
+                            console.log('✅ Loaded dashboard data from:', endpoint);
+                            break;
+                        }
+                    } catch (error) {
+                        console.log(`❌ Endpoint ${endpoint} not accessible`);
+                    }
+                }
+
+                if (!dashboardData) {
+                    console.warn('⚠️ Could not load dashboard data, using demo data');
+                    dashboardData = {
+                        username: 'Demo User',
+                        blockchain_balance: '0.00',
+                        teocoin_balance: {
+                            available: '150.75',
+                            staked: '50.00',
+                            pending_withdrawal: '0.00',
+                            total: '200.75',
+                            can_withdraw: true
+                        },
+                        wallet_address: null,
+                        courses: [],
+                        stats: {
+                            total_courses: 3,
+                            total_earnings: '245.50',
+                            active_students: 15
+                        },
+                        recent_transactions: [],
+                        notifications: []
+                    };
+                }
+
+                // Update UI with real data
+                updateDashboardUI(dashboardData);
+                
+            } catch (error) {
+                console.error('❌ Error loading dashboard:', error);
+            }
+        }
+
+        function updateDashboardUI(data) {
+            // Update balance displays
+            document.getElementById('blockchain-balance').textContent = data.blockchain_balance || '0.00';
+            document.getElementById('db-balance').textContent = data.teocoin_balance?.available || '0.00';
+            
+            // Update wallet info
+            const walletEl = document.getElementById('user-wallet');
+            if (data.wallet_address) {
+                walletEl.textContent = `Wallet: ${data.wallet_address.substring(0, 6)}...${data.wallet_address.substring(38)}`;
+            } else {
+                walletEl.textContent = 'Wallet: Not connected';
+            }
+
+            // Update courses
+            const coursesEl = document.getElementById('courses-content');
+            if (data.courses && data.courses.length > 0) {
+                coursesEl.innerHTML = `
+                    <ul>
+                        ${data.courses.slice(0, 3).map(course => `
+                            <li>${course.title || course.name || 'Course'}</li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                coursesEl.innerHTML = '<p>No courses found</p>';
+            }
+
+            // Update stats
+            const statsEl = document.getElementById('stats-content');
+            if (data.stats) {
+                statsEl.innerHTML = `
+                    <div>Total Courses: <strong>${data.stats.total_courses || 0}</strong></div>
+                    <div>Total Earnings: <strong>${data.stats.total_earnings || '0.00'} TEO</strong></div>
+                    <div>Active Students: <strong>${data.stats.active_students || 0}</strong></div>
+                `;
+            } else if (data.courses) {
+                statsEl.innerHTML = `
+                    <div>Enrolled Courses: <strong>${data.courses.length}</strong></div>
+                    <div>Available Balance: <strong>${data.teocoin_balance?.available || '0.00'} TEO</strong></div>
+                `;
+            }
+
+            // Update transactions
+            const transactionsEl = document.getElementById('transactions-content');
+            if (data.recent_transactions && data.recent_transactions.length > 0) {
+                transactionsEl.innerHTML = `
+                    <ul>
+                        ${data.recent_transactions.slice(0, 3).map(tx => `
+                            <li>${tx.transaction_type}: ${tx.amount} TEO</li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                transactionsEl.innerHTML = '<p>No recent transactions</p>';
+            }
+
+            // Update notifications
+            const notificationsEl = document.getElementById('notifications-content');
+            if (data.notifications && data.notifications.length > 0) {
+                notificationsEl.innerHTML = `
+                    <ul>
+                        ${data.notifications.slice(0, 3).map(notif => `
+                            <li>${notif.title || notif.message}</li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                notificationsEl.innerHTML = '<p>No notifications</p>';
+            }
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Dashboard page loaded, initializing...');
+            loadDashboardData();
+        });
+
+        // Also initialize the TeoCoin widget manually after data loads
+        setTimeout(() => {
+            if (window.TeoCoinWidget && !window.TeoCoinWidget.userBalance) {
+                console.log('🔄 Manually initializing TeoCoin widget...');
+                window.TeoCoinWidget.init();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

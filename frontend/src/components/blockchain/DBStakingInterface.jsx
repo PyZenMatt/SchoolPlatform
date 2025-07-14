@@ -42,7 +42,8 @@ const DBStakingInterface = ({
             });
 
             // Load user balance
-            const balanceResponse = await fetch('/api/v1/teocoin/balance/', {
+            // Use withdrawal API for consistency
+            const balanceResponse = await fetch('/api/v1/teocoin/withdrawals/balance/', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     'Content-Type': 'application/json'
@@ -53,8 +54,17 @@ const DBStakingInterface = ({
                 const stakingData = await stakingResponse.json();
                 const balanceData = await balanceResponse.json();
                 
+                console.log('🔍 Staking Balance API Response:', balanceData);
+                
                 setTeacherInfo(stakingData.staking_info);
-                setUserBalance(balanceData.balance.available_balance);
+                
+                // Convert withdrawal API format
+                if (balanceData.success && balanceData.balance) {
+                    setUserBalance(parseFloat(balanceData.balance.available || 0));
+                } else {
+                    console.warn('Balance API returned no data:', balanceData);
+                    setUserBalance(0);
+                }
             } else {
                 throw new Error('Failed to load teacher information');
             }

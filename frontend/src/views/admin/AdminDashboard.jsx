@@ -6,6 +6,7 @@ import PendingCoursesCard from '../../components/PendingCoursesCard';
 import ApprovalStats from '../../components/ApprovalStats';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
 import AdminTeoCoinDashboard from '../../components/blockchain/DBAdminTeoCoinDashboard';
+import TeoCoinBalanceWidget from '../../components/TeoCoinBalanceWidget';
 import RevenueAnalytics from '../../components/admin/RevenueAnalytics';
 import { fetchAdminDashboard } from '../../services/api/admin';
 import { fetchUserProfile } from '../../services/api/dashboard';
@@ -281,10 +282,13 @@ const AdminDashboard = () => {
         </Col>
       </Row>
 
-      {/* TeoCoin Dashboard */}
+      {/* TeoCoin Dashboard and Withdrawal */}
       <Row className="mt-4">
-        <Col lg={12}>
+        <Col lg={8}>
           <AdminTeoCoinDashboard />
+        </Col>
+        <Col lg={4}>
+          <TeoCoinBalanceWidget variant="compact" />
         </Col>
       </Row>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiV2Client } from '../services/core/apiV2Client';
+import apiV2Client from '../services/core/apiV2Client';
 
 /**
  * Teacher Choice Dashboard - Layer 2 Gas-Free TeoCoin System

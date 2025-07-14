@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Spinner, Badge, Button, Modal, Form, Alert } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
+import PendingWithdrawals from './PendingWithdrawals';
 
 /**
  * Updated TeoCoinBalance component using DB-based system
@@ -25,6 +26,9 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
   const [withdrawalError, setWithdrawalError] = useState('');
+  
+  // Pending withdrawals state
+  const [showPendingWithdrawals, setShowPendingWithdrawals] = useState(false);
 
   // Fetch DB-based balance
   const fetchBalance = async () => {
@@ -34,7 +38,8 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
     setError('');
     
     try {
-      const response = await fetch('/api/v1/teocoin/balance/', {
+      // Use withdrawal API for consistency
+      const response = await fetch('/api/v1/teocoin/withdrawals/balance/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           'Content-Type': 'application/json'
@@ -42,11 +47,29 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch balance');
+        throw new Error(`Balance API error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      setBalance(data.balance);
+      console.log('🔍 DBTeoCoinBalance API Response:', data);
+      
+      if (data.success && data.balance) {
+        // Convert withdrawal API format to component format
+        setBalance({
+          available_balance: parseFloat(data.balance.available || 0),
+          staked_balance: parseFloat(data.balance.staked || 0),
+          pending_withdrawal: parseFloat(data.balance.pending_withdrawal || 0),
+          total_balance: parseFloat(data.balance.total || 0)
+        });
+      } else {
+        console.warn('Balance API returned no data:', data);
+        setBalance({
+          available_balance: 0,
+          staked_balance: 0,
+          pending_withdrawal: 0,
+          total_balance: 0
+        });
+      }
     } catch (err) {
       console.error('Error fetching DB balance:', err);
       setError('Errore nel caricamento saldo');
@@ -93,7 +116,18 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setSuccess(`Richiesta di prelievo creata! ID: ${data.withdrawal_id}`);
+        // Check if withdrawal was auto-processed
+        if (data.auto_processed && data.status === 'completed') {
+          // Auto-processed successfully!
+          setSuccess(`🎉 ${data.amount} TEO minted successfully to your MetaMask wallet! TX: ${data.transaction_hash?.substring(0, 10)}...`);
+        } else if (data.status === 'completed') {
+          // Completed normally
+          setSuccess(`✅ ${data.amount} TEO withdrawal completed! TX: ${data.transaction_hash?.substring(0, 10)}...`);
+        } else {
+          // Still pending (fallback)
+          setSuccess(`⏳ Withdrawal request created! ID: ${data.withdrawal_id} - Processing...`);
+        }
+        
         setShowWithdrawalModal(false);
         setWithdrawalAmount('');
         setWithdrawalAddress('');
@@ -224,6 +258,18 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
                 Preleva su MetaMask
               </Button>
             )}
+            
+            {/* Show Pending Withdrawals Button */}
+            {balance.pending_withdrawal > 0 && (
+              <Button 
+                variant="warning" 
+                size="sm" 
+                onClick={() => setShowPendingWithdrawals(!showPendingWithdrawals)}
+              >
+                <i className="feather icon-clock me-1"></i>
+                {showPendingWithdrawals ? 'Nascondi' : 'Processa'} Prelievi Pending
+              </Button>
+            )}
           </div>
 
           <div className="mt-3 small text-muted">
@@ -242,6 +288,20 @@ const DBTeoCoinBalance = ({ title = "Saldo TeoCoin", showDetails = false, showWi
           </div>
         </Card.Body>
       </Card>
+
+      {/* Pending Withdrawals Section */}
+      {showPendingWithdrawals && (
+        <div className="mt-3">
+          <PendingWithdrawals 
+            onTransactionComplete={(data) => {
+              // Refresh balance when transaction completes
+              fetchBalance();
+              setSuccess(`✅ ${data.amount_minted} TEO minted successfully! TX: ${data.transaction_hash?.substring(0, 10)}...`);
+              setTimeout(() => setSuccess(''), 5000);
+            }}
+          />
+        </div>
+      )}
 
       {/* Withdrawal Modal */}
       <Modal show={showWithdrawalModal} onHide={() => setShowWithdrawalModal(false)} centered>

@@ -12,7 +12,6 @@ from users.permissions import IsTeacher
 from django.utils import timezone
 from datetime import timedelta
 import random
-from rewards.models import BlockchainTransaction
 from users.models import User
 from notifications.models import Notification
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,16 +23,45 @@ logger = logging.getLogger(__name__)
 
 def create_reward_transaction(user, amount, transaction_type, submission_id):
     """
-    Create a reward transaction for a user
+    Create a reward transaction for a user using DB-based TeoCoin service
     """
-    return BlockchainTransaction.objects.create(
+    from services.db_teocoin_service import db_teocoin_service
+    
+    # Convert amount to Decimal for DB service
+    from decimal import Decimal
+    amount_decimal = Decimal(str(amount))
+    
+    # Create description based on transaction type
+    if transaction_type == 'exercise_reward':
+        description = f"Exercise completion reward (submission {submission_id})"
+    elif transaction_type == 'review_reward':
+        description = f"Exercise review reward (submission {submission_id})"
+    else:
+        description = f"{transaction_type.replace('_', ' ').title()} for submission {submission_id}"
+    
+    # Use DB service to add balance and create transaction
+    success = db_teocoin_service.add_balance(
         user=user,
+        amount=amount_decimal,
         transaction_type=transaction_type,
-        amount=amount,
-        related_object_id=str(submission_id),
-        notes=f"{transaction_type.replace('_', ' ').title()} for submission {submission_id}",
-        status='pending'
+        description=description
     )
+    
+    if success:
+        # Return a mock object that mimics the old BlockchainTransaction for compatibility
+        class MockTransaction:
+            def __init__(self, user, amount, transaction_type, submission_id):
+                self.id = f"db_{submission_id}_{transaction_type}"
+                self.user = user
+                self.amount = amount
+                self.transaction_type = transaction_type
+                self.submission_id = submission_id
+                self.success = True
+        
+        return MockTransaction(user, amount_decimal, transaction_type, submission_id)
+    else:
+        logger.error(f"Failed to create reward transaction for {user.email}: {amount} {transaction_type}")
+        return None
 
 
 class ExerciseListCreateView(generics.ListCreateAPIView):
@@ -192,15 +220,24 @@ class ReviewExerciseView(APIView):
                             # Reward max is PER STUDENT, not per course
                             reward_max_per_student = int(course.price * 0.15)
                             
-                            # Check how much this student has already received for this course
-                            student_rewards_for_course = BlockchainTransaction.objects.filter(
-                                user=submission.student,
-                                transaction_type='exercise_reward',
-                                related_object_id__in=ExerciseSubmission.objects.filter(
-                                    exercise__lesson__course=course,
-                                    student=submission.student
-                                ).values_list('id', flat=True)
-                            ).aggregate(total=models.Sum('amount'))['total'] or 0
+                            # Check how much this student has already received for this course using DB service
+                            from blockchain.models import DBTeoCoinTransaction
+                            
+                            # Get all exercise submissions for this student in this course
+                            course_submission_ids = ExerciseSubmission.objects.filter(
+                                exercise__lesson__course=course,
+                                student=submission.student
+                            ).values_list('id', flat=True)
+                            
+                            # Sum up exercise rewards for those submissions
+                            student_rewards_for_course = 0
+                            for sub_id in course_submission_ids:
+                                reward_amount = DBTeoCoinTransaction.objects.filter(
+                                    user=submission.student,
+                                    transaction_type='exercise_reward',
+                                    description__contains=f'submission {sub_id}'
+                                ).aggregate(total=models.Sum('amount'))['total'] or 0
+                                student_rewards_for_course += reward_amount
                             
                             remaining_for_student = reward_max_per_student - student_rewards_for_course
 
@@ -222,7 +259,11 @@ class ReviewExerciseView(APIView):
                                     submission.id
                                 )
                                 reward_transactions_created.append(exercise_reward)
-                                logger.info(f"✅ Exercise reward transaction created: ID {exercise_reward.id}")
+                                
+                                if exercise_reward:
+                                    logger.info(f"✅ Exercise reward transaction created: ID {exercise_reward.id}")
+                                else:
+                                    logger.error(f"❌ Failed to create exercise reward transaction")
 
                                 # Note: We no longer track global course.reward_distributed
                                 # Each student can earn up to their individual limit
@@ -243,7 +284,11 @@ class ReviewExerciseView(APIView):
                                 submission.id
                             )
                             reward_transactions_created.append(review_reward)
-                            logger.info(f"✅ Review reward transaction created: ID {review_reward.id}")
+                            
+                            if review_reward:
+                                logger.info(f"✅ Review reward transaction created: ID {review_reward.id}")
+                            else:
+                                logger.error(f"❌ Failed to create review reward transaction for {r.reviewer.username}")
                     
                     logger.info(f"💾 Saving submission changes for {submission.id}")
                     # Save submission changes

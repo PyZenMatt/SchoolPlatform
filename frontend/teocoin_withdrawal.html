@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeoCoin Withdrawal System - MetaMask Integration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: #2196F3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.1);
+        }
+        
+        .status-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .status-connected {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .status-disconnected {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #000;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .balance-display {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .withdrawal-history {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .balance-amount {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🪙 TeoCoin Withdrawal</h1>
+            <p>Withdraw your TeoCoin balance to MetaMask wallet</p>
+        </div>
+        
+        <div class="content">
+            <!-- MetaMask Connection Status -->
+            <div class="card">
+                <div class="status-card" id="connectionStatus">
+                    <div class="status-icon status-disconnected" id="statusIcon">❌</div>
+                    <div>
+                        <h3 id="connectionText">MetaMask Not Connected</h3>
+                        <p id="walletAddress">Please connect your MetaMask wallet</p>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" id="connectBtn">Connect MetaMask</button>
+                    <button class="btn btn-secondary hidden" id="disconnectBtn">Disconnect</button>
+                </div>
+            </div>
+            
+            <!-- Database Balance Display -->
+            <div class="card hidden" id="balanceCard">
+                <h3>Your TeoCoin Balance</h3>
+                <div class="balance-display">
+                    <div class="balance-amount" id="dbBalance">0.00 TEO</div>
+                    <div>Available for withdrawal</div>
+                </div>
+                <button class="btn btn-secondary" id="refreshBalanceBtn">🔄 Refresh Balance</button>
+            </div>
+            
+            <!-- Withdrawal Form -->
+            <div class="card hidden" id="withdrawalForm">
+                <h3>Request Withdrawal</h3>
+                <div class="form-group">
+                    <label for="withdrawAmount">Amount to Withdraw (TEO)</label>
+                    <input type="number" id="withdrawAmount" placeholder="Enter amount (min 10 TEO)" 
+                           min="10" max="10000" step="0.01">
+                    <small>Minimum: 10 TEO | Maximum: 10,000 TEO</small>
+                </div>
+                <div class="form-group">
+                    <label for="metamaskAddress">MetaMask Address</label>
+                    <input type="text" id="metamaskAddress" placeholder="0x..." readonly>
+                </div>
+                <button class="btn" id="withdrawBtn">💸 Request Withdrawal</button>
+            </div>
+            
+            <!-- Alerts -->
+            <div id="alerts"></div>
+            
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+            
+            <!-- Withdrawal History -->
+            <div class="card hidden" id="historyCard">
+                <h3>Withdrawal History</h3>
+                <button class="btn btn-secondary" id="refreshHistoryBtn">🔄 Refresh History</button>
+                <div class="withdrawal-history" id="withdrawalHistory">
+                    <p>No withdrawals found.</p>
+                </div>
+            </div>
+            
+            <!-- Network Info -->
+            <div class="card">
+                <h3>Network Information</h3>
+                <p><strong>Contract:</strong> TeoCoin2 (TEO)</p>
+                <p><strong>Network:</strong> Polygon Amoy Testnet</p>
+                <p><strong>Contract Address:</strong> 0x20D6656A31297ab3b8A87291Ed562D4228Be9ff8</p>
+                <p><strong>Processing Time:</strong> 5-10 minutes</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let isConnected = false;
+        let userAccount = null;
+        let dbBalance = 0;
+        
+        // API endpoints
+        const API_BASE = '/blockchain/v2';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkMetaMaskAvailability();
+            setupEventListeners();
+            loadUserData();
+        });
+        
+        function setupEventListeners() {
+            document.getElementById('connectBtn').addEventListener('click', connectMetaMask);
+            document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+            document.getElementById('withdrawBtn').addEventListener('click', requestWithdrawal);
+            document.getElementById('refreshBalanceBtn').addEventListener('click', refreshBalance);
+            document.getElementById('refreshHistoryBtn').addEventListener('click', loadWithdrawalHistory);
+        }
+        
+        function checkMetaMaskAvailability() {
+            if (typeof window.ethereum !== 'undefined') {
+                showAlert('MetaMask detected! Ready to connect.', 'success');
+                // Check if already connected
+                checkExistingConnection();
+            } else {
+                showAlert('MetaMask not found. Please install MetaMask browser extension.', 'error');
+                document.getElementById('connectBtn').disabled = true;
+            }
+        }
+        
+        async function checkExistingConnection() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    userAccount = accounts[0];
+                    updateConnectionStatus(true);
+                    loadUserData();
+                }
+            } catch (error) {
+                console.error('Error checking connection:', error);
+            }
+        }
+        
+        async function connectMetaMask() {
+            if (!window.ethereum) {
+                showAlert('MetaMask not found!', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Request account access
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                if (accounts.length === 0) {
+                    throw new Error('No accounts found');
+                }
+                
+                userAccount = accounts[0];
+                
+                // Check network
+                await checkNetwork();
+                
+                // Link wallet to backend
+                await linkWalletToBackend();
+                
+                updateConnectionStatus(true);
+                loadUserData();
+                
+                showAlert('MetaMask connected successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                showAlert(`Connection failed: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function checkNetwork() {
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const polygonAmoyChainId = '0x13882'; // 80002 in hex
+                
+                if (chainId !== polygonAmoyChainId) {
+                    // Try to switch to Polygon Amoy
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: polygonAmoyChainId }],
+                        });
+                    } catch (switchError) {
+                        // If network doesn't exist, add it
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: polygonAmoyChainId,
+                                    chainName: 'Polygon Amoy',
+                                    nativeCurrency: {
+                                        name: 'MATIC',
+                                        symbol: 'MATIC',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://rpc-amoy.polygon.technology/'],
+                                    blockExplorerUrls: ['https://amoy.polygonscan.com/']
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Network check failed:', error);
+                showAlert('Please switch to Polygon Amoy testnet', 'warning');
+            }
+        }
+        
+        async function linkWalletToBackend() {
+            try {
+                const response = await fetch(`${API_BASE}/link-wallet/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        wallet_address: userAccount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to link wallet');
+                }
+                
+                console.log('Wallet linked to backend:', data);
+                
+            } catch (error) {
+                console.error('Backend linking error:', error);
+                throw new Error(`Backend connection failed: ${error.message}`);
+            }
+        }
+        
+        function disconnectWallet() {
+            userAccount = null;
+            updateConnectionStatus(false);
+            showAlert('Wallet disconnected', 'warning');
+        }
+        
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusIcon = document.getElementById('statusIcon');
+            const connectionText = document.getElementById('connectionText');
+            const walletAddress = document.getElementById('walletAddress');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected && userAccount) {
+                statusIcon.className = 'status-icon status-connected';
+                statusIcon.textContent = '✅';
+                connectionText.textContent = 'MetaMask Connected';
+                walletAddress.textContent = `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`;
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+                
+                // Show connected sections
+                document.getElementById('balanceCard').classList.remove('hidden');
+                document.getElementById('withdrawalForm').classList.remove('hidden');
+                document.getElementById('historyCard').classList.remove('hidden');
+                
+                // Update MetaMask address in form
+                document.getElementById('metamaskAddress').value = userAccount;
+                
+            } else {
+                statusIcon.className = 'status-icon status-disconnected';
+                statusIcon.textContent = '❌';
+                connectionText.textContent = 'MetaMask Not Connected';
+                walletAddress.textContent = 'Please connect your MetaMask wallet';
+                connectBtn.classList.remove('hidden');
+                disconnectBtn.classList.add('hidden');
+                
+                // Hide connected sections
+                document.getElementById('balanceCard').classList.add('hidden');
+                document.getElementById('withdrawalForm').classList.add('hidden');
+                document.getElementById('historyCard').classList.add('hidden');
+            }
+        }
+        
+        async function loadUserData() {
+            if (!isConnected) return;
+            
+            try {
+                await Promise.all([
+                    refreshBalance(),
+                    loadWithdrawalHistory()
+                ]);
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+        
+        async function refreshBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/balance/`, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // This would be DB balance from backend
+                    // For demo, we'll simulate with a balance
+                    dbBalance = parseFloat(data.balance || 0);
+                    document.getElementById('dbBalance').textContent = `${dbBalance.toFixed(2)} TEO`;
+                } else {
+                    throw new Error(data.error || 'Failed to fetch balance');
+                }
+                
+            } catch (error) {
+                console.error('Balance fetch error:', error);
+                showAlert(`Failed to load balance: ${error.message}`, 'error');
+            }
+        }
+        
+        async function requestWithdrawal() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            const address = document.getElementById('metamaskAddress').value;
+            
+            // Validation
+            if (!amount || amount < 10 || amount > 10000) {
+                showAlert('Please enter a valid amount between 10 and 10,000 TEO', 'error');
+                return;
+            }
+            
+            if (amount > dbBalance) {
+                showAlert(`Insufficient balance. You have ${dbBalance.toFixed(2)} TEO available.`, 'error');
+                return;
+            }
+            
+            if (!address || !address.startsWith('0x')) {
+                showAlert('Invalid MetaMask address', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`${API_BASE}/request-withdrawal/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        amount: amount.toString(),
+                        metamask_address: address
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert(`Withdrawal request submitted successfully! Request ID: ${data.withdrawal_id}. Processing time: ${data.estimated_processing_time}`, 'success');
+                    
+                    // Clear form
+                    document.getElementById('withdrawAmount').value = '';
+                    
+                    // Refresh data
+                    await loadUserData();
+                    
+                } else {
+                    throw new Error(data.error || 'Withdrawal request failed');
+                }
+                
+            } catch (error) {
+                console.error('Withdrawal error:', error);
+                showAlert(`Withdrawal failed: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function loadWithdrawalHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/withdrawal-history/`, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayWithdrawalHistory(data.withdrawals || []);
+                } else {
+                    throw new Error(data.error || 'Failed to load history');
+                }
+                
+            } catch (error) {
+                console.error('History load error:', error);
+                document.getElementById('withdrawalHistory').innerHTML = 
+                    '<p>Failed to load withdrawal history.</p>';
+            }
+        }
+        
+        function displayWithdrawalHistory(withdrawals) {
+            const container = document.getElementById('withdrawalHistory');
+            
+            if (withdrawals.length === 0) {
+                container.innerHTML = '<p>No withdrawals found.</p>';
+                return;
+            }
+            
+            const historyHTML = withdrawals.map(withdrawal => `
+                <div class="history-item">
+                    <div>
+                        <strong>${withdrawal.amount} TEO</strong><br>
+                        <small>to ${withdrawal.metamask_address.slice(0, 10)}...</small><br>
+                        <small>${new Date(withdrawal.created_at).toLocaleString()}</small>
+                    </div>
+                    <div>
+                        <span class="history-status status-${withdrawal.status}">${withdrawal.status.toUpperCase()}</span>
+                        ${withdrawal.transaction_hash ? `<br><small>TX: ${withdrawal.transaction_hash.slice(0, 10)}...</small>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = historyHTML;
+        }
+        
+        function showAlert(message, type) {
+            const alertsContainer = document.getElementById('alerts');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertsContainer.appendChild(alert);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+        
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            loading.style.display = show ? 'block' : 'none';
+        }
+        
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return '';
+        }
+        
+        // Listen for account changes
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                if (accounts.length === 0) {
+                    disconnectWallet();
+                } else if (accounts[0] !== userAccount) {
+                    userAccount = accounts[0];
+                    updateConnectionStatus(true);
+                    loadUserData();
+                }
+            });
+            
+            window.ethereum.on('chainChanged', function (chainId) {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

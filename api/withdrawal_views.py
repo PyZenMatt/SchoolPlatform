@@ -81,6 +81,65 @@ class CreateWithdrawalView(APIView):
             )
             
             if result['success']:
+                withdrawal_id = result['withdrawal_id']
+                
+                # 🚀 NEW: Automatically process the withdrawal immediately
+                logger.info(f"🎯 Auto-processing withdrawal #{withdrawal_id} for {request.user.email}")
+                
+                # Process the withdrawal with real minting
+                mint_result = teocoin_withdrawal_service.mint_tokens_to_address(
+                    amount=amount_decimal,
+                    to_address=metamask_address,
+                    withdrawal_id=withdrawal_id
+                )
+                
+                if mint_result['success']:
+                    # Update withdrawal status to completed
+                    from blockchain.models import TeoCoinWithdrawalRequest, DBTeoCoinBalance
+                    
+                    try:
+                        withdrawal = TeoCoinWithdrawalRequest.objects.get(id=withdrawal_id)
+                        withdrawal.status = 'completed'
+                        withdrawal.transaction_hash = mint_result.get('transaction_hash', 'pending')
+                        withdrawal.save()
+                        
+                        # Update user balance
+                        balance_obj, created = DBTeoCoinBalance.objects.get_or_create(
+                            user=request.user,
+                            defaults={
+                                'available_balance': Decimal('0.00'),
+                                'staked_balance': Decimal('0.00'),
+                                'pending_withdrawal': Decimal('0.00')
+                            }
+                        )
+                        balance_obj.pending_withdrawal -= amount_decimal
+                        balance_obj.save()
+                        
+                        logger.info(f"✅ Auto-processed withdrawal #{withdrawal_id} successfully")
+                        
+                        return Response({
+                            'success': True,
+                            'withdrawal_id': withdrawal_id,
+                            'amount': str(amount_decimal),
+                            'metamask_address': metamask_address,
+                            'status': 'completed',
+                            'transaction_hash': mint_result.get('transaction_hash'),
+                            'gas_used': mint_result.get('gas_used'),
+                            'message': f'✅ {amount_decimal} TEO minted successfully to your MetaMask wallet!',
+                            'auto_processed': True
+                        }, status=status.HTTP_201_CREATED)
+                        
+                    except Exception as e:
+                        logger.error(f"Error updating withdrawal #{withdrawal_id} status: {e}")
+                        # Return original pending response if status update fails
+                        pass
+                
+                else:
+                    logger.error(f"❌ Auto-processing failed for withdrawal #{withdrawal_id}: {mint_result.get('error')}")
+                    # Return the original pending withdrawal response
+                    pass
+                
+                # Fallback: Return original response if auto-processing fails
                 return Response({
                     'success': True,
                     'withdrawal_id': result['withdrawal_id'],
@@ -89,7 +148,8 @@ class CreateWithdrawalView(APIView):
                     'status': result['status'],
                     'estimated_processing_time': result['estimated_processing_time'],
                     'daily_withdrawal_count': result['daily_withdrawal_count'],
-                    'message': result['message']
+                    'message': result['message'],
+                    'note': 'Auto-processing failed, withdrawal is pending manual processing'
                 }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
@@ -160,7 +220,7 @@ class UserWithdrawalHistoryView(APIView):
             
             status_filter = request.query_params.get('status')
             
-            withdrawals = teocoin_withdrawal_service.get_user_withdrawal_history(
+            withdrawals = teocoin_withdrawal_service.get_user_withwithdrawal_history(
                 user=request.user,
                 limit=limit,
                 status=status_filter
@@ -339,6 +399,136 @@ class AdminWithdrawalStatsView(APIView):
             
         except Exception as e:
             logger.error(f"Error getting withdrawal statistics (admin): {e}")
+            return Response({
+                'success': False,
+                'error': 'Internal server error',
+                'error_code': 'INTERNAL_ERROR'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ProcessWithdrawalView(APIView):
+    """Process a specific withdrawal request - Convert pending to actual minting"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, withdrawal_id):
+        """
+        Process a specific withdrawal by ID
+        
+        URL: /api/v1/teocoin/withdrawals/{withdrawal_id}/process/
+        Body: {} (empty)
+        
+        Returns real-time transaction feedback including transaction hash
+        """
+        try:
+            # Import here to avoid circular imports
+            from blockchain.models import TeoCoinWithdrawalRequest
+            
+            # Get withdrawal request
+            try:
+                withdrawal = TeoCoinWithdrawalRequest.objects.get(
+                    id=withdrawal_id,
+                    user=request.user,
+                    status='pending'
+                )
+            except TeoCoinWithdrawalRequest.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'error': 'Withdrawal not found or already processed',
+                    'error_code': 'WITHDRAWAL_NOT_FOUND'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            logger.info(f"🎯 Processing withdrawal #{withdrawal_id} for user {request.user.email}")
+            
+            # Process the withdrawal with real minting
+            result = teocoin_withdrawal_service.mint_tokens_to_address(
+                amount=withdrawal.amount,
+                to_address=withdrawal.metamask_address,
+                withdrawal_id=withdrawal.id
+            )
+            
+            if result['success']:
+                # Update withdrawal status
+                withdrawal.status = 'completed'
+                withdrawal.transaction_hash = result.get('transaction_hash', 'pending')
+                withdrawal.save()
+                
+                # Update user balance
+                from blockchain.models import DBTeoCoinBalance
+                balance_obj, created = DBTeoCoinBalance.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'available_balance': Decimal('0.00'),
+                        'staked_balance': Decimal('0.00'),
+                        'pending_withdrawal': Decimal('0.00')
+                    }
+                )
+                balance_obj.pending_withdrawal -= withdrawal.amount
+                balance_obj.save()
+                
+                logger.info(f"✅ Withdrawal #{withdrawal_id} processed successfully")
+                
+                return Response({
+                    'success': True,
+                    'message': f'Successfully minted {withdrawal.amount} TEO to your MetaMask wallet',
+                    'transaction_hash': result.get('transaction_hash'),
+                    'gas_used': result.get('gas_used'),
+                    'amount_minted': str(withdrawal.amount),
+                    'to_address': withdrawal.metamask_address,
+                    'withdrawal_id': withdrawal.id,
+                    'status': 'completed'
+                }, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"❌ Withdrawal #{withdrawal_id} failed: {result.get('error')}")
+                
+                return Response({
+                    'success': False,
+                    'error': result.get('error', 'Minting failed'),
+                    'error_code': 'MINTING_FAILED',
+                    'withdrawal_id': withdrawal.id
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error processing withdrawal #{withdrawal_id}: {e}")
+            return Response({
+                'success': False,
+                'error': 'Internal server error during withdrawal processing',
+                'error_code': 'INTERNAL_ERROR'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserPendingWithdrawalsView(APIView):
+    """Get user's pending withdrawals that can be processed"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current user's pending withdrawals"""
+        try:
+            from blockchain.models import TeoCoinWithdrawalRequest
+            
+            pending_withdrawals = TeoCoinWithdrawalRequest.objects.filter(
+                user=request.user,
+                status='pending'
+            ).order_by('-created_at')
+            
+            withdrawals_data = []
+            for w in pending_withdrawals:
+                withdrawals_data.append({
+                    'id': w.id,
+                    'amount': str(w.amount),
+                    'metamask_address': w.metamask_address,
+                    'created_at': w.created_at.isoformat(),
+                    'status': w.status,
+                    'can_process': True  # User can trigger processing
+                })
+            
+            return Response({
+                'success': True,
+                'pending_withdrawals': withdrawals_data,
+                'count': len(withdrawals_data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error getting user pending withdrawals: {e}")
             return Response({
                 'success': False,
                 'error': 'Internal server error',

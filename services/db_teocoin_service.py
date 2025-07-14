@@ -553,6 +553,69 @@ class DBTeoCoinService:
             for tx in transactions
         ]
     
+    # ========== BURN DEPOSIT OPERATIONS ==========
+    
+    @transaction.atomic
+    def credit_user(self, user: User, amount: Decimal, transaction_type: str = 'deposit',
+                   description: str = "", metadata: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Credit user's account with TeoCoin from burn deposit
+        
+        Args:
+            user: User to credit
+            amount: Amount to credit
+            transaction_type: Type of transaction (must match DBTeoCoinTransaction.TRANSACTION_TYPES)
+            description: Transaction description
+            metadata: Additional transaction metadata (stored in blockchain_tx_hash)
+            
+        Returns:
+            Dict with success status and new balance
+        """
+        try:
+            # Get or create balance record
+            balance_obj, created = DBTeoCoinBalance.objects.get_or_create(
+                user=user,
+                defaults={
+                    'available_balance': Decimal('0.00'),
+                    'staked_balance': Decimal('0.00'),
+                    'pending_withdrawal': Decimal('0.00')
+                }
+            )
+            
+            # Update available balance
+            balance_obj.available_balance += amount
+            balance_obj.updated_at = timezone.now()
+            balance_obj.save()
+            
+            # Extract transaction hash from metadata for storage
+            tx_hash = None
+            if metadata and 'transaction_hash' in metadata:
+                tx_hash = metadata['transaction_hash']
+            
+            # Record transaction
+            transaction_record = DBTeoCoinTransaction.objects.create(
+                user=user,
+                transaction_type=transaction_type,
+                amount=amount,
+                description=description,
+                blockchain_tx_hash=tx_hash
+            )
+            
+            logger.info(f"✅ Credited {amount} TEO to {user.email} via {transaction_type}")
+            
+            return {
+                'success': True,
+                'new_balance': balance_obj.available_balance,
+                'transaction_id': transaction_record.id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error crediting user {user.email}: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
     # ========== ADMIN/PLATFORM OPERATIONS ==========
     
     def get_platform_statistics(self) -> Dict[str, Any]:

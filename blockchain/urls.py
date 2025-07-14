@@ -1,17 +1,18 @@
 """
 URL Configuration for Blockchain Module
 
-This module defines API endpoints for blockchain operations including:
-- Wallet management and balance queries
-- Token minting and rewards
-- Transaction history and status checking
-- Reward pool management and monitoring
+Phase 2 Clean Implementation: TeoCoin Withdrawal System
+Uses the existing TeoCoin2 contract with focused withdrawal functionality.
 
-All endpoints require authentication except for token information.
+Legacy endpoints remain for compatibility but new development should use clean_views.
 """
 
 from django.urls import path, include
 
+# Phase 2: Clean implementation
+from . import clean_views
+
+# Legacy imports for backward compatibility (to be phased out)
 from .views import (
     get_wallet_balance, 
     link_wallet, 
@@ -40,6 +41,30 @@ from .views import (
 )
 
 urlpatterns = [
+    # ============================================
+    # PHASE 2: CLEAN TEOCOIN WITHDRAWAL SYSTEM
+    # ============================================
+    
+    # Core wallet operations
+    path('v2/balance/', clean_views.get_token_balance, name='v2-balance'),
+    path('v2/link-wallet/', clean_views.link_wallet_address, name='v2-link-wallet'),
+    
+    # Withdrawal operations (NEW - Phase 2)
+    path('v2/request-withdrawal/', clean_views.request_withdrawal, name='v2-request-withdrawal'),
+    path('v2/withdrawal-status/<int:withdrawal_id>/', clean_views.get_withdrawal_status, name='v2-withdrawal-status'),
+    path('v2/withdrawal-history/', clean_views.get_withdrawal_history, name='v2-withdrawal-history'),
+    
+    # Transaction operations
+    path('v2/check-transaction/', clean_views.check_transaction_status, name='v2-check-transaction'),
+    path('v2/token-info/', clean_views.get_token_info, name='v2-token-info'),
+    
+    # Admin operations
+    path('v2/admin/process-withdrawals/', clean_views.process_pending_withdrawals, name='v2-process-withdrawals'),
+    
+    # ============================================
+    # LEGACY ENDPOINTS (Phase 1 - To be deprecated)
+    # ============================================
+    
     # Wallet management endpoints
     path('balance/', get_wallet_balance, name='wallet-balance'),
     path('link-wallet/', link_wallet, name='link-wallet'),
@@ -57,10 +82,10 @@ urlpatterns = [
     path('check-student-approval/', check_student_approval, name='check-student-approval'),
     
     # Course payment endpoints - LEGACY (DEPRECATED)
-    path('confirm-course-payment/', confirm_course_payment, name='confirm-course-payment'),  # Legacy
+    path('confirm-course-payment/', confirm_course_payment, name='confirm-course-payment'),
     path('check-course-payment-prerequisites/', check_course_payment_prerequisites, name='check-course-payment-prerequisites'),
     path('execute-course-payment/', execute_course_payment, name='execute-course-payment'),
-    path('process-course-payment/', process_course_payment, name='process-course-payment'),  # Legacy endpoint
+    path('process-course-payment/', process_course_payment, name='process-course-payment'),
     
     # Phase 5.3: Staking Management APIs
     path('staking/info/', get_teacher_staking_info, name='teacher-staking-info'),

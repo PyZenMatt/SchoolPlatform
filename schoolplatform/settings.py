@@ -336,9 +336,8 @@ STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 if not STRIPE_SECRET_KEY and not DEBUG:
     raise ImproperlyConfigured("STRIPE_SECRET_KEY environment variable is required for production")
 
-# Platform wallet address for TeoCoin payments
-PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x742d35Cc6C4d8a8c8C1fd9A2C3a8a6e3F7b1D8e9')
-PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x742d35Cc6C4d8a8c8C1fd9A2C3a8a6e3F7b1D8e9')
+# Platform wallet address for TeoCoin payments (with minting permissions)
+PLATFORM_WALLET_ADDRESS = os.getenv('PLATFORM_WALLET_ADDRESS', '0x3b72a4E942CF1467134510cA3952F01b63005044')
 
 # Payment configuration
 TEOCOIN_EUR_RATE = 10  # 1 EUR = 10 TEO (base rate before discounts)

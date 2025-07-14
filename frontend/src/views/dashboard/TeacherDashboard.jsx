@@ -5,6 +5,7 @@ import './TeacherDashboard.css';
 
 import StudentTeoCoinDashboard from '../../components/blockchain/DBStudentTeoCoinDashboard';
 import ZeroMaticStakingInterface from '../../components/blockchain/DBStakingInterface';
+import TeoCoinBalanceWidget from '../../components/TeoCoinBalanceWidget';
 import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
@@ -299,10 +300,13 @@ const TeacherDashboard = () => {
       <Row>
         {/* Full Width Column - following StudentDashboard layout */}
         <Col lg={12} className="mb-4">
-          {/* TeoCoin Dashboard */}
+          {/* TeoCoin Dashboard and Withdrawal */}
           <Row className="mb-4">
-            <Col lg={12}>
+            <Col lg={6}>
               <StudentTeoCoinDashboard />
+            </Col>
+            <Col lg={6}>
+              <TeoCoinBalanceWidget />
             </Col>
           </Row>
 

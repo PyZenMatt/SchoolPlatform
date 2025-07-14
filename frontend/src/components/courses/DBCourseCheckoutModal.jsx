@@ -58,19 +58,25 @@ const DBCourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }
       try {
         console.log('💰 Loading DB balance for user:', user.id);
         
-        const response = await fetch('/api/v1/teocoin/balance/', {
+        // Use withdrawal API for consistency
+        const response = await fetch('/api/v1/teocoin/withdrawals/balance/', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
         
         const data = await response.json();
-        if (data.success) {
-          setDbBalance(parseFloat(data.balance.available_balance || 0));
-          console.log('💰 DB Balance loaded:', data.balance.available_balance);
+        console.log('🔍 Checkout Balance API Response:', data);
+        
+        if (data.success && data.balance) {
+          // Convert withdrawal API format
+          const availableBalance = parseFloat(data.balance.available || 0);
+          setDbBalance(availableBalance);
+          console.log('💰 DB Balance loaded:', availableBalance);
         } else {
-          console.error('Failed to load DB balance:', data.error);
-          setError('Errore nel caricamento del saldo TeoCoin');
+          console.warn('Balance API returned no data:', data);
+          setDbBalance(0);
+          setError('Failed to load TeoCoin balance');
         }
         
       } catch (err) {
@@ -195,13 +201,23 @@ const DBCourseCheckoutModal = ({ course, show, handleClose, onPurchaseComplete }
 
   const refreshDbBalance = async () => {
     try {
-      const response = await fetch('/api/v1/teocoin/balance/', {
+      // Use withdrawal API for consistency
+      const response = await fetch('/api/v1/teocoin/withdrawals/balance/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
       
       const data = await response.json();
+      console.log('🔍 Checkout Refresh Balance API Response:', data);
+      
+      if (data.success && data.balance) {
+        // Convert withdrawal API format
+        setDbBalance(parseFloat(data.balance.available || 0));
+      } else {
+        console.warn('Balance API returned no data:', data);
+        setDbBalance(0);
+      }
       if (data.success) {
         setDbBalance(parseFloat(data.balance.available_balance || 0));
       }

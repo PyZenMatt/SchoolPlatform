@@ -55,6 +55,9 @@ urlpatterns = [
     # Enhanced Withdrawal System - Phase 1 (MetaMask Integration)
     path('withdrawals/', include('api.withdrawal_urls', namespace='withdrawals')),
     
+    # Burn Deposit System - Phase 2 (MetaMask → Platform)
+    path('', include('api.burn_deposit_urls', namespace='burn_deposit')),
+    
     # Legacy Withdrawal Management (DB-based)
     path('withdraw/', WithdrawTokensView.as_view(), name='withdraw'),
     path('withdrawal/<int:withdrawal_id>/', DBWithdrawalStatusView.as_view(), name='withdrawal_status'),
