@@ -61,8 +61,10 @@ urlpatterns = [
     path('credit/', CreditUserView.as_view(), name='credit'),
     
     # Teacher Discount Absorption System
-    path('teacher/absorptions/pending/', TeacherPendingAbsorptionsView.as_view(), name='teacher_pending_absorptions'),
+    path('teacher/absorptions/', TeacherPendingAbsorptionsView.as_view(), name='teacher_pending_absorptions'),
+    path('teacher/absorptions/pending/', TeacherPendingAbsorptionsView.as_view(), name='teacher_pending_absorptions_alt'),
     path('teacher/absorptions/choose/', TeacherMakeAbsorptionChoiceView.as_view(), name='teacher_make_absorption_choice'),
+    path('teacher/choice/', TeacherMakeAbsorptionChoiceView.as_view(), name='teacher_choice_shortcut'),
     path('teacher/absorptions/history/', TeacherAbsorptionHistoryView.as_view(), name='teacher_absorption_history'),
     
     # Legacy endpoints (for backward compatibility)

@@ -46,22 +46,64 @@ class TeacherDiscountAbsorptionService:
         
         teacher_commission_rate = tier_commission_rates.get(int(teacher_tier), 50)
         
-        # Create the absorption opportunity
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Calculate both options before creating the object
+        course_price_eur = Decimal(str(discount_data['course_price_eur']))
+        discount_amount_eur = Decimal(str(discount_data['discount_amount_eur']))
+        teo_used_by_student = Decimal(str(discount_data['teo_used']))
+        teacher_commission_rate_decimal = Decimal(str(teacher_commission_rate))
+        
+        # Option A: Standard commission, platform absorbs discount
+        option_a_teacher_eur = (course_price_eur * teacher_commission_rate_decimal / 100)
+        option_a_platform_eur = course_price_eur - option_a_teacher_eur
+        
+        # Option B: Teacher absorbs discount, gets TEO + 25% bonus
+        option_b_teacher_eur = option_a_teacher_eur - discount_amount_eur
+        option_b_teacher_teo = teo_used_by_student * Decimal('1.25')  # 25% bonus
+        option_b_platform_eur = option_a_platform_eur + discount_amount_eur
+        
+        # Create the absorption opportunity with all fields populated
         absorption = TeacherDiscountAbsorption.objects.create(
             teacher=teacher,
             course=course,
             student=student,
-            course_price_eur=Decimal(str(discount_data['course_price_eur'])),
+            course_price_eur=course_price_eur,
             discount_percentage=discount_data['discount_percentage'],
-            teo_used_by_student=Decimal(str(discount_data['teo_used'])),
-            discount_amount_eur=Decimal(str(discount_data['discount_amount_eur'])),
+            teo_used_by_student=teo_used_by_student,
+            discount_amount_eur=discount_amount_eur,
             teacher_tier=teacher_tier,
-            teacher_commission_rate=Decimal(str(teacher_commission_rate))
+            teacher_commission_rate=teacher_commission_rate_decimal,
+            expires_at=timezone.now() + timedelta(hours=24),  # 24 hour window
+            # Option A (Default EUR)
+            option_a_teacher_eur=option_a_teacher_eur,
+            option_a_platform_eur=option_a_platform_eur,
+            # Option B (Absorb Discount for TEO)
+            option_b_teacher_eur=option_b_teacher_eur,
+            option_b_teacher_teo=option_b_teacher_teo,
+            option_b_platform_eur=option_b_platform_eur
         )
         
-        # Calculate both options
-        absorption.calculate_options()
-        absorption.save()
+        # Send notification to teacher about the new absorption opportunity
+        try:
+            from notifications.services import teocoin_notification_service
+            
+            teocoin_notification_service.notify_teacher_discount_pending(
+                teacher=teacher,
+                student=student,
+                course_title=course.title,
+                discount_percent=discount_data['discount_percentage'],
+                teo_cost=float(teo_used_by_student),
+                teacher_bonus=float(option_b_teacher_teo - teo_used_by_student),  # 25% bonus part
+                request_id=absorption.pk,
+                expires_at=absorption.expires_at
+            )
+        except Exception as e:
+            # Log error but don't fail the whole process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send teacher notification: {e}")
         
         return absorption
     
@@ -100,6 +142,34 @@ class TeacherDiscountAbsorptionService:
                 transaction_type='discount_absorption',
                 description=f"Absorbed discount for course: {absorption.course.title}"
             )
+        
+        # Send notification to student about teacher's decision
+        try:
+            from notifications.services import teocoin_notification_service
+            
+            decision = 'accepted' if choice == 'absorb' else 'declined'
+            teo_amount = float(absorption.final_teacher_teo) if choice == 'absorb' else None
+            
+            teocoin_notification_service.notify_student_teacher_decision(
+                student=absorption.student,
+                teacher=teacher,
+                course_title=absorption.course.title,
+                decision=decision,
+                teo_amount=teo_amount
+            )
+            
+            # If teacher accepted TEO, send staking reminder
+            if choice == 'absorb':
+                teocoin_notification_service.create_teacher_staking_reminder(
+                    teacher=teacher,
+                    teo_amount=float(absorption.final_teacher_teo)
+                )
+                
+        except Exception as e:
+            # Log error but don't fail the whole process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send decision notifications: {e}")
         
         return absorption
     
@@ -180,6 +250,23 @@ class TeacherDiscountAbsorptionService:
         count = 0
         for absorption in expired_absorptions:
             absorption.auto_expire()
+            
+            # Send expiration notification
+            try:
+                from notifications.services import teocoin_notification_service
+                
+                teocoin_notification_service.notify_request_expired(
+                    teacher=absorption.teacher,
+                    student=absorption.student,
+                    course_title=absorption.course.title,
+                    request_id=absorption.pk
+                )
+            except Exception as e:
+                # Log error but continue processing
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send expiration notification for absorption {absorption.pk}: {e}")
+            
             count += 1
         
         return count

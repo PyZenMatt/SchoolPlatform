@@ -17,20 +17,20 @@ from .discount_views import (
     CalculateDiscountCostView,
     SystemStatusView
 )
-# Import Layer 2 views
-from .layer2_discount_views import (
-    create_layer2_discount_request,
-    check_student_teo_balance,
-    simulate_layer2_discount
-)
+# Import Layer 2 views - COMMENTED OUT - Missing file
+# from .layer2_discount_views import (
+#     create_layer2_discount_request,
+#     check_student_teo_balance,
+#     simulate_layer2_discount
+# )
 
 app_name = 'discount_api'
 
 urlpatterns = [
-    # === Layer 2 Gas-Free Endpoints (NEW) ===
-    path('layer2/create/', create_layer2_discount_request, name='layer2_create_request'),
-    path('layer2/balance/', check_student_teo_balance, name='layer2_check_balance'),
-    path('layer2/simulate/', simulate_layer2_discount, name='layer2_simulate'),
+    # === Layer 2 Gas-Free Endpoints (NEW) === COMMENTED OUT - Missing views
+    # path('layer2/create/', create_layer2_discount_request, name='layer2_create_request'),
+    # path('layer2/balance/', check_student_teo_balance, name='layer2_check_balance'),
+    # path('layer2/simulate/', simulate_layer2_discount, name='layer2_simulate'),
     
     # === Original Smart Contract Endpoints (LEGACY) ===
     # Signature and request creation

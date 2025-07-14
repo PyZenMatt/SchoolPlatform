@@ -26,15 +26,15 @@ const TeacherDiscountChoiceModal = ({
         setError('');
         
         try {
-            const response = await fetch('/api/v1/courses/teacher-choice/accept/', {
+            const response = await fetch('/api/v1/teocoin/teacher/absorptions/choose/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
                 body: JSON.stringify({
-                    request_id: discountRequest.id,
-                    choice: choice // 'accept' or 'decline'
+                    absorption_id: discountRequest.id,
+                    choice: choice === 'accept' ? 'absorb' : 'refuse'
                 })
             });
             
@@ -65,19 +65,30 @@ const TeacherDiscountChoiceModal = ({
     if (!discountRequest) return null;
 
     const {
-        student,
         course,
-        discount_percent,
-        teo_amount,
-        course_price,
-        teacher_earnings_if_accepted,
-        teacher_earnings_if_declined,
-        expires_at
+        student,
+        discount,
+        options,
+        timing
     } = discountRequest;
 
+    // Extract data from the new API format
+    const studentEmail = student?.email || student?.username || 'Unknown';
+    const courseTitle = course?.title || 'Unknown Course';
+    const coursePrice = course?.price || 0;
+    const discountPercent = discount?.percentage || 0;
+    const teoUsed = discount?.teo_used || 0;
+    const discountAmountEur = discount?.eur_amount || 0;
+    
+    const optionA = options?.option_a || {};
+    const optionB = options?.option_b || {};
+    
+    const expiresAt = timing?.expires_at || new Date();
+    const hoursRemaining = timing?.hours_remaining || 0;
+
     // Calculate earnings comparison
-    const fiatDifference = teacher_earnings_if_declined?.fiat - teacher_earnings_if_accepted?.fiat;
-    const teoGained = teacher_earnings_if_accepted?.teo || 0;
+    const fiatDifference = optionA.teacher_eur - optionB.teacher_eur;
+    const teoGained = optionB.teacher_teo;
 
     return (
         <Modal show={show} onHide={handleClose} size="lg" centered>
@@ -102,15 +113,15 @@ const TeacherDiscountChoiceModal = ({
                     <div className="bg-light p-3 rounded">
                         <div className="row">
                             <div className="col-md-6">
-                                <strong>Student:</strong> {student?.email || 'Unknown'}<br/>
-                                <strong>Course:</strong> {course?.title || 'Unknown Course'}<br/>
-                                <strong>Course Price:</strong> €{course_price}
+                                <strong>Student:</strong> {studentEmail}<br/>
+                                <strong>Course:</strong> {courseTitle}<br/>
+                                <strong>Course Price:</strong> €{coursePrice}
                             </div>
                             <div className="col-md-6">
                                 <strong>Discount Requested:</strong> 
-                                <Badge bg="primary" className="ms-2">{discount_percent}%</Badge><br/>
-                                <strong>TEO Cost:</strong> {teo_amount} TEO<br/>
-                                <strong>Expires:</strong> {new Date(expires_at).toLocaleString()}
+                                <Badge bg="primary" className="ms-2">{discountPercent}%</Badge><br/>
+                                <strong>TEO Used:</strong> {teoUsed} TEO<br/>
+                                <strong>Expires:</strong> {new Date(expiresAt).toLocaleString()}
                             </div>
                         </div>
                     </div>
@@ -126,16 +137,16 @@ const TeacherDiscountChoiceModal = ({
                             <div>
                                 <h6 className="text-success mb-1">
                                     <i className="fab fa-bitcoin me-2"></i>
-                                    Accept TeoCoin Payment
+                                    Absorb Discount for TEO + Bonus
                                 </h6>
                                 <p className="mb-2">
-                                    Student gets {discount_percent}% discount, you receive TEO tokens
+                                    Accept the {discountPercent}% discount and receive TEO tokens with 25% bonus
                                 </p>
                                 <div className="small text-muted">
                                     <strong>You receive:</strong><br/>
-                                    • €{teacher_earnings_if_accepted?.fiat} (fiat)<br/>
-                                    • {teacher_earnings_if_accepted?.teo} TEO tokens<br/>
-                                    • Total TEO: {teacher_earnings_if_accepted?.total_teo} TEO
+                                    • €{optionB.teacher_eur} (reduced EUR commission)<br/>
+                                    • {optionB.teacher_teo} TEO tokens (original + 25% bonus)<br/>
+                                    • Platform pays: €{optionB.platform_eur}
                                 </div>
                             </div>
                             <Button 
@@ -160,15 +171,16 @@ const TeacherDiscountChoiceModal = ({
                             <div>
                                 <h6 className="text-primary mb-1">
                                     <i className="fas fa-euro-sign me-2"></i>
-                                    Take Full Fiat Payment
+                                    Keep Full EUR Commission
                                 </h6>
                                 <p className="mb-2">
-                                    Student pays full price, you receive full EUR payment
+                                    Platform absorbs the discount cost, you get full EUR commission
                                 </p>
                                 <div className="small text-muted">
                                     <strong>You receive:</strong><br/>
-                                    • €{teacher_earnings_if_declined?.fiat} (fiat)<br/>
-                                    • 0 TEO tokens
+                                    • €{optionA.teacher_eur} (full EUR commission)<br/>
+                                    • 0 TEO tokens<br/>
+                                    • Platform pays: €{optionA.platform_eur}
                                 </div>
                             </div>
                             <Button 
@@ -182,7 +194,7 @@ const TeacherDiscountChoiceModal = ({
                                 ) : (
                                     <i className="fas fa-money-bill me-2"></i>
                                 )}
-                                Take Fiat
+                                Take EUR
                             </Button>
                         </div>
                     </div>
@@ -194,7 +206,7 @@ const TeacherDiscountChoiceModal = ({
                     <div className="bg-info bg-opacity-10 p-3 rounded">
                         <div className="row text-center">
                             <div className="col-md-4">
-                                <strong>Fiat Difference</strong><br/>
+                                <strong>EUR Difference</strong><br/>
                                 <span className="text-danger">
                                     -€{fiatDifference?.toFixed(2) || 0}
                                 </span><br/>
@@ -205,14 +217,14 @@ const TeacherDiscountChoiceModal = ({
                                 <span className="text-success">
                                     +{teoGained} TEO
                                 </span><br/>
-                                <small className="text-muted">TEO tokens if you accept</small>
+                                <small className="text-muted">TEO tokens + 25% bonus</small>
                             </div>
                             <div className="col-md-4">
-                                <strong>Recommendation</strong><br/>
-                                <Badge bg={teoGained > fiatDifference * 2 ? 'success' : 'warning'}>
-                                    {teoGained > fiatDifference * 2 ? 'Accept TEO' : 'Consider carefully'}
+                                <strong>Time Remaining</strong><br/>
+                                <Badge bg={hoursRemaining > 12 ? 'success' : hoursRemaining > 3 ? 'warning' : 'danger'}>
+                                    {hoursRemaining.toFixed(1)}h left
                                 </Badge><br/>
-                                <small className="text-muted">Based on TEO/EUR ratio</small>
+                                <small className="text-muted">Auto-EUR if expired</small>
                             </div>
                         </div>
                     </div>
@@ -231,7 +243,7 @@ const TeacherDiscountChoiceModal = ({
                     Cancel
                 </Button>
                 <div className="ms-auto small text-muted">
-                    Decision expires: {new Date(expires_at).toLocaleString()}
+                    Decision expires: {new Date(expiresAt).toLocaleString()}
                 </div>
             </Modal.Footer>
         </Modal>

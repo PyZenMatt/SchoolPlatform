@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.db import transaction
 import logging
 
-from services.hybrid_teocoin_service import hybrid_teocoin_service
+from services.db_teocoin_service import DBTeoCoinService
 from blockchain.models import DBTeoCoinBalance, TeoCoinWithdrawalRequest
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,8 @@ class TeoCoinBalanceView(APIView):
     def get(self, request):
         """Get current user's TeoCoin balance"""
         try:
-            balance_data = hybrid_teocoin_service.get_user_balance(request.user)
+            db_service = DBTeoCoinService()
+            balance_data = db_service.get_user_balance(request.user)
             
             return Response({
                 'success': True,
@@ -55,7 +56,8 @@ class CalculateDiscountView(APIView):
                     'error': 'Invalid course price'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            discount_info = hybrid_teocoin_service.calculate_discount(
+            db_service = DBTeoCoinService()
+            discount_info = db_service.calculate_discount(
                 user=request.user,
                 course_price=course_price
             )
@@ -91,7 +93,8 @@ class ApplyDiscountView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Check user balance
-            balance = hybrid_teocoin_service.get_user_balance(request.user)
+            db_service = DBTeoCoinService()
+            balance = db_service.get_user_balance(request.user)
             if balance['available_balance'] < teo_amount:
                 return Response({
                     'success': False,
@@ -99,21 +102,22 @@ class ApplyDiscountView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Deduct TeoCoin for discount
-            result = hybrid_teocoin_service.debit_user(
+            success = db_service.deduct_balance(
                 user=request.user,
                 amount=teo_amount,
-                reason=f'Discount applied for course {course_id}',
+                transaction_type='discount',
+                description=f'Discount applied for course {course_id}',
                 course_id=course_id
             )
             
-            if not result['success']:
+            if not success:
                 return Response({
                     'success': False,
-                    'error': result.get('error', 'Failed to apply discount')
+                    'error': 'Failed to apply discount'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Get updated balance
-            new_balance_data = hybrid_teocoin_service.get_user_balance(request.user)
+            new_balance_data = db_service.get_user_balance(request.user)
             
             return Response({
                 'success': True,
@@ -311,7 +315,8 @@ class StakingInfoView(APIView):
     def get(self, request):
         """Get teacher's staking info and tier details"""
         try:
-            balance_data = hybrid_teocoin_service.get_user_balance(request.user)
+            db_service = DBTeoCoinService()
+            balance_data = db_service.get_user_balance(request.user)
             
             # Get teacher profile info if available
             tier_info = {
@@ -359,13 +364,23 @@ class WithdrawTokensView(APIView):
                     'error': 'Amount and wallet address required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            result = hybrid_teocoin_service.request_withdrawal(
+            db_service = DBTeoCoinService()
+            success = db_service.request_withdrawal(
                 user=request.user,
                 amount=amount,
                 metamask_address=wallet_address
             )
             
-            return Response(result)
+            if success:
+                return Response({
+                    'success': True,
+                    'message': 'Withdrawal request created successfully'
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Failed to create withdrawal request'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
             logger.error(f"Error creating withdrawal for user {request.user.id}: {e}")
@@ -390,7 +405,7 @@ class WithdrawalStatusView(APIView):
             return Response({
                 'success': True,
                 'withdrawal': {
-                    'id': withdrawal.id,
+                    'id': withdrawal.pk,
                     'amount': str(withdrawal.amount),
                     'wallet_address': withdrawal.wallet_address,
                     'status': withdrawal.status,
@@ -422,7 +437,8 @@ class TransactionHistoryView(APIView):
         """Get user's TeoCoin transaction history"""
         try:
             limit = int(request.GET.get('limit', 50))
-            transactions = hybrid_teocoin_service.get_user_transactions(
+            db_service = DBTeoCoinService()
+            transactions = db_service.get_user_transactions(
                 user=request.user,
                 limit=limit
             )
@@ -447,7 +463,8 @@ class PlatformStatisticsView(APIView):
     def get(self, request):
         """Get platform TeoCoin statistics"""
         try:
-            stats = hybrid_teocoin_service.get_platform_statistics()
+            db_service = DBTeoCoinService()
+            stats = db_service.get_platform_statistics()
             
             # Return basic stats for all authenticated users
             return Response({
@@ -492,10 +509,12 @@ class CreditUserView(APIView):
             
             target_user = User.objects.get(id=user_id)
             
-            result = hybrid_teocoin_service.credit_user(
+            db_service = DBTeoCoinService()
+            result = db_service.add_balance(
                 user=target_user,
                 amount=amount,
-                reason=reason
+                transaction_type='admin_credit',
+                description=reason
             )
             
             return Response(result)

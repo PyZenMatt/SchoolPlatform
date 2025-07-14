@@ -21,8 +21,14 @@ class TeacherPendingAbsorptionsView(APIView):
     
     def get(self, request):
         try:
-            # Only teachers should access this
-            if not hasattr(request.user, 'role') or request.user.role != 'teacher':
+            # Check if user is a teacher (has role='teacher' OR has created courses OR is staff)
+            is_teacher = (
+                getattr(request.user, 'role', None) == 'teacher' or
+                request.user.is_staff or
+                hasattr(request.user, 'created_courses') and request.user.created_courses.exists()
+            )
+            
+            if not is_teacher:
                 return Response({
                     'success': False,
                     'error': 'Only teachers can access absorption opportunities'
@@ -93,8 +99,14 @@ class TeacherMakeAbsorptionChoiceView(APIView):
     
     def post(self, request):
         try:
-            # Only teachers should access this
-            if not hasattr(request.user, 'role') or request.user.role != 'teacher':
+            # Check if user is a teacher (has role='teacher' OR has created courses OR is staff)
+            is_teacher = (
+                getattr(request.user, 'role', None) == 'teacher' or
+                request.user.is_staff or
+                hasattr(request.user, 'created_courses') and request.user.created_courses.exists()
+            )
+            
+            if not is_teacher:
                 return Response({
                     'success': False,
                     'error': 'Only teachers can make absorption choices'
@@ -157,8 +169,14 @@ class TeacherAbsorptionHistoryView(APIView):
     
     def get(self, request):
         try:
-            # Only teachers should access this
-            if not hasattr(request.user, 'role') or request.user.role != 'teacher':
+            # Check if user is a teacher (has role='teacher' OR has created courses OR is staff)
+            is_teacher = (
+                getattr(request.user, 'role', None) == 'teacher' or
+                request.user.is_staff or
+                hasattr(request.user, 'created_courses') and request.user.created_courses.exists()
+            )
+            
+            if not is_teacher:
                 return Response({
                     'success': False,
                     'error': 'Only teachers can access absorption history'

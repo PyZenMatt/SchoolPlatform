@@ -28,6 +28,8 @@ from users.models import User
 from services.gas_free_v2_service import GasFreeV2Service
 from views.gas_free_v2_views import create_discount_request_v2
 from services.teo_earning_service import TeoEarningService
+from services.teacher_discount_absorption_service import TeacherDiscountAbsorptionService
+from services.db_teocoin_service import DBTeoCoinService
 from blockchain.blockchain import TeoCoinService
 from notifications.services import teocoin_notification_service
 
@@ -68,61 +70,64 @@ class CreatePaymentIntentView(APIView):
             # Process TeoCoin discount if requested
             if use_teocoin_discount and discount_percent > 0:
                 try:
-                    # Create discount request via Gas-Free V2 system
-                    gas_free_service = GasFreeV2Service()
-                    teacher_address = getattr(course.teacher, 'wallet_address', '') or getattr(course.teacher, 'amoy_address', '')
+                    logger.info(f"🔄 Processing DB TeoCoin discount: {discount_percent}% for user {user.id}")
                     
-                    if not teacher_address:
-                        return Response({
-                            'error': 'Teacher wallet address not configured',
-                            'code': 'TEACHER_WALLET_MISSING'
-                        }, status=status.HTTP_400_BAD_REQUEST)
+                    # Initialize DB TeoCoin service
+                    db_teo_service = DBTeoCoinService()
                     
-                    # Step 1: Transfer TEO from student to escrow (immediate)
-                    logger.info(f"🔄 Processing Gas-Free V2 discount: {discount_percent}% for student {student_address}")
-                    
-                    # Calculate TEO cost (simplified: 1 TEO = €0.10 discount)
+                    # Calculate TEO cost (1 EUR discount = 1 TEO, matching frontend)
                     discount_value_eur = original_price * Decimal(discount_percent) / Decimal('100')
-                    teo_cost = discount_value_eur * 10  # 10 TEO per EUR discount
+                    teo_cost = discount_value_eur  # 1 TEO = 1 EUR discount value
                     
-                    # Check student allowance/balance
-                    student_allowance = gas_free_service.get_student_allowance(student_address)
-                    student_balance = gas_free_service.get_student_actual_balance(student_address)
-                    available_teo = max(student_allowance, student_balance)
+                    # Check student TEO balance using DB system (matches frontend)
+                    student_balance_data = db_teo_service.get_user_balance(user)
+                    available_teo = student_balance_data.get('available_balance', 0)
                     
                     if available_teo < teo_cost:
                         return Response({
                             'error': f'Insufficient TEO balance. Need {teo_cost} TEO, have {available_teo} TEO',
-                            'code': 'INSUFFICIENT_TEO_BALANCE'
+                            'code': 'INSUFFICIENT_TEO_BALANCE',
+                            'required_teo': float(teo_cost),
+                            'available_teo': float(available_teo)
                         }, status=status.HTTP_400_BAD_REQUEST)
                     
-                    # Step 2: Create discount request (TEO goes to escrow immediately)
-                    # For now, simulate the escrow transfer
-                    discount_request_id = 12345  # Generate unique ID
+                    # Deduct TEO from student's account immediately
+                    success = db_teo_service.deduct_balance(
+                        user=user,
+                        amount=teo_cost,
+                        transaction_type='discount',
+                        description=f'TeoCoin discount for course: {course.title}',
+                        course_id=str(course_id)
+                    )
+                    
+                    if not success:
+                        return Response({
+                            'error': 'Failed to deduct TeoCoin from your account',
+                            'code': 'TEO_DEDUCTION_FAILED'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Create Teacher Discount Absorption Opportunity
+                    absorption = TeacherDiscountAbsorptionService.create_absorption_opportunity(
+                        student=user,
+                        teacher=course.teacher,
+                        course=course,
+                        discount_data={
+                            'discount_percentage': discount_percent,
+                            'teo_used': float(teo_cost),
+                            'discount_amount_eur': float(discount_value_eur),
+                            'course_price_eur': float(original_price)
+                        }
+                    )
                     
                     # Student gets guaranteed discount immediately
-                    discount_amount = original_price * Decimal(discount_percent) / Decimal('100')
+                    discount_amount = discount_value_eur
                     final_price = original_price - discount_amount
                     
-                    logger.info(f"✅ Gas-Free V2 discount applied: {discount_percent}% off €{original_price}")
-                    logger.info(f"💰 {teo_cost} TEO transferred to escrow, student pays €{final_price}")
+                    logger.info(f"✅ TeoCoin discount applied: {discount_percent}% off €{original_price}")
+                    logger.info(f"💰 {teo_cost} TEO deducted from student, pays €{final_price}")
+                    logger.info(f"📋 Teacher absorption opportunity created: ID {absorption.pk}")
                     
-                    # Step 3: Send notification to teacher about pending decision
-                    try:
-                        teocoin_notification_service.notify_teacher_discount_pending(
-                            teacher=course.teacher,
-                            student=user,
-                            course_title=course.title,
-                            discount_percent=discount_percent,
-                            teo_cost=float(teo_cost),
-                            teacher_bonus=float(teo_cost * Decimal('0.25')),  # 25% bonus
-                            request_id=discount_request_id,
-                            expires_at=timezone.now() + timezone.timedelta(hours=2)
-                        )
-                    except Exception as notification_error:
-                        logger.warning(f"Failed to send teacher notification: {notification_error}")
-                    
-                    logger.info(f"✅ Discount request created: {discount_request_id} for €{discount_amount}")
+                    # Teacher will be notified through the absorption dashboard
                         
                 except Exception as e:
                     logger.error(f"Discount creation error: {e}")
@@ -233,7 +238,7 @@ class ConfirmPaymentView(APIView):
             if existing_enrollment:
                 return Response({
                     'error': 'Already enrolled in this course',
-                    'enrollment_id': existing_enrollment.id,
+                    'enrollment_id': existing_enrollment.pk,
                     'code': 'ALREADY_ENROLLED'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
@@ -276,7 +281,7 @@ class ConfirmPaymentView(APIView):
             
             return Response({
                 'success': True,
-                'enrollment_id': enrollment.id,
+                'enrollment_id': enrollment.pk,
                 'course_title': course.title,
                 'amount_paid': str(final_price),
                 'discount_applied': str(discount_amount) if discount_amount > 0 else None,

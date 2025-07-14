@@ -314,7 +314,7 @@ class TeoCoinDiscountNotificationService:
                 'teacher_bonus': teacher_bonus,
                 'total_teo': teo_cost + teacher_bonus,
                 'hours_remaining': hours_remaining,
-                'dashboard_url': f"{settings.FRONTEND_URL}/teacher/dashboard"
+                'dashboard_url': f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/teacher/dashboard"
             }
             
             html_message = render_to_string('emails/teacher_discount_decision.html', context)
@@ -342,7 +342,7 @@ class TeoCoinDiscountNotificationService:
                 f"You have only {minutes_remaining} minutes left to choose your payment method "
                 f"for the discount request on '{course_title}'.\n\n"
                 f"Please visit your dashboard to make your choice:\n"
-                f"{settings.FRONTEND_URL}/teacher/dashboard\n\n"
+                f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/teacher/dashboard\n\n"
                 f"If you don't choose, you'll automatically receive full EUR commission."
             )
             
