@@ -1,8 +1,8 @@
 """
-TeoCoin API URL Configuration
+TeoCoin API URL Configuration - Enhanced with Phase 1 Withdrawal System
 """
 
-from django.urls import path
+from django.urls import path, include
 from .teocoin_views import (
     CreateWithdrawalView,
     WithdrawalStatusView,
@@ -52,7 +52,10 @@ urlpatterns = [
     path('unstake/', UnstakeTokensView.as_view(), name='unstake'),
     path('staking-info/', StakingInfoView.as_view(), name='staking_info'),
     
-    # Withdrawal Management (DB-based)
+    # Enhanced Withdrawal System - Phase 1 (MetaMask Integration)
+    path('withdrawals/', include('api.withdrawal_urls', namespace='withdrawals')),
+    
+    # Legacy Withdrawal Management (DB-based)
     path('withdraw/', WithdrawTokensView.as_view(), name='withdraw'),
     path('withdrawal/<int:withdrawal_id>/', DBWithdrawalStatusView.as_view(), name='withdrawal_status'),
     

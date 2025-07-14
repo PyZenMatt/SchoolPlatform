@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend API Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Frontend API Debug Tool</h1>
+    <p>This tool simulates the exact frontend API calls to debug the teacher choice issue.</p>
+    
+    <div>
+        <h3>1. Authentication Test</h3>
+        <button onclick="testAuth()">Test Authentication</button>
+        <div id="authResult" class="result"></div>
+    </div>
+    
+    <div>
+        <h3>2. Get Pending Absorptions</h3>
+        <button onclick="getPendingAbsorptions()">Get Pending Absorptions</button>
+        <div id="pendingResult" class="result"></div>
+    </div>
+    
+    <div>
+        <h3>3. Submit Teacher Choice</h3>
+        <label>Absorption ID: <input type="number" id="absorptionId" value="9" /></label>
+        <label>Choice: 
+            <select id="choice">
+                <option value="absorb">Absorb (Accept TEO)</option>
+                <option value="refuse">Refuse (Take EUR)</option>
+            </select>
+        </label>
+        <button onclick="submitChoice()">Submit Choice</button>
+        <div id="choiceResult" class="result"></div>
+    </div>
+    
+    <div>
+        <h3>4. Check Balance</h3>
+        <button onclick="checkBalance()">Check TEO Balance</button>
+        <div id="balanceResult" class="result"></div>
+    </div>
+
+    <script>
+        // Simulate getting token from localStorage (replace with actual token)
+        let accessToken = 'test-token'; // This will be replaced with real token
+        
+        async function testAuth() {
+            const result = document.getElementById('authResult');
+            result.innerHTML = '🔄 Testing authentication...';
+            
+            try {
+                const response = await fetch('/api/v1/teocoin/balance/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `✅ Auth successful! Response: ${JSON.stringify(data)}`;
+                    result.className = 'result success';
+                } else {
+                    result.innerHTML = `❌ Auth failed! Status: ${response.status}`;
+                    result.className = 'result error';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Network error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        async function getPendingAbsorptions() {
+            const result = document.getElementById('pendingResult');
+            result.innerHTML = '🔄 Getting pending absorptions...';
+            
+            try {
+                const response = await fetch('/api/v1/teocoin/teacher/absorptions/pending/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `✅ Found ${data.absorptions?.length || 0} pending absorptions:<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    result.className = 'result success';
+                } else {
+                    result.innerHTML = `❌ Failed! Status: ${response.status}`;
+                    result.className = 'result error';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Network error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        async function submitChoice() {
+            const result = document.getElementById('choiceResult');
+            const absorptionId = document.getElementById('absorptionId').value;
+            const choice = document.getElementById('choice').value;
+            
+            result.innerHTML = `🔄 Submitting choice: ${choice} for absorption ${absorptionId}...`;
+            
+            const requestData = {
+                absorption_id: parseInt(absorptionId),
+                choice: choice
+            };
+            
+            console.log('Making API call with data:', requestData);
+            console.log('URL:', '/api/v1/teocoin/teacher/absorptions/choose/');
+            console.log('Token:', accessToken);
+            
+            try {
+                const response = await fetch('/api/v1/teocoin/teacher/absorptions/choose/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    result.innerHTML = `✅ Choice submitted successfully!<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    result.className = 'result success';
+                } else {
+                    result.innerHTML = `❌ Failed! Status: ${response.status}<br>Response: ${responseText}`;
+                    result.className = 'result error';
+                }
+            } catch (error) {
+                console.error('Error details:', error);
+                result.innerHTML = `❌ Network error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        async function checkBalance() {
+            const result = document.getElementById('balanceResult');
+            result.innerHTML = '🔄 Checking balance...';
+            
+            try {
+                const response = await fetch('/api/v1/teocoin/balance/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `✅ Current balance: ${data.available_balance} TEO<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    result.className = 'result success';
+                } else {
+                    result.innerHTML = `❌ Failed! Status: ${response.status}`;
+                    result.className = 'result error';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ Network error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        // Auto-fill with a real token if running in the browser
+        window.onload = function() {
+            // Try to get real token from localStorage
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                accessToken = token;
+                document.getElementById('authResult').innerHTML = `🔑 Using token from localStorage: ${token.substring(0, 50)}...`;
+            } else {
+                document.getElementById('authResult').innerHTML = '⚠️ No token found in localStorage. Please login first.';
+            }
+        };
+    </script>
+</body>
+</html>

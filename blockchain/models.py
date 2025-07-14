@@ -300,13 +300,15 @@ class DBTeoCoinTransaction(models.Model):
 
 class TeoCoinWithdrawalRequest(models.Model):
     """
-    Handle MetaMask withdrawal requests from DB balance to blockchain
+    Enhanced withdrawal request model for MetaMask integration
+    Handles withdrawal from DB balance to blockchain via minting
     """
-    STATUS_CHOICES = [
+    WITHDRAWAL_STATUS = [
         ('pending', 'Pending'),
         ('processing', 'Processing'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
+        ('cancelled', 'Cancelled')
     ]
     
     user = models.ForeignKey(
@@ -314,32 +316,44 @@ class TeoCoinWithdrawalRequest(models.Model):
         on_delete=models.CASCADE,
         related_name='withdrawal_requests'
     )
-    
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    wallet_address = models.CharField(max_length=42)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    metamask_address = models.CharField(max_length=42)
+    status = models.CharField(max_length=20, choices=WITHDRAWAL_STATUS, default='pending')
     
-    # Processing data
-    blockchain_tx_hash = models.CharField(max_length=66, blank=True, null=True)
-    gas_fee_paid = models.DecimalField(max_digits=8, decimal_places=6, null=True, blank=True)
+    # Blockchain tracking
+    transaction_hash = models.CharField(max_length=66, null=True, blank=True)
+    gas_used = models.BigIntegerField(null=True, blank=True)
+    gas_price_gwei = models.DecimalField(max_digits=8, decimal_places=2, null=True)
+    gas_cost_eur = models.DecimalField(max_digits=8, decimal_places=2, null=True)
+    
+    # Security and limits
+    daily_withdrawal_count = models.IntegerField(default=1)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    # Error handling
     error_message = models.TextField(blank=True, null=True)
+    retry_count = models.IntegerField(default=0)
     
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
-        ordering = ['-created_at']
         verbose_name = "TeoCoin Withdrawal Request"
         verbose_name_plural = "TeoCoin Withdrawal Requests"
         db_table = "blockchain_teocoin_withdrawal_request"
+        ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'status']),
-            models.Index(fields=['created_at']),
-            models.Index(fields=['status']),
+            models.Index(fields=['metamask_address']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['daily_withdrawal_count']),
         ]
     
     def __str__(self):
-        return f"{self.user.email} - {self.amount} TEO - {self.status}"
+        return f"Withdrawal #{self.id} - {self.user.email} - {self.amount} TEO - {self.status}"
     
     @property
     def is_processing_too_long(self):
@@ -347,3 +361,18 @@ class TeoCoinWithdrawalRequest(models.Model):
         if self.status == 'processing':
             return timezone.now() - self.created_at > timezone.timedelta(hours=24)
         return False
+    
+    @property
+    def can_be_cancelled(self):
+        """Check if withdrawal can be cancelled by user"""
+        return self.status in ['pending', 'failed']
+    
+    @property
+    def estimated_processing_time(self):
+        """Estimated processing time for withdrawal"""
+        if self.status == 'pending':
+            return "5-10 minutes"
+        elif self.status == 'processing':
+            return "1-5 minutes"
+        else:
+            return "Completed"

@@ -412,44 +412,22 @@ class TeacherProfile(models.Model):
 
     def sync_with_staking_service(self):
         """
-        PHASE 2.1: Auto-sync commission rate with TeoCoin staking service
-        
-        This method fetches the latest staking information from the blockchain
-        and updates the teacher's profile automatically.
+        DEPRECATED: Legacy staking service integration removed.
+        Now uses database-only staking system.
         """
         try:
-            from services.teocoin_staking_service import TeoCoinStakingService
+            # Use database-only staking system instead
+            update_result = self.update_tier_and_commission()
             
-            # Skip if no wallet address
-            if not self.user.wallet_address:
-                return False, "No wallet address found"
+            # Save changes
+            self.save()
             
-            # Initialize staking service
-            staking_service = TeoCoinStakingService()
-            
-            # Get current staking information from blockchain
-            staking_info = staking_service.get_user_staking_info(
-                self.user.wallet_address
-            )
-            
-            if staking_info and staking_info.get('success'):
-                # Update staked amount from blockchain
-                self.staked_teo_amount = Decimal(str(staking_info.get('staked_amount_formatted', '0.00')))
-                
-                # Update tier and commission based on actual staked amount
-                update_result = self.update_tier_and_commission()
-                
-                # Save changes
-                self.save()
-                
-                return True, {
-                    'message': 'Profile synced successfully',
-                    'tier': update_result['tier'],
-                    'commission_rate': update_result['commission_rate'],
-                    'staked_amount': update_result['staked_amount']
-                }
-            else:
-                return False, "Failed to fetch staking info from blockchain"
+            return True, {
+                'message': 'Profile updated using database staking system',
+                'tier': update_result['tier'],
+                'commission_rate': update_result['commission_rate'],
+                'staked_amount': update_result['staked_amount']
+            }
                 
         except Exception as e:
             import logging

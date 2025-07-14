@@ -1,12 +1,12 @@
 """
 TeoCoin Discount Payment System - Clean Implementation
-Backend Proxy Architecture: Platform pays gas fees, students get guaranteed discounts
+Database-only Architecture: Fast, reliable, gasless TeoCoin operations
 
 Business Logic:
-- Students always get discounts regardless of teacher decision
-- Teachers choose between EUR safety vs TEO staking opportunity  
-- Platform absorbs discount cost if teacher declines
-- 50% baseline commission with staking tier adjustments
+- Students get discounts using database TeoCoin balance
+- Teachers receive commissions based on staking tiers (database-tracked)
+- Platform handles all business logic in secure database
+- Clean separation between DB operations and blockchain (for withdrawal/deposit only)
 """
 
 from rest_framework.views import APIView
@@ -25,8 +25,12 @@ from django.conf import settings
 
 from courses.models import Course, CourseEnrollment
 from users.models import User
-from services.gas_free_v2_service import GasFreeV2Service
-from views.gas_free_v2_views import create_discount_request_v2
+
+# LEGACY IMPORTS REMOVED - using clean database services now
+# from services.gas_free_v2_service import GasFreeV2Service
+# from views.gas_free_v2_views import create_discount_request_v2
+
+from services.hybrid_teocoin_service import hybrid_teocoin_service
 from services.teo_earning_service import TeoEarningService
 from services.teacher_discount_absorption_service import TeacherDiscountAbsorptionService
 from services.db_teocoin_service import DBTeoCoinService
@@ -271,13 +275,23 @@ class ConfirmPaymentView(APIView):
                 except Exception as e:
                     logger.error(f"Teacher notification error: {e}")
             
-            # Award completion TEO to student (backend proxy handles minting)
+            # Award purchase bonus TEO to student using clean database system
             try:
-                teo_service = TeoEarningService()
-                teo_service.reward_course_purchase(user.id, course_id)
-                logger.info(f"🪙 TEO purchase reward sent to {student_address}")
+                from decimal import Decimal
+                purchase_bonus = Decimal('5.0')  # 5 TEO bonus for course purchase
+                success = hybrid_teocoin_service.add_balance(
+                    user=user,
+                    amount=purchase_bonus,
+                    transaction_type='course_purchase_bonus',
+                    description=f"Purchase bonus for course: {course.title}",
+                    course_id=str(course_id)
+                )
+                if success:
+                    logger.info(f"🪙 {purchase_bonus} TEO purchase bonus awarded to {user.email}")
+                else:
+                    logger.error(f"Failed to award purchase bonus to {user.email}")
             except Exception as e:
-                logger.error(f"TEO reward error: {e}")
+                logger.error(f"TEO purchase bonus error: {e}")
             
             return Response({
                 'success': True,

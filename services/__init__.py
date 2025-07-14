@@ -9,8 +9,8 @@ Services:
 - CourseService: Course management and enrollment
 - BlockchainService: Blockchain and TeoCoin operations
 - NotificationService: Email and in-app notifications
-- TeoCoinStakingService: Staking system operations
 - TeoEarningService: TEO earning tracking
+- DBTeoCoinService: Clean database-based TeoCoin operations
 """
 
 # Default app config
@@ -24,7 +24,8 @@ __all__ = [
     'user_service',
     'TeoEarningService',
     'teo_earning_service',
-    'TeoCoinStakingService',
+    'db_teocoin_service',
+    'hybrid_teocoin_service',
 ]
 
 def __getattr__(name):
@@ -41,9 +42,12 @@ def __getattr__(name):
     elif name == 'TeoEarningService':
         from .teo_earning_service import TeoEarningService
         return TeoEarningService
-    elif name == 'TeoCoinStakingService':
-        from .teocoin_staking_service import TeoCoinStakingService
-        return TeoCoinStakingService
+    elif name == 'db_teocoin_service':
+        from .db_teocoin_service import db_teocoin_service
+        return db_teocoin_service
+    elif name == 'hybrid_teocoin_service':
+        from .hybrid_teocoin_service import hybrid_teocoin_service
+        return hybrid_teocoin_service
     elif name == 'BaseService':
         from .base import BaseService
         return BaseService
