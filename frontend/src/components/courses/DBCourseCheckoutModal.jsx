@@ -12,8 +12,7 @@ import {
 // Initialize Stripe
 const stripePromise = loadStripe(
     process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-    'pk_test_51RcjXd1ION4Zwx6o6sYtV3D7Kq8rOxB2Jr99saydr5tf499pv9pi9yrKAukluL6FHmXEAVgDnHZMKROHjeezlPLu00XRVqvbus'
+    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
 );
 
 /**
