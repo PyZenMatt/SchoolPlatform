@@ -9,7 +9,6 @@ Services:
 - CourseService: Course management and enrollment
 - BlockchainService: Blockchain and TeoCoin operations
 - NotificationService: Email and in-app notifications
-- TeoEarningService: TEO earning tracking
 - DBTeoCoinService: Clean database-based TeoCoin operations
 """
 
@@ -22,8 +21,6 @@ __all__ = [
     'TransactionalService',
     'UserService',
     'user_service',
-    'TeoEarningService',
-    'teo_earning_service',
     'db_teocoin_service',
     'hybrid_teocoin_service',
 ]
@@ -36,12 +33,6 @@ def __getattr__(name):
     elif name == 'UserService':
         from .user_service import UserService
         return UserService
-    elif name == 'teo_earning_service':
-        from .teo_earning_service import teo_earning_service as _teo_earning_service
-        return _teo_earning_service
-    elif name == 'TeoEarningService':
-        from .teo_earning_service import TeoEarningService
-        return TeoEarningService
     elif name == 'db_teocoin_service':
         from .db_teocoin_service import db_teocoin_service
         return db_teocoin_service

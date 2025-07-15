@@ -19,9 +19,6 @@ from .db_teocoin_views import (
     CalculateDiscountView,
     ApplyDiscountView,
     PurchaseCourseView,
-    StakeTokensView,
-    UnstakeTokensView,
-    StakingInfoView,
     WithdrawTokensView,
     WithdrawalStatusView as DBWithdrawalStatusView,
     TransactionHistoryView,
@@ -46,11 +43,6 @@ urlpatterns = [
     path('calculate-discount/', CalculateDiscountView.as_view(), name='calculate_discount'),
     path('apply-discount/', ApplyDiscountView.as_view(), name='apply_discount'),
     path('purchase-course/', PurchaseCourseView.as_view(), name='purchase_course'),
-    
-    # Staking System
-    path('stake/', StakeTokensView.as_view(), name='stake'),
-    path('unstake/', UnstakeTokensView.as_view(), name='unstake'),
-    path('staking-info/', StakingInfoView.as_view(), name='staking_info'),
     
     # Enhanced Withdrawal System - Phase 1 (MetaMask Integration)
     path('withdrawals/', include('api.withdrawal_urls', namespace='withdrawals')),

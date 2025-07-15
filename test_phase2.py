@@ -22,7 +22,7 @@ def test_phase2_implementation():
     try:
         # Test 1: Import service
         print("Test 1: Importing blockchain service...")
-        from blockchain.services import teocoin_service
+        from services.consolidated_teocoin_service import teocoin_service
         print("✅ Service imported successfully")
         
         # Test 2: Get token info

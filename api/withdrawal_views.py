@@ -14,7 +14,7 @@ from decimal import Decimal
 import logging
 
 from services.teocoin_withdrawal_service import teocoin_withdrawal_service
-from services.hybrid_teocoin_service import hybrid_teocoin_service
+from services.db_teocoin_service import db_teocoin_service
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ class UserTeoCoinBalanceView(APIView):
     def get(self, request):
         """Get current user's TeoCoin balance"""
         try:
-            balance_data = hybrid_teocoin_service.get_user_balance(request.user)
+            balance_data = db_teocoin_service.get_user_balance(request.user)
             
             return Response({
                 'success': True,

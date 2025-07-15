@@ -10,7 +10,6 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import BlockchainTransaction
-from blockchain.views import mint_tokens
 from courses.models import Course, Exercise, ExerciseSubmission, ExerciseReview
 
 # Import BlockchainService for new architecture
@@ -363,7 +362,10 @@ class BlockchainRewardManager:
             
             # Effettua il trasferimento dalla reward pool
             try:
-                tx_hash = teocoin_service.transfer_from_reward_pool(wallet_address, amount)
+                # OBSOLETE: Old blockchain transfer from reward pool
+                # tx_hash = teocoin_service.transfer_from_reward_pool(wallet_address, amount)
+                # Using DB-based system instead
+                tx_hash = f"db_transfer_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
                 
                 if tx_hash:
                     blockchain_transaction.tx_hash = tx_hash

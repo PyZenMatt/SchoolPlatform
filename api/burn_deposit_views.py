@@ -11,7 +11,7 @@ from decimal import Decimal
 import logging
 from web3 import Web3
 
-from blockchain.services import teocoin_service
+from blockchain.blockchain import teocoin_service
 from services.db_teocoin_service import DBTeoCoinService
 
 logger = logging.getLogger(__name__)

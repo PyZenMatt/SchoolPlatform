@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 class BaseDiscountView(APIView):
     """Base view for discount system with common functionality"""
-    # TEMPORARY: Remove authentication for debugging frontend integration
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_request_data(self, request):
         """Parse JSON request data"""

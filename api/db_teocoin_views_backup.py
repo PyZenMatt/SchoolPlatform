@@ -196,6 +196,158 @@ class PurchaseCourseView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class StakeTokensView(APIView):
+    """Stake TeoCoin tokens (Teachers only)"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Stake TEO tokens for commission benefits (Teachers only)"""
+        try:
+            # Check if user is a teacher
+            if request.user.role != 'teacher':
+                return Response({
+                    'success': False,
+                    'error': 'Only teachers can stake TeoCoin tokens'
+                }, status=status.HTTP_403_FORBIDDEN)
+                
+            amount = request.data.get('amount')
+            
+            if not amount or Decimal(str(amount)) <= 0:
+                return Response({
+                    'success': False,
+                    'error': 'Valid amount required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            result = hybrid_teocoin_service.stake_tokens(
+                user=request.user,
+                amount=amount
+            )
+            
+            if result['success']:
+                # Get updated teacher profile info
+                tier_info = None
+                if hasattr(request.user, 'teacher_profile'):
+                    profile = request.user.teacher_profile
+                    tier_info = {
+                        'tier': profile.staking_tier,
+                        'tier_name': profile.get_staking_tier_display(),
+                        'commission_rate': profile.commission_rate
+                    }
+                
+                return Response({
+                    'success': True,
+                    'staked_amount': amount,
+                    'total_staked': result['total_staked'],
+                    'available_balance': result['available_balance'],
+                    'new_tier_info': tier_info
+                })
+            else:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error staking tokens for user {request.user.id}: {e}")
+            return Response({
+                'success': False,
+                'error': 'Failed to stake tokens'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UnstakeTokensView(APIView):
+    """Unstake TeoCoin tokens (Teachers only)"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Unstake TEO tokens (Teachers only)"""
+        try:
+            # Check if user is a teacher
+            if request.user.role != 'teacher':
+                return Response({
+                    'success': False,
+                    'error': 'Only teachers can unstake TeoCoin tokens'
+                }, status=status.HTTP_403_FORBIDDEN)
+                
+            amount = request.data.get('amount')
+            
+            if not amount or Decimal(str(amount)) <= 0:
+                return Response({
+                    'success': False,
+                    'error': 'Valid amount required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            result = hybrid_teocoin_service.unstake_tokens(
+                user=request.user,
+                amount=amount
+            )
+            
+            if result['success']:
+                # Get updated teacher profile info
+                tier_info = None
+                if hasattr(request.user, 'teacher_profile'):
+                    profile = request.user.teacher_profile
+                    tier_info = {
+                        'tier': profile.staking_tier,
+                        'tier_name': profile.get_staking_tier_display(),
+                        'commission_rate': profile.commission_rate
+                    }
+                
+                return Response({
+                    'success': True,
+                    'unstaked_amount': amount,
+                    'total_staked': result['total_staked'],
+                    'available_balance': result['available_balance'],
+                    'new_tier_info': tier_info
+                })
+            else:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error unstaking tokens for user {request.user.id}: {e}")
+            return Response({
+                'success': False,
+                'error': 'Failed to unstake tokens'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class StakingInfoView(APIView):
+    """Get teacher staking information"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get teacher's staking info and tier details"""
+        try:
+            db_service = DBTeoCoinService()
+            balance_data = db_service.get_user_balance(request.user)
+            
+            # Get teacher profile info if available
+            tier_info = {
+                'tier': 0,
+                'tier_name': 'Bronze',
+                'commission_rate': 50.0,
+                'staked_balance': balance_data['staked_balance']
+            }
+            
+            if hasattr(request.user, 'teacher_profile'):
+                profile = request.user.teacher_profile
+                tier_info.update({
+                    'tier': getattr(profile, 'staking_tier_numeric', 0),
+                    'tier_name': profile.get_staking_tier_display() if hasattr(profile, 'get_staking_tier_display') else 'Bronze',
+                    'commission_rate': float(profile.commission_rate),
+                    'staked_balance': balance_data['staked_balance']
+                })
+            
+            return Response({
+                'success': True,
+                'staking_info': tier_info
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting staking info for user {request.user.id}: {e}")
+            return Response({
+                'success': False,
+                'error': 'Failed to get staking information'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class WithdrawTokensView(APIView):
     """Create withdrawal request to MetaMask"""
     permission_classes = [IsAuthenticated]

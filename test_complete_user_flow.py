@@ -28,7 +28,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from services.db_teocoin_service import db_teocoin_service
-from blockchain.services import TeoCoinBlockchainService
+from services.consolidated_teocoin_service import ConsolidatedTeoCoinService
 
 User = get_user_model()
 
@@ -38,7 +38,7 @@ class TeoCoinUserTester:
     
     def __init__(self):
         self.base_url = "http://localhost:8000"
-        self.blockchain_service = TeoCoinBlockchainService()
+        self.blockchain_service = ConsolidatedTeoCoinService()
         
     def setup_test_user(self, email="test@example.com"):
         """Create or get test user with TeoCoin balance"""

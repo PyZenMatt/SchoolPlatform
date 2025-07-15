@@ -22,7 +22,7 @@ def demonstrate_phase2_workflow():
     
     try:
         # Import required services
-        from blockchain.services import teocoin_service
+        from services.consolidated_teocoin_service import teocoin_service
         from services.teocoin_withdrawal_service import teocoin_withdrawal_service
         from blockchain.models import TeoCoinWithdrawalRequest, DBTeoCoinBalance
         from django.contrib.auth import get_user_model

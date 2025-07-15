@@ -31,7 +31,6 @@ from users.models import User
 # from views.gas_free_v2_views import create_discount_request_v2
 
 from services.hybrid_teocoin_service import hybrid_teocoin_service
-from services.teo_earning_service import TeoEarningService
 from services.teacher_discount_absorption_service import TeacherDiscountAbsorptionService
 from services.db_teocoin_service import DBTeoCoinService
 from blockchain.blockchain import TeoCoinService
