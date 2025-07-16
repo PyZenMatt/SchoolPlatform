@@ -7,7 +7,7 @@ import { Card, Spinner, Button, Modal, Form, Alert } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 import { ethers } from 'ethers';
 
-const BurnDepositInterface = () => {
+const BurnDepositInterface = ({ onTransactionComplete }) => {
   const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -162,7 +162,12 @@ const BurnDepositInterface = () => {
         // Refresh MetaMask balance
         await loadMetaMaskBalance(account);
         
-        // Trigger parent component refresh if needed
+        // Trigger parent component refresh
+        if (onTransactionComplete) {
+          onTransactionComplete(data);
+        }
+        
+        // Also trigger event for other listeners
         window.dispatchEvent(new Event('teocoin-balance-updated'));
       } else {
         throw new Error(data.error || 'Failed to process burn deposit');
@@ -198,7 +203,16 @@ const BurnDepositInterface = () => {
                 Current Status: Not Connected
               </div>
               
-              <Button variant="primary" onClick={connectMetaMask}>
+              <Button 
+                variant="primary" 
+                onClick={connectMetaMask}
+                style={{ 
+                  backgroundColor: '#007bff', 
+                  borderColor: '#007bff', 
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
                 <i className="fas fa-wallet me-2"></i>
                 Connect MetaMask
               </Button>
@@ -243,18 +257,37 @@ const BurnDepositInterface = () => {
               <div className="d-grid gap-2">
                 <Button
                   variant="success"
-                  onClick={() => setShowModal(true)}
+                  onClick={() => {
+                    console.log('🔥 Burn & Deposit button clicked');
+                    setShowModal(true);
+                  }}
                   disabled={parseFloat(metamaskBalance) <= 0}
+                  className="btn-success"
+                  style={{ 
+                    backgroundColor: '#28a745', 
+                    borderColor: '#28a745', 
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }}
                 >
                   <i className="fas fa-fire me-2"></i>
                   Burn & Deposit TEO
                 </Button>
                 
                 <Button
-                  variant="outline-secondary"
+                  variant="outline-primary"
                   size="sm"
-                  onClick={() => loadMetaMaskBalance(account)}
+                  onClick={() => {
+                    console.log('🔄 Refresh button clicked');
+                    loadMetaMaskBalance(account);
+                  }}
                   disabled={loading}
+                  className="btn-outline-primary"
+                  style={{ 
+                    borderColor: '#007bff', 
+                    color: '#007bff',
+                    fontWeight: '500'
+                  }}
                 >
                   <i className="fas fa-sync-alt me-1"></i>
                   Refresh Balance

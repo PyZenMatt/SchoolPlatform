@@ -318,7 +318,8 @@ const TeoCoinWithdrawal = ({ open, onClose, userBalance = 0 }) => {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.warn(`Withdrawal history API error: ${response.status}`);
+        return; // Don't throw error, just return
       }
       
       const data = await response.json();
