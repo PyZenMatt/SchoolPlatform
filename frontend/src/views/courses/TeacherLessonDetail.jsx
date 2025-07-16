@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Spinner, Alert } from 'react-bootstrap';
-import ExerciseCreateModal from '../../components/ExerciseCreateModal';
+import ExerciseCreateModal from '../../components/modals/ExerciseCreateModal';
 import { fetchExercisesForLesson, fetchLessonDetail } from '../../services/api/courses';
 
 const TeacherLessonDetail = () => {

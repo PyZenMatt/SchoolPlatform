@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Button, Spinner, Alert, Badge } from 'react-bootstrap';
-import { fetchPendingTeachers, approveTeacher, rejectTeacher } from '../services/api/admin';
+import { fetchPendingTeachers, approveTeacher, rejectTeacher } from '../../services/api/admin';
 
 const PendingTeachersCard = () => {
   const [teachers, setTeachers] = useState([]);

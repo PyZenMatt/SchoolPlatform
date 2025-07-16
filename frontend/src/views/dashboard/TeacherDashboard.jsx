@@ -10,9 +10,9 @@ import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
 import { fetchTeacherDashboard, fetchUserProfile } from '../../services/api/dashboard';
 import { fetchLessonsForCourse, fetchExercisesForLesson } from '../../services/api/courses';
-import CourseCreateModal from '../../components/CourseCreateModal';
-import LessonCreateModal from '../../components/LessonCreateModal';
-import ExerciseCreateModal from '../../components/ExerciseCreateModal';
+import CourseCreateModal from '../../components/modals/CourseCreateModal';
+import LessonCreateModal from '../../components/modals/LessonCreateModal';
+import ExerciseCreateModal from '../../components/modals/ExerciseCreateModal';
 import TeacherDiscountDashboard from '../../components/discount/DBTeacherDiscountDashboard';
 import TeacherDiscountAbsorptionDashboard from '../../components/discount/TeacherDiscountAbsorptionDashboard';
 

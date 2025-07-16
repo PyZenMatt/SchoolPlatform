@@ -16,8 +16,6 @@ urlpatterns = [
     path('api/v1/blockchain/', include('blockchain.urls')),
     path('api/v1/services/', include('services.urls')),
     path('api/v1/teocoin/', include('api.teocoin_urls')),
-    # Frontend URLs for TeoCoin withdrawal system
-    path('frontend/', include('frontend.urls')),
     # Gas-Free V2 System URLs - TODO: Implement proper V2 endpoints
     # path('', include('urls_v2')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

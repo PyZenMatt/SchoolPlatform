@@ -77,11 +77,6 @@ const routes = [
         element: lazy(() => import('./views/dashboard/TeacherDashboard'))
       },
       {
-        exact: 'true',
-        path: '/teacher/choices',
-        element: lazy(() => import('./components/TeacherChoiceDashboard'))
-      },
-      {
         path: '*',
         exact: 'true',
         element: () => <Navigate to={BASE_URL} />

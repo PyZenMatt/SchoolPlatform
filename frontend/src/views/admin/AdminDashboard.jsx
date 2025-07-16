@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Alert, Spinner, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import PendingTeachersCard from '../../components/PendingTeachersCard';
-import PendingCoursesCard from '../../components/PendingCoursesCard';
-import ApprovalStats from '../../components/ApprovalStats';
+import PendingTeachersCard from '../../components/cards/PendingTeachersCard';
+import PendingCoursesCard from '../../components/cards/PendingCoursesCard';
+import ApprovalStats from '../../components/ui/ApprovalStats';
 import AdminTransactionMonitor from '../../components/admin/AdminTransactionMonitor';
 import AdminTeoCoinDashboard from '../../components/blockchain/DBAdminTeoCoinDashboard';
 import TeoCoinBalanceWidget from '../../components/TeoCoinBalanceWidget';
