@@ -12,10 +12,10 @@ import {
     useElements
 } from '@stripe/react-stripe-js';
 import { ethers } from 'ethers';
-import './PaymentModal.css';
+import '../../../assets/css/components/PaymentModal.css';
 
-// Import the new Layer 2 component
-import Layer2TeoCoinDiscount from './Layer2TeoCoinDiscount';
+// TODO: Replace Layer 2 component with current DB-based TeoCoin system
+// import Layer2TeoCoinDiscount from './Layer2TeoCoinDiscount';
 
 // Fix Stripe key - use VITE prefix for Vite build system
 const stripePromise = loadStripe(

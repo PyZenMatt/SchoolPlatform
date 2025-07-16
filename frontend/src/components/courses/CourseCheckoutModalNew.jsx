@@ -3,7 +3,7 @@ import { Modal, Button, Alert, Spinner, Nav, Tab } from 'react-bootstrap';
 import { purchaseCourse } from '../../services/api/courses';
 import { web3Service } from '../../services/api/web3Service';
 import { useAuth } from '../../contexts/AuthContext';
-import PaymentModal from '../PaymentModal';
+import PaymentModal from '../modals/PaymentModal';
 
 /**
  * Enhanced CourseCheckoutModal - Supports both Stripe and TeoCoin payments

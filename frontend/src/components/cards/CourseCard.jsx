@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { Button, Spinner, Collapse } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import './CourseCard.css';
+import '../../../assets/css/components/CourseCard.css';
 
 // Memoized lesson item component for better performance
 const LessonItem = memo(({ lesson, order, teacherMode }) => {
