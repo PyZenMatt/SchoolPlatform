@@ -1,3 +1,277 @@
+/* =========================
+   ENHANCED DASHBOARD STYLES
+   ========================= */
+
+/* Dashboard Stat Cards Enhancement */
+.dashboard-stat-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dashboard-stat-card .stat-icon {
+  transition: transform 0.3s ease;
+}
+
+.dashboard-stat-card:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+/* Welcome Card Styling */
+.welcome-card {
+  background: linear-gradient(135deg, rgba(4, 169, 245, 0.1) 0%, rgba(29, 233, 182, 0.1) 100%);
+  border: none;
+}
+
+.welcome-card .avatar-lg {
+  transition: transform 0.3s ease;
+}
+
+.welcome-card:hover .avatar-lg {
+  transform: scale(1.05);
+}
+
+/* Activity Timeline */
+.activity-timeline .activity-indicator {
+  transition: transform 0.3s ease;
+}
+
+.activity-timeline .activity-indicator:hover {
+  transform: scale(1.1);
+}
+
+/* Goal Progress Cards */
+.goal-progress .progress {
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.goal-progress .progress-bar {
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* Enhanced Course Cards */
+.course-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e3e6f0 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  border-color: #04a9f5 !important;
+}
+
+.course-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #04a9f5, #1de9b6);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.course-card:hover::before {
+  transform: scaleX(1);
+}
+
+.course-card .course-title {
+  color: #2d3436;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.course-card:hover .course-title {
+  color: #04a9f5;
+}
+
+.course-card .course-description {
+  transition: color 0.3s ease;
+}
+
+.course-card .stat-box {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.course-card .stat-box:hover {
+  background-color: #e9ecef !important;
+  transform: translateY(-1px);
+}
+
+.course-card .btn-primary {
+  background: linear-gradient(135deg, #04a9f5, #1de9b6);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.6rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.course-card .btn-primary:hover {
+  background: linear-gradient(135deg, #0390d3, #1ac4a0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(4, 169, 245, 0.3);
+}
+
+.course-card .btn-outline-primary {
+  border-color: #04a9f5;
+  color: #04a9f5;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.6rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.course-card .btn-outline-primary:hover {
+  background: linear-gradient(135deg, #04a9f5, #1de9b6);
+  border-color: #04a9f5;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(4, 169, 245, 0.3);
+}
+
+/* Empty State Styling */
+.empty-state {
+  padding: 3rem 2rem;
+}
+
+.empty-state i {
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.empty-state:hover i {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Progress Colors using Datta Able theme */
+.progress-c-theme .progress-bar {
+  background: linear-gradient(90deg, #04a9f5, #1de9b6);
+}
+
+.progress-c-theme2 .progress-bar {
+  background: linear-gradient(90deg, #1de9b6, #f4c22b);
+}
+
+.progress-c-theme3 .progress-bar {
+  background: linear-gradient(90deg, #f4c22b, #ff6b6b);
+}
+
+/* Badge Enhancements */
+.badge.bg-success {
+  background: linear-gradient(135deg, #1de9b6, #20c997) !important;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(135deg, #f4c22b, #fd7e14) !important;
+  color: #212529 !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(135deg, #f44236, #e83e8c) !important;
+}
+
+.badge.bg-primary {
+  background: linear-gradient(135deg, #04a9f5, #1de9b6) !important;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+  .dashboard-stat-card .card-body {
+    padding: 1.25rem;
+  }
+  
+  .welcome-card .card-body {
+    padding: 2rem 1rem;
+  }
+  
+  .course-card .card-body {
+    padding: 1.25rem;
+  }
+  
+  .activity-timeline .activity-indicator {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+}
+
+/* =========================
+   ADMIN DASHBOARD STYLES
+   ========================= */
+
+/* Admin Action Buttons */
+.admin-action-btn {
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.admin-action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  background: white;
+}
+
+.admin-action-btn i {
+  transition: transform 0.3s ease;
+}
+
+.admin-action-btn:hover i {
+  transform: scale(1.1);
+}
+
+/* Platform Activity Items */
+.platform-activity .activity-item {
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.platform-activity .activity-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(5px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Admin Metrics */
+.admin-metrics .metric-item {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  transition: background 0.3s ease;
+}
+
+.admin-metrics .metric-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Enhanced Badge Styling for Admin */
+.badge.rounded-pill {
+  font-size: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+}
+
 /* Course Cards Styling */
 .course-card {
   transition: all 0.3s ease;
