@@ -9,11 +9,23 @@ import {
     useElements
 } from '@stripe/react-stripe-js';
 
-// Initialize Stripe
-const stripePromise = loadStripe(
-    process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-);
+// Initialize Stripe with debugging
+const STRIPE_PUBLISHABLE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 
+                                import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+console.log('🔑 Stripe Key Debug:', {
+  react_env: process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY?.substring(0, 15) + '...',
+  vite_env: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY?.substring(0, 15) + '...',
+  using: STRIPE_PUBLISHABLE_KEY?.substring(0, 15) + '...',
+  key_length: STRIPE_PUBLISHABLE_KEY?.length
+});
+
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.error('❌ No Stripe publishable key found!');
+  console.log('Available env vars:', Object.keys(import.meta.env).filter(k => k.includes('STRIPE')));
+}
+
+const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
 
 /**
  * DB-based CourseCheckoutModal - Uses database TeoCoin system
@@ -482,7 +494,14 @@ const StripeCardForm = ({ course, finalPrice, paymentResult, onPaymentSuccess, o
   const handleSubmit = async (event) => {
     event.preventDefault();
     
+    console.log('💳 Stripe validation:', {
+      stripe_available: !!stripe,
+      elements_available: !!elements,
+      stripe_key_loaded: STRIPE_PUBLISHABLE_KEY?.substring(0, 15) + '...'
+    });
+    
     if (!stripe || !elements) {
+      console.error('❌ Stripe or Elements not available:', { stripe: !!stripe, elements: !!elements });
       onPaymentError('Stripe not loaded. Please refresh the page.');
       return;
     }
@@ -495,6 +514,12 @@ const StripeCardForm = ({ course, finalPrice, paymentResult, onPaymentSuccess, o
       
       const cardElement = elements.getElement(CardElement);
       
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+      
+      console.log('💳 Card element found, validating...');
+      
       // Validate card element before proceeding
       const {error: cardError} = await stripe.createPaymentMethod({
         type: 'card',
@@ -503,27 +528,56 @@ const StripeCardForm = ({ course, finalPrice, paymentResult, onPaymentSuccess, o
 
       if (cardError) {
         console.error('❌ Card validation error:', cardError);
-        throw new Error(cardError.message);
+        
+        // Handle specific Stripe error types
+        if (cardError.type === 'api_connection_error') {
+          throw new Error('Connection problem with payment service. Please check your internet connection and try again.');
+        } else if (cardError.type === 'api_error') {
+          throw new Error('Payment service error. Please try again in a moment.');
+        } else if (cardError.type === 'authentication_error') {
+          throw new Error('Payment authentication failed. Please refresh the page and try again.');
+        } else if (cardError.type === 'card_error') {
+          throw new Error(`Card error: ${cardError.message}`);
+        } else {
+          throw new Error(cardError.message || 'Payment validation failed');
+        }
       }
 
       console.log('✅ Card validation passed');
 
-      // Create payment intent
-      const response = await fetch(`/api/v1/courses/${course.id}/create-payment-intent/`, {
+      // Create payment intent with retry mechanism
+      console.log('🔄 Creating payment intent for course:', course.id);
+      
+      const apiUrl = `/api/v1/courses/${course.id}/create-payment-intent/`;
+      console.log('📡 API URL:', apiUrl);
+      
+      const paymentData = {
+        use_teocoin_discount: paymentResult?.discountInfo ? true : false,
+        discount_percent: paymentResult?.discountInfo?.discount_percentage || 0,
+        teocoin_discount: paymentResult?.discountInfo?.discount_amount_eur || 0,
+        payment_method: 'stripe',
+        final_amount: finalPrice,
+        discount_info: paymentResult?.discountInfo
+      };
+      
+      console.log('💳 Payment data:', paymentData);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({
-          use_teocoin_discount: paymentResult?.discountInfo ? true : false,
-          discount_percent: paymentResult?.discountInfo?.discount_percentage || 0,
-          teocoin_discount: paymentResult?.discountInfo?.discount_amount_eur || 0,
-          payment_method: 'stripe',
-          final_amount: finalPrice,
-          discount_info: paymentResult?.discountInfo
-        })
+        body: JSON.stringify(paymentData)
       });
+      
+      console.log('📡 Payment intent response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Payment intent API error:', { status: response.status, text: errorText });
+        throw new Error(`Payment API error (${response.status}): ${errorText}`);
+      }
 
       const data = await response.json();
       console.log('💳 Payment intent response:', data);

@@ -27,3 +27,7 @@ export const approveCourse = async (courseId) => {
 export const rejectCourse = async (courseId) => {
   return api.post(`reject-course/${courseId}/`);
 };
+
+export const fetchApprovalStats = async () => {
+  return api.get('admin/approval-stats/');
+};

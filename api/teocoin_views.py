@@ -16,6 +16,49 @@ from services.hybrid_teocoin_service import hybrid_teocoin_service
 logger = logging.getLogger(__name__)
 
 
+class GetBalanceView(APIView):
+    """Get current user's TeoCoin balance"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get user's current TeoCoin balance
+        
+        Returns:
+        {
+            "success": true,
+            "balance": {
+                "available": "123.45",
+                "staked": "250.00",
+                "pending_withdrawal": "0.00",
+                "total": "373.45"
+            },
+            "user_role": "student"
+        }
+        """
+        try:
+            # Use the db_teocoin_service to get balance
+            from services.db_teocoin_service import db_teocoin_service
+            result = db_teocoin_service.get_user_balance(request.user)
+            
+            return Response({
+                'success': True,
+                'balance': {
+                    'available': str(result['available_balance']),
+                    'staked': str(result['staked_balance']),
+                    'pending_withdrawal': str(result.get('pending_withdrawal', 0)),
+                    'total': str(result['total_balance'])
+                },
+                'user_role': request.user.role if hasattr(request.user, 'role') else 'unknown'
+            })
+        except Exception as e:
+            logger.error(f"Error getting balance for user {request.user.id}: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CreateWithdrawalView(APIView):
     """Create a new withdrawal request"""
     permission_classes = [IsAuthenticated]

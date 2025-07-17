@@ -11,4 +11,7 @@ urlpatterns = [
     
     # TeoCoin Discount endpoints
     path('discount/', include('api.discount_urls')),
+    
+    # Staking endpoints
+    path('staking/', include('api.staking_urls')),
 ]

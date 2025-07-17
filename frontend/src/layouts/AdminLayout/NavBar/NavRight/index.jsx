@@ -6,6 +6,7 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import ChatList from './ChatList';
 // import { TeacherDiscountNotification } from '../../../../components/discount'; // TODO: Implement discount notifications
 import { useAuth } from '../../../../contexts/AuthContext';
+import ThemeToggle from '../../../../components/ui/ThemeToggle';
 
 import avatar1 from '../../../../assets/images/user/avatar-1.jpg';
 import avatar2 from '../../../../assets/images/user/avatar-2.jpg';
@@ -51,6 +52,11 @@ const NavRight = () => {
           </ListGroup.Item>
         )}
         */}
+        
+        {/* Theme Toggle */}
+        <ListGroup.Item as="li" bsPrefix=" ">
+          <ThemeToggle size="sm" />
+        </ListGroup.Item>
         
         <ListGroup.Item as="li" bsPrefix=" ">
           <Dropdown align="end">

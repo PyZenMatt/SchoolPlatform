@@ -4,6 +4,7 @@ TeoCoin API URL Configuration - Enhanced with Phase 1 Withdrawal System
 
 from django.urls import path, include
 from .teocoin_views import (
+    GetBalanceView,
     CreateWithdrawalView,
     WithdrawalStatusView,
     UserWithdrawalHistoryView,
@@ -36,6 +37,7 @@ app_name = 'teocoin_api'
 
 urlpatterns = [
     # User Balance & Transactions (DB-based)
+    path('student/balance/', GetBalanceView.as_view(), name='student_balance'),
     path('balance/', TeoCoinBalanceView.as_view(), name='balance'),
     path('transactions/', TransactionHistoryView.as_view(), name='transactions'),
     

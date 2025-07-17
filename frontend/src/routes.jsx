@@ -136,6 +136,21 @@ const routes = [
       },
       {
         exact: 'true',
+        path: '/profile/settings/theme',
+        element: lazy(() => import('./views/settings/ThemeSettings'))
+      },
+      {
+        exact: 'true',
+        path: '/demo/dark-theme',
+        element: lazy(() => import('./views/demo/DarkThemeShowcase'))
+      },
+      {
+        exact: 'true',
+        path: '/dev/status',
+        element: lazy(() => import('./views/dev/DevelopmentStatusDashboard'))
+      },
+      {
+        exact: 'true',
         path: '/profile/progress',
         element: lazy(() => import('./views/profile/ProfileProgress'))
       },

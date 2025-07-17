@@ -336,14 +336,14 @@ const StudentDashboard = () => {
       {/* Reward Notifications */}
       <RewardNotifications />
 
-      {/* TeoCoin Withdrawal Widget */}
+      {/* TeoCoin Components - Enhanced Layout */}
       <Row className="mb-4">
-        <Col lg={6} className="mb-4">
-          {/* Enhanced TeoCoin Dashboard */}
+        <Col lg={8} className="mb-4">
+          {/* Enhanced TeoCoin Dashboard - Main */}
           <StudentTeoCoinDashboard />
         </Col>
-        <Col lg={6} className="mb-4">
-          {/* TeoCoin Withdrawal Widget */}
+        <Col lg={4} className="mb-4">
+          {/* TeoCoin Withdrawal Widget - Sidebar */}
           <TeoCoinBalanceWidget />
         </Col>
       </Row>

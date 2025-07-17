@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Card, Row, Col, Badge, InputGroup } from 'react-bootstrap';
-import { createExercise } from '../services/api/courses';
-import CustomToast from './Toast';
-import './ExerciseCreateModal.css';
+import { createExercise } from '../../services/api/courses';
+import CustomToast from '../ui/Toast';
+import '../../assets/css/components/ExerciseCreateModal.css';
 
-import ErrorDisplay from './ErrorDisplay';
-import { validateExerciseForm, debounce } from '../utils/formValidation';
+import ErrorDisplay from '../ui/ErrorDisplay';
+import { validateExerciseForm, debounce } from '../../utils/formValidation';
 
 const ExerciseCreateModal = ({ show, onHide, onCreated, lessonId, courseId }) => {
   const [title, setTitle] = useState('');

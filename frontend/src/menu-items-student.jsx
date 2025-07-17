@@ -110,6 +110,17 @@ const studentMenuItems = {
           url: '/profile/settings'
         },
         {
+          id: 'theme-settings',
+          title: 'Tema & Aspetto',
+          type: 'item',
+          icon: 'feather icon-moon',
+          url: '/profile/settings/theme',
+          badge: {
+            title: 'New',
+            type: 'label-info'
+          }
+        },
+        {
           id: 'achievements',
           title: 'Progressi & Achievement',
           type: 'item',

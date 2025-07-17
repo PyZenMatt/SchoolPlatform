@@ -12,7 +12,7 @@ import {
     useElements
 } from '@stripe/react-stripe-js';
 import { ethers } from 'ethers';
-import '../../../assets/css/components/PaymentModal.css';
+import '../../assets/css/components/PaymentModal.css';
 
 // TODO: Replace Layer 2 component with current DB-based TeoCoin system
 // import Layer2TeoCoinDiscount from './Layer2TeoCoinDiscount';

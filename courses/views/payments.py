@@ -21,6 +21,7 @@ from django.utils import timezone
 from decimal import Decimal
 import logging
 import stripe
+import os
 from django.conf import settings
 
 from courses.models import Course, CourseEnrollment
@@ -58,17 +59,31 @@ class CreatePaymentIntentView(APIView):
             course = get_object_or_404(Course, id=course_id)
             user = request.user
             
+            logger.info(f"💳 Creating payment intent for course {course_id} by user {user.id}")
+            
             # Extract request data
             use_teocoin_discount = request.data.get('use_teocoin_discount', False)
             discount_percent = request.data.get('discount_percent', 0)
             student_address = request.data.get('student_address', '')
             student_signature = request.data.get('student_signature', '')
             
+            logger.info(f"💳 Payment data: use_discount={use_teocoin_discount}, discount={discount_percent}%")
+            
             # Calculate pricing
             original_price = course.price_eur
             discount_amount = Decimal('0')
             final_price = original_price
             discount_request_id = None
+            
+            logger.info(f"💰 Course pricing: original=€{original_price}")
+            
+            # Validate Stripe configuration
+            if not settings.STRIPE_SECRET_KEY:
+                logger.error("❌ Stripe secret key not configured")
+                return Response({
+                    'error': 'Payment system not configured',
+                    'code': 'STRIPE_NOT_CONFIGURED'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Process TeoCoin discount if requested
             if use_teocoin_discount and discount_percent > 0:
@@ -140,8 +155,48 @@ class CreatePaymentIntentView(APIView):
                         'code': 'DISCOUNT_SYSTEM_ERROR'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+            # Validate and set Stripe configuration with robust error handling
+            stripe_secret = settings.STRIPE_SECRET_KEY
+            
+            # Check for common configuration issues
+            if not stripe_secret:
+                logger.error("❌ STRIPE_SECRET_KEY is None or empty")
+                return Response({
+                    'error': 'Payment system not configured - missing secret key',
+                    'code': 'STRIPE_KEY_MISSING'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            if 'your_str' in str(stripe_secret) or 'example' in str(stripe_secret).lower():
+                logger.error(f"❌ STRIPE_SECRET_KEY appears to be a placeholder: {str(stripe_secret)[:20]}...")
+                # Try to get from environment directly as fallback
+                stripe_secret = os.getenv('STRIPE_SECRET_KEY')
+                if not stripe_secret or 'your_str' in str(stripe_secret):
+                    return Response({
+                        'error': 'Payment system misconfigured - placeholder key detected',
+                        'code': 'STRIPE_KEY_PLACEHOLDER'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.warning("⚠️ Used fallback environment variable for Stripe key")
+            
+            if len(str(stripe_secret)) < 20:
+                logger.error(f"❌ STRIPE_SECRET_KEY too short: {len(str(stripe_secret))} chars")
+                return Response({
+                    'error': 'Payment system misconfigured - invalid key length',
+                    'code': 'STRIPE_KEY_INVALID_LENGTH'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             # Create Stripe payment intent for final price
-            stripe.api_key = settings.STRIPE_SECRET_KEY
+            logger.info(f"💳 Creating Stripe payment intent for €{final_price}")
+            
+            stripe.api_key = stripe_secret
+            logger.info(f"🔑 Stripe API key set to: {str(stripe.api_key)[:15]}...{str(stripe.api_key)[-4:] if stripe.api_key else 'NONE'}")
+            
+            # Validate final price
+            if final_price <= 0:
+                logger.error(f"❌ Invalid final price: €{final_price}")
+                return Response({
+                    'error': 'Invalid payment amount',
+                    'code': 'INVALID_AMOUNT'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             intent_data = {
                 'amount': int(final_price * 100),  # Convert to cents
@@ -161,7 +216,23 @@ class CreatePaymentIntentView(APIView):
             if discount_request_id:
                 intent_data['metadata']['discount_request_id'] = str(discount_request_id)
             
-            payment_intent = stripe.PaymentIntent.create(**intent_data)
+            logger.info(f"💳 Stripe intent data: {intent_data}")
+            
+            try:
+                payment_intent = stripe.PaymentIntent.create(**intent_data)
+                logger.info(f"✅ Stripe payment intent created: {payment_intent.id}")
+            except Exception as stripe_err:
+                logger.error(f"❌ Stripe API error: {stripe_err}")
+                return Response({
+                    'error': f'Stripe payment error: {str(stripe_err)}',
+                    'code': 'STRIPE_API_ERROR'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception as e:
+                logger.error(f"❌ Unexpected Stripe error: {e}")
+                return Response({
+                    'error': f'Payment system error: {str(e)}',
+                    'code': 'PAYMENT_SYSTEM_ERROR'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             return Response({
                 'success': True,

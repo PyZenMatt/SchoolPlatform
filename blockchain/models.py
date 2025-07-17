@@ -191,6 +191,8 @@ class DBTeoCoinBalance(models.Model):
     
     This replaces blockchain-based balances for internal platform operations.
     Users can still withdraw to MetaMask anytime via the withdrawal system.
+    
+    Note: Staking functionality is only available for teachers, not students.
     """
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -203,14 +205,14 @@ class DBTeoCoinBalance(models.Model):
         max_digits=12, 
         decimal_places=2, 
         default=Decimal('0.00'),
-        help_text="TEO available for spending (discounts/staking)"
+        help_text="TEO available for spending (discounts for students, staking for teachers)"
     )
     
     staked_balance = models.DecimalField(
         max_digits=12, 
         decimal_places=2, 
         default=Decimal('0.00'),
-        help_text="TEO currently staked (affects commission rates)"
+        help_text="TEO currently staked (Teachers only - affects commission rates)"
     )
     
     pending_withdrawal = models.DecimalField(
@@ -237,6 +239,66 @@ class DBTeoCoinBalance(models.Model):
     def total_balance(self):
         """Total TEO owned by user"""
         return self.available_balance + self.staked_balance + self.pending_withdrawal
+    
+    def can_stake(self):
+        """Check if user can stake tokens (teachers only)"""
+        return self.user.role == 'teacher'
+    
+    def stake_tokens(self, amount):
+        """
+        Move tokens from available to staked balance (teachers only)
+        
+        Args:
+            amount (Decimal): Amount to stake
+            
+        Returns:
+            bool: True if successful, False otherwise
+            
+        Raises:
+            ValueError: If user is not a teacher or insufficient balance
+        """
+        if not self.can_stake():
+            raise ValueError("Only teachers can stake TEO tokens")
+        
+        amount = Decimal(str(amount))
+        
+        if amount <= 0:
+            raise ValueError("Amount must be greater than zero")
+        
+        if self.available_balance < amount:
+            raise ValueError(f"Insufficient balance. Available: {self.available_balance} TEO")
+        
+        self.available_balance -= amount
+        self.staked_balance += amount
+        return True
+    
+    def unstake_tokens(self, amount):
+        """
+        Move tokens from staked to available balance (teachers only)
+        
+        Args:
+            amount (Decimal): Amount to unstake
+            
+        Returns:
+            bool: True if successful, False otherwise
+            
+        Raises:
+            ValueError: If user is not a teacher or insufficient staked balance
+        """
+        if not self.can_stake():
+            raise ValueError("Only teachers can unstake TEO tokens")
+        
+        amount = Decimal(str(amount))
+        
+        if amount <= 0:
+            raise ValueError("Amount must be greater than zero")
+        
+        if self.staked_balance < amount:
+            raise ValueError(f"Insufficient staked balance. Staked: {self.staked_balance} TEO")
+        
+        self.staked_balance -= amount
+        self.available_balance += amount
+        return True
 
 
 class DBTeoCoinTransaction(models.Model):

@@ -27,6 +27,9 @@ from courses.views.payments import (
     TeoCoinDiscountStatusView
 )
 
+# === DEBUG ===
+from courses.debug_stripe import DebugStripeView
+
 # === LESSONS ===
 from courses.views.lessons import (
     CourseLessonsView,
@@ -115,6 +118,7 @@ urlpatterns = [
     path('reject-course/<int:course_id>/', RejectCourseView.as_view(), name='reject-course'),
     
     # === FIAT PAYMENTS ===
+    path('debug/stripe/', DebugStripeView.as_view(), name='debug-stripe'),
     path('courses/<int:course_id>/create-payment-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
     path('courses/<int:course_id>/confirm-payment/', ConfirmPaymentView.as_view(), name='confirm-payment'),
     path('courses/<int:course_id>/payment-summary/', PaymentSummaryView.as_view(), name='payment-summary'),

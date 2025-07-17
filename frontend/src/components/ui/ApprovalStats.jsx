@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { fetchPendingTeachers } from '../services/api/admin.js';
-import { fetchPendingCourses } from '../services/api/admin.js';
+import { fetchApprovalStats } from '../../services/api/admin';
+import { fetchPendingCourses } from '../../services/api/admin';
 import StatWidget from './StatWidget';
 
 const ApprovalStats = React.memo(() => {

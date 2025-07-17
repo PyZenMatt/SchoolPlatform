@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
-import './LazyImage.css';
+import '../../assets/css/components/LazyImage.css';
 
 /**
  * Optimized lazy-loading image component

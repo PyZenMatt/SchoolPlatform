@@ -47,8 +47,8 @@ const DBStudentTeoCoinDashboard = () => {
         throw new Error('No authentication token found');
       }
 
-      // Load balance using withdrawal API for consistency
-      const balanceResponse = await fetch('/api/v1/teocoin/withdrawals/balance/', {
+      // Load balance using student API for consistency
+      const balanceResponse = await fetch('/api/v1/teocoin/student/balance/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -56,13 +56,13 @@ const DBStudentTeoCoinDashboard = () => {
       });
 
       if (!balanceResponse.ok) {
-        throw new Error(`Balance API error! status: ${balanceResponse.status}`);
+        throw new Error(`Student balance API error! status: ${balanceResponse.status}`);
       }
 
       const balanceData = await balanceResponse.json();
-      console.log('🔍 Balance API Response:', balanceData);
+      console.log('🔍 Student Balance API Response:', balanceData);
 
-      // Extract balance data correctly from withdrawal API format
+      // Extract balance data correctly from student API format
       const balance = balanceData.success && balanceData.balance 
         ? {
             available_balance: parseFloat(balanceData.balance.available || 0).toFixed(2),
@@ -206,178 +206,98 @@ const DBStudentTeoCoinDashboard = () => {
       )}
 
       <Row>
-        {/* Balance Cards */}
-        <Col lg={6}>
+        {/* Recent Transactions - Full Width */}
+        <Col lg={12}>
           <Card className="border-0 shadow-sm mb-3">
-            <Card.Header className="bg-gradient-primary text-white">
+            <Card.Header className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">
-                <i className="fas fa-wallet me-2"></i>
-                Saldo Disponibile
+                <i className="feather icon-activity text-primary me-2"></i>
+                Recent Transactions
               </h5>
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={loadDashboardData}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Spinner animation="border" size="sm" />
+                ) : (
+                  <i className="feather icon-refresh-cw"></i>
+                )}
+                Refresh
+              </Button>
             </Card.Header>
             <Card.Body>
-              <div className="text-center py-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div>
-                    <strong>Available Balance:</strong>
-                    <div className="h4 text-primary mb-0">
-                      {parseFloat(dashboardData.balance.available_balance).toFixed(2)} TEO
+              {dashboardData.recentTransactions.length === 0 ? (
+                <div className="text-center py-4">
+                  <i className="feather icon-clock text-muted" style={{ fontSize: '3rem' }}></i>
+                  <h6 className="text-muted mt-3">No recent transactions</h6>
+                  <p className="text-muted small mb-0">Your transactions will appear here</p>
+                </div>
+              ) : (
+                <div className="transaction-list">
+                  {dashboardData.recentTransactions
+                    .filter(transaction => {
+                      // Filter out staking transactions for students
+                      if (user?.role === 'student') {
+                        return !['stake', 'unstake'].includes(transaction.type);
+                      }
+                      return true;
+                    })
+                    .map((transaction, index) => (
+                    <div key={transaction.id || index} className="d-flex align-items-center justify-content-between py-3 border-bottom">
+                      <div className="d-flex align-items-center">
+                        <div className="me-3">
+                          <div className={`rounded-circle d-flex align-items-center justify-content-center text-white bg-${getTransactionColor(transaction.type)}`} 
+                               style={{ width: '40px', height: '40px' }}>
+                            <i className="feather icon-arrow-up-right"></i>
+                          </div>
+                        </div>
+                        <div>
+                          <h6 className="mb-1 fw-semibold">{transaction.description || 'TeoCoin Transaction'}</h6>
+                          <div className="d-flex align-items-center gap-2">
+                            <Badge bg={getTransactionColor(transaction.type)} className="small">
+                              {transaction.type}
+                            </Badge>
+                            <small className="text-muted">
+                              {formatDate(transaction.created_at)}
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-end">
+                        <div className={`fw-bold ${parseFloat(transaction.amount) >= 0 ? 'text-success' : 'text-danger'}`}>
+                          {parseFloat(transaction.amount) >= 0 ? '+' : ''}
+                          {parseFloat(transaction.amount).toFixed(2)} TEO
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-end">
-                    <Badge bg="success">Istantaneo</Badge>
-                  </div>
+                  ))}
                 </div>
-
-                <div className="mt-3 small text-muted">
-                  <div className="d-flex justify-content-between">
-                    <span>Utilizzo:</span>
-                    <span>Sconti sui corsi</span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span>Status:</span>
-                    <span>Disponibile</span>
-                  </div>
-                </div>
-              </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
-
-        {/* Staking Card - Only for Teachers */}
-        {user?.role === 'teacher' && (
-          <Col lg={6}>
-            <Card className="border-0 shadow-sm mb-3">
-              <Card.Header className="bg-gradient-warning text-white">
-                <h5 className="mb-0">
-                  <i className="fas fa-lock me-2"></i>
-                  Saldo in Staking
-                </h5>
-              </Card.Header>
-              <Card.Body>
-                <div className="text-center py-3">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                      <strong>Staked Balance:</strong>
-                      <div className="h4 text-warning mb-0">
-                        {parseFloat(dashboardData.balance.staked_balance).toFixed(2)} TEO
-                      </div>
-                    </div>
-                    <div className="text-end">
-                      <Badge bg="warning">Solo Insegnanti</Badge>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 small text-muted">
-                    <div className="d-flex justify-content-between">
-                      <span>Beneficio:</span>
-                      <span>Riduce commissioni</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Status:</span>
-                      <span>Bloccato</span>
-                    </div>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        )}
       </Row>
 
-
-
-      {/* Pending Withdrawals Section */}
-      {parseFloat(dashboardData.balance.pending_withdrawal) > 0 && (
-        <Row className="mb-3">
-          <Col>
-            <PendingWithdrawals 
-              onTransactionComplete={(data) => {
-                // Refresh dashboard when transaction completes
-                loadDashboardData();
-              }}
-            />
-          </Col>
-        </Row>
-      )}
-
-      {/* Deposit Interface */}
+      {/* Deposit and Withdrawal Components - Same Level */}
       <Row className="mb-3">
-        <Col>
+        <Col lg={6}>
           <BurnDepositInterface 
             onTransactionComplete={(data) => {
-              // Refresh dashboard when burn deposit completes
+              loadDashboardData();
+            }}
+          />
+        </Col>
+        <Col lg={6}>
+          <PendingWithdrawals 
+            onTransactionComplete={(data) => {
               loadDashboardData();
             }}
           />
         </Col>
       </Row>
-
-      {/* Recent Transactions */}
-      <Card className="transactions-card">
-        <Card.Header>
-          <h5>📈 Transazioni Recenti</h5>
-          <Button 
-            variant="outline-primary" 
-            size="sm"
-            onClick={loadDashboardData}
-            disabled={loading}
-          >
-            {loading ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              <i className="fas fa-sync-alt"></i>
-            )}
-            Aggiorna
-          </Button>
-        </Card.Header>
-        <Card.Body>
-          {dashboardData.recentTransactions.length === 0 ? (
-            <div className="text-center py-4">
-              <i className="fas fa-history fa-3x text-muted mb-3"></i>
-              <p className="text-muted">Nessuna transazione recente</p>
-              <small>Le tue transazioni appariranno qui</small>
-            </div>
-          ) : (
-            <div className="transactions-list">
-              {dashboardData.recentTransactions
-                .filter(transaction => {
-                  // Filter out staking transactions for students
-                  if (user?.role === 'student') {
-                    return !['stake', 'unstake'].includes(transaction.type);
-                  }
-                  return true;
-                })
-                .map((transaction, index) => (
-                <div key={transaction.id || index} className="transaction-item">
-                  <div className="transaction-icon">
-                    {getTransactionIcon(transaction.type)}
-                  </div>
-                  <div className="transaction-details">
-                    <div className="transaction-type">
-                      <Badge bg={getTransactionColor(transaction.type)}>
-                        {transaction.type}
-                      </Badge>
-                    </div>
-                    <div className="transaction-description">
-                      {transaction.description || 'Transazione TeoCoin'}
-                    </div>
-                    <div className="transaction-date">
-                      {formatDate(transaction.created_at)}
-                    </div>
-                  </div>
-                  <div className="transaction-amount">
-                    <span className={`amount ${parseFloat(transaction.amount) >= 0 ? 'positive' : 'negative'}`}>
-                      {parseFloat(transaction.amount) >= 0 ? '+' : ''}
-                      {parseFloat(transaction.amount).toFixed(2)} TEO
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card.Body>
-      </Card>
 
     </div>
   );

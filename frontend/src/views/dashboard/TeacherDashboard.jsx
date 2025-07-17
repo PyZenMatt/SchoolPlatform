@@ -3,8 +3,8 @@ import { Row, Col, Card, Button, Modal, Spinner, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import './TeacherDashboard.css';
 
-import StudentTeoCoinDashboard from '../../components/blockchain/DBStudentTeoCoinDashboard';
-import ZeroMaticStakingInterface from '../../components/blockchain/DBStakingInterface';
+import DatabaseStaking from '../../components/staking/DatabaseStaking';
+import MetaMaskDeposit from '../../components/deposit/MetaMaskDeposit';
 import TeoCoinBalanceWidget from '../../components/TeoCoinBalanceWidget';
 import StatCard from '../../components/common/StatCard';
 import CoursesTable from '../../components/courses/CoursesTable';
@@ -13,8 +13,8 @@ import { fetchLessonsForCourse, fetchExercisesForLesson } from '../../services/a
 import CourseCreateModal from '../../components/modals/CourseCreateModal';
 import LessonCreateModal from '../../components/modals/LessonCreateModal';
 import ExerciseCreateModal from '../../components/modals/ExerciseCreateModal';
-import TeacherDiscountDashboard from '../../components/discount/DBTeacherDiscountDashboard';
-import TeacherDiscountAbsorptionDashboard from '../../components/discount/TeacherDiscountAbsorptionDashboard';
+import AdvancedAnalyticsDashboard from '../../components/analytics/AdvancedAnalyticsDashboard';
+import EnhancedNotificationSystem from '../../components/notifications/EnhancedNotificationSystem';
 
 // Import dashboard styles
 import './dashboard-styles.css';
@@ -173,6 +173,12 @@ const TeacherDashboard = () => {
     handleHideExerciseModal(lessonId);
   };
 
+  // Handle component updates
+  const handleComponentUpdate = () => {
+    // This can be used to refresh data across components
+    console.log('Component data updated');
+  };
+
   // Navigation functions
   const handleViewCourse = (courseId) => {
     navigate(`/corsi-docente/${courseId}`);
@@ -257,6 +263,9 @@ const TeacherDashboard = () => {
 
   return (
     <React.Fragment>
+      {/* 🔥 PHASE 4: Enhanced Notification System */}
+      <EnhancedNotificationSystem />
+      
       {/* Enhanced Welcome Section */}
       <Row className="mb-4">
         <Col md={12}>
@@ -476,81 +485,46 @@ const TeacherDashboard = () => {
       <Row>
         {/* Full Width Column - following StudentDashboard layout */}
         <Col lg={12} className="mb-4">
-          {/* TeoCoin Dashboard and Withdrawal */}
+          {/* 💰 SEPARATED TEOCOIN SYSTEMS */}
+          <div className="mb-4">
+            <h4 className="mb-3">
+              <i className="feather icon-layers me-2 text-primary"></i>
+              TeoCoin Management
+              <Badge bg="info" className="ms-2">Teacher Features</Badge>
+            </h4>
+            <div className="alert alert-info">
+              <i className="feather icon-info me-2"></i>
+              <strong>Teacher Benefits:</strong> 
+              Stake your TEO to reduce platform commission rates and increase your earnings. 
+              Deposits/withdrawals handle MetaMask ↔ Platform transfers.
+            </div>
+          </div>
+
+          {/* Separated TeoCoin Components - Database Staking & MetaMask Operations */}
           <Row className="mb-4">
-            <Col lg={6}>
-              <StudentTeoCoinDashboard />
+            {/* Database Staking - Virtual staking system */}
+            <Col lg={6} className="mb-4">
+              <DatabaseStaking 
+                onBalanceUpdate={handleComponentUpdate}
+              />
             </Col>
-            <Col lg={6}>
+            
+            {/* MetaMask Deposit - MetaMask to Platform */}
+            <Col lg={6} className="mb-4">
+              <MetaMaskDeposit 
+                onDepositComplete={handleComponentUpdate}
+              />
+            </Col>
+          </Row>
+
+          {/* TeoCoin Balance Widget */}
+          <Row className="mb-4">
+            <Col lg={12}>
               <TeoCoinBalanceWidget />
             </Col>
           </Row>
 
-          {/* Staking Interface */}
-          <Row className="mb-4">
-            <Col lg={12}>
-              <Card>
-                <Card.Header>
-                  <Card.Title as="h5">
-                    <i className="feather icon-trending-up me-2"></i>
-                    Gas-Free TeoCoin Staking System
-                    <Badge bg="success" className="ms-2">0 MATIC Cost</Badge>
-                  </Card.Title>
-                  <p className="mb-0 text-muted">
-                    Stake your TeoCoin to reduce platform commission rates - No gas fees required!
-                  </p>
-                </Card.Header>
-                <Card.Body>
-                  <ZeroMaticStakingInterface 
-                    walletAddress={userProfile?.wallet_address}
-                    onStakingUpdate={(data) => {
-                      // Refresh dashboard data after staking operation
-                      loadDashboard();
-                    }}
-                  />
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* TeoCoin Escrow Manager */}
-          <Row className="mb-4">
-            <Col lg={12}>
-              <TeacherDiscountDashboard />
-            </Col>
-          </Row>
-
-          {/* Teacher Discount Absorption System */}
-          <Row className="mb-4">
-            <Col lg={12}>
-              <TeacherDiscountAbsorptionDashboard />
-            </Col>
-          </Row>
-
-          {/* Teacher Choice Dashboard */}
-          <Row className="mb-4">
-            <Col lg={12}>
-              <Card>
-                <Card.Header>
-                  <Card.Title as="h5">
-                    <i className="feather icon-target me-2"></i>
-                    TeoCoin Choice Dashboard
-                    <Badge bg="warning" className="ms-2">Layer 2</Badge>
-                  </Card.Title>
-                  <p className="mb-0 text-muted">
-                    Make decisions on student discount requests - TEO payment or full fiat
-                  </p>
-                </Card.Header>
-                <Card.Body className="text-center">
-                  <p>View and decide on pending TeoCoin payment choices from students.</p>
-                  <Link to="/teacher/choices" className="btn btn-primary">
-                    <i className="feather icon-target me-2"></i>
-                    Open Choice Dashboard
-                  </Link>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          {/* Removed TeacherDiscountDashboard and TeacherDiscountAbsorptionDashboard as they are not relevant for teachers */}
 
           {/* Courses Management Section */}
           <Card>
@@ -605,6 +579,13 @@ const TeacherDashboard = () => {
               )}
             </Card.Body>
           </Card>
+        </Col>
+      </Row>
+
+      {/* 🔥 PHASE 4: Advanced Analytics */}
+      <Row className="mb-4">
+        <Col lg={12}>
+          <AdvancedAnalyticsDashboard />
         </Col>
       </Row>
 
