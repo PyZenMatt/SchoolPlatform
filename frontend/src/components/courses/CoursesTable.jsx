@@ -12,6 +12,7 @@ const CoursesTable = ({
   expandedCourse,
   onExpandCourse,
   courseLessons = {},
+  loadingLessons = {},
   onCreateExercise,
   lessonExercises = {},
   loadingExercises = {},
@@ -145,29 +146,56 @@ const CoursesTable = ({
         </Card>
       )}
 
-      <Row>
-        {courses.map(course => {
-          const completionRate = getCompletionPercentage(course);
-          const isExpanded = expandedCourse === course.id;
+      <div className="courses-grid-modern">
+        <div className="container-fluid px-0">
+          {courses.map(course => {
+        const completionRate = getCompletionPercentage(course);
+        const isExpanded = expandedCourse === course.id;
           
           return (
-            <Col lg={6} xl={4} key={course.id} className="mb-4">
-              <Card className="course-card h-100 border-0 shadow-sm">
-                {/* Course Image/Header */}
-                <div className="course-image-container position-relative">
+            <div key={course.id} className="course-item mb-4 mx-auto" style={{ maxWidth: '800px' }}>
+              <Card className="course-card h-100 border-0 shadow-sm position-relative">
+                {/* Course Image/Header - Make clickable */}
+                <div 
+                  className="course-image-container position-relative cursor-pointer"
+                  onClick={() => onExpandCourse && onExpandCourse(
+                    isExpanded ? null : course.id
+                  )}
+                  style={{ cursor: 'pointer' }}
+                >
                   {course.image ? (
                     <img 
                       src={course.image} 
                       alt={course.title}
                       className="course-image"
+                      style={{ transition: 'transform 0.3s ease' }}
                     />
                   ) : (
                     <div className="course-placeholder" style={{
-                      background: `linear-gradient(135deg, ${getCategoryColor(course.category)} 0%, ${getCategoryColor(course.category)}99 100%)`
+                      background: `linear-gradient(135deg, ${getCategoryColor(course.category)} 0%, ${getCategoryColor(course.category)}99 100%)`,
+                      transition: 'transform 0.3s ease'
                     }}>
                       <i className="feather icon-book-open"></i>
                     </div>
                   )}
+                  
+                  {/* Hover overlay for better UX */}
+                  <div 
+                    className="course-hover-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                      borderRadius: '15px 15px 0 0'
+                    }}
+                  >
+                    <div className="text-center text-white">
+                      <i className={`feather icon-${isExpanded ? 'eye-off' : 'eye'} fs-1 mb-2`}></i>
+                      <div className="fw-bold">
+                        {isExpanded ? 'Nascondi Dettagli' : 'Mostra Dettagli'}
+                      </div>
+                    </div>
+                  </div>
                   
                   <div className="position-absolute top-0 start-0 m-3">
                     <Badge 
@@ -186,19 +214,40 @@ const CoursesTable = ({
                     <Button
                       className="expand-btn"
                       size="sm"
-                      onClick={() => onExpandCourse && onExpandCourse(
-                        isExpanded ? null : course.id
-                      )}
+                      variant={isExpanded ? 'success' : 'primary'}
+                      style={{
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExpandCourse && onExpandCourse(
+                          isExpanded ? null : course.id
+                        );
+                      }}
                     >
                       <i className={`feather icon-chevron-${isExpanded ? 'up' : 'down'}`}></i>
                     </Button>
                   </div>
                 </div>
                 
-                <Card.Body className="course-header">
+                <Card.Body 
+                  className="course-header cursor-pointer"
+                  onClick={() => onExpandCourse && onExpandCourse(
+                    isExpanded ? null : course.id
+                  )}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div className="flex-grow-1">
-                      <h6 className="course-title mb-2">{course.title}</h6>
+                      <h6 className="course-title mb-2 text-primary fw-bold" style={{ fontSize: '1.1rem' }}>
+                        {course.title}
+                        <i className="feather icon-external-link ms-2 text-muted" style={{ fontSize: '0.8rem' }}></i>
+                      </h6>
                       <div className="d-flex align-items-center gap-2 mb-2">
                         <Badge 
                           variant={getBadgeVariant(course.status)} 
@@ -209,23 +258,31 @@ const CoursesTable = ({
                         </Badge>
                         <small className="text-muted">
                           <i className="feather icon-clock me-1"></i>
-                          {course.lessons?.length || 0} lezioni
+                          {(courseLessons[course.id] && courseLessons[course.id].length) || course.lessons?.length || 0} lezioni
                         </small>
+                        {isExpanded && (
+                          <Badge bg="info" className="expanded-indicator">
+                            <i className="feather icon-eye me-1"></i>
+                            Espanso
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-end">
-                      <div className="price-tag text-primary fw-bold">
+                      <div className="price-tag text-primary fw-bold" style={{ fontSize: '1.2rem' }}>
                         {formatPrice(course.price)} TEO
                       </div>
+                      <small className="text-muted">Prezzo corso</small>
                     </div>
                   </div>
                   
                   {course.description && (
-                    <p className="course-description mb-3" style={{
+                    <p className="course-description mb-3 text-muted" style={{
                       display: '-webkit-box',
-                      WebkitLineClamp: 2,
+                      WebkitLineClamp: isExpanded ? 'none' : 2,
                       WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+                      overflow: isExpanded ? 'visible' : 'hidden',
+                      transition: 'all 0.3s ease'
                     }}>
                       {course.description}
                     </p>
@@ -239,7 +296,7 @@ const CoursesTable = ({
                     </div>
                     <ProgressBar 
                       now={completionRate} 
-                      style={{ height: '6px', borderRadius: '3px' }}
+                      style={{ height: '8px', borderRadius: '4px' }}
                       variant={completionRate > 70 ? 'success' : completionRate > 40 ? 'warning' : 'danger'}
                     />
                   </div>
@@ -249,7 +306,7 @@ const CoursesTable = ({
                       <Col>
                         <div className="stat-item p-2 bg-light rounded">
                           <div className="stat-value text-primary fw-bold">
-                            {course.lessons?.length || 0}
+                            {(courseLessons[course.id] && courseLessons[course.id].length) || course.lessons?.length || 0}
                           </div>
                           <small className="stat-label text-muted d-block">Lezioni</small>
                         </div>
@@ -274,22 +331,31 @@ const CoursesTable = ({
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="course-actions d-flex gap-2">
+                  <div 
+                    className="course-actions d-flex gap-2"
+                    onClick={(e) => e.stopPropagation()} // Prevent card click when clicking buttons
+                  >
                     <Button
-                      variant="outline-primary"
+                      variant={isExpanded ? "primary" : "outline-primary"}
                       size="sm"
                       className="flex-fill"
-                      onClick={() => navigate(`/teacher/corsi/${course.id}/preview`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewCourse && onViewCourse(course.id);
+                      }}
                       style={{ borderRadius: '12px' }}
                     >
                       <i className="feather icon-eye me-1"></i>
-                      Anteprima
+                      {isExpanded ? 'Vai al Corso' : 'Dettagli'}
                     </Button>
                     <Button
                       variant="outline-secondary"
                       size="sm"
                       className="flex-fill"
-                      onClick={() => onEditCourse && onEditCourse(course.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCourse && onEditCourse(course.id);
+                      }}
                       style={{ borderRadius: '12px' }}
                     >
                       <i className="feather icon-edit me-1"></i>
@@ -299,7 +365,15 @@ const CoursesTable = ({
                       <Button
                         variant="success"
                         size="sm"
-                        onClick={() => onCreateLesson(course.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCreateLesson(course.id);
+                        }}
+                        style={{ 
+                          borderRadius: '12px',
+                          minWidth: '45px'
+                        }}
+                        title="Aggiungi Lezione"
                       >
                         <i className="feather icon-plus"></i>
                       </Button>
@@ -333,9 +407,16 @@ const CoursesTable = ({
                         )}
                       </div>
                       
-                      {course.lessons && course.lessons.length > 0 ? (
+                      {loadingLessons && loadingLessons[course.id] ? (
+                        <div className="text-center py-4">
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Caricamento lezioni...</span>
+                          </div>
+                          <p className="text-muted mt-2 mb-0">Caricamento lezioni...</p>
+                        </div>
+                      ) : courseLessons[course.id] && courseLessons[course.id].length > 0 ? (
                         <div className="lessons-grid">
-                          {course.lessons.map((lesson, lessonIndex) => (
+                          {courseLessons[course.id].map((lesson, lessonIndex) => (
                             <Card key={lesson.id} className="lesson-card mb-3 border-0 shadow-sm">
                               <Card.Body className="p-3">
                                 <div 
@@ -542,10 +623,11 @@ const CoursesTable = ({
                   </div>
                 </Collapse>
               </Card>
-            </Col>
+            </div>
           );
         })}
-      </Row>
+        </div>
+      </div>
     </div>
   );
 };

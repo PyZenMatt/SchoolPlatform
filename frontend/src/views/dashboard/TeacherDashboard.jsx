@@ -82,27 +82,52 @@ const TeacherDashboard = () => {
 
   // Course expansion handling
   const handleExpandCourse = async (courseId) => {
+    console.log('🎯 Expanding course:', courseId);
+    
     if (expandedCourse === courseId) {
+      // Collapsing the current expanded course
       setExpandedCourse(null);
       return;
     }
     
     setExpandedCourse(courseId);
     
-    // Se le lezioni sono già presenti, non fare chiamata API
-    if (courseLessons[courseId]) {
+    // If lessons are already loaded, don't make another API call
+    if (courseLessons[courseId] && courseLessons[courseId].length > 0) {
       console.log('📖 Lessons already loaded for course:', courseId);
       return;
     }
     
+    // Load lessons for this course
     setLoadingLessons(prev => ({ ...prev, [courseId]: true }));
     
     try {
+      console.log('🔄 Loading lessons for course:', courseId);
       const res = await fetchLessonsForCourse(courseId);
-      setCourseLessons(prev => ({ ...prev, [courseId]: res.data }));
-      console.log('📖 Lessons loaded from API for course:', courseId, res.data);
+      
+      // Process lessons to include exercises count
+      const lessonsWithExercises = res.data.map(lesson => ({
+        ...lesson,
+        exercises: lesson.exercises || [],
+        course_id: courseId
+      }));
+      
+      setCourseLessons(prev => ({ ...prev, [courseId]: lessonsWithExercises }));
+      console.log('✅ Lessons loaded successfully:', lessonsWithExercises);
+      
+      // Update course total_exercises count
+      const totalExercises = lessonsWithExercises.reduce((total, lesson) => {
+        return total + (lesson.exercises?.length || 0);
+      }, 0);
+      
+      setCourses(prev => prev.map(course => 
+        course.id === courseId 
+          ? { ...course, total_exercises: totalExercises }
+          : course
+      ));
+      
     } catch (err) {
-      console.error('Errore caricamento lezioni:', err);
+      console.error('❌ Error loading lessons:', err);
       setCourseLessons(prev => ({ ...prev, [courseId]: [] }));
     } finally {
       setLoadingLessons(prev => ({ ...prev, [courseId]: false }));
@@ -124,6 +149,17 @@ const TeacherDashboard = () => {
       setLoadingLessons(prev => ({ ...prev, [courseId]: true }));
       const res = await fetchLessonsForCourse(courseId);
       setCourseLessons(prev => ({ ...prev, [courseId]: res.data }));
+      
+      // Update course total_exercises count
+      const totalExercises = res.data.reduce((total, lesson) => {
+        return total + (lesson.exercises?.length || 0);
+      }, 0);
+      
+      setCourses(prev => prev.map(course => 
+        course.id === courseId 
+          ? { ...course, total_exercises: totalExercises }
+          : course
+      ));
     } catch (error) {
       console.error('Error refreshing lessons:', error);
       setCourseLessons(prev => ({ ...prev, [courseId]: [] }));
@@ -165,12 +201,49 @@ const TeacherDashboard = () => {
       setLoadingLessons(prev => ({ ...prev, [courseId]: true }));
       const res = await fetchLessonsForCourse(courseId);
       setCourseLessons(prev => ({ ...prev, [courseId]: res.data }));
+      
+      // Update course total_exercises count
+      const totalExercises = res.data.reduce((total, lesson) => {
+        return total + (lesson.exercises?.length || 0);
+      }, 0);
+      
+      setCourses(prev => prev.map(course => 
+        course.id === courseId 
+          ? { ...course, total_exercises: totalExercises }
+          : course
+      ));
     } catch (error) {
       console.error('Error refreshing lessons:', error);
     } finally {
       setLoadingLessons(prev => ({ ...prev, [courseId]: false }));
     }
     handleHideExerciseModal(lessonId);
+  };
+
+  // Handle course creation - reload dashboard data
+  const handleCourseCreated = async () => {
+    console.log('🎉 Course created! Refreshing dashboard...');
+    try {
+      setLoading(true);
+      const res = await fetchTeacherDashboard();
+      setCourses(res.data.courses);
+      setSales(res.data.sales);
+      setTransactions(res.data.transactions || []);
+      
+      // Populate lessons data
+      const lessonsData = {};
+      res.data.courses.forEach(course => {
+        if (course.lessons && course.lessons.length > 0) {
+          lessonsData[course.id] = course.lessons;
+        }
+      });
+      setCourseLessons(lessonsData);
+      console.log('✅ Dashboard refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing dashboard after course creation:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle component updates
@@ -593,6 +666,7 @@ const TeacherDashboard = () => {
       <CourseCreateModal 
         show={showCreateModal} 
         onHide={() => setShowCreateModal(false)} 
+        onCreated={handleCourseCreated}
       />
       
       {/* Lesson Creation Modals */}

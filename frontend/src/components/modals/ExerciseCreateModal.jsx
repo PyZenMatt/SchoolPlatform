@@ -183,7 +183,7 @@ const ExerciseCreateModal = ({ show, onHide, onCreated, lessonId, courseId }) =>
       setShowToast(true);
       
       resetForm();
-      if (onCreated) onCreated();
+      if (onCreated) onCreated(lessonId, courseId);
       
       // Delay modal close to show success message
       setTimeout(() => {

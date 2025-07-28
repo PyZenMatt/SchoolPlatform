@@ -139,15 +139,7 @@ const PendingWithdrawals = ({ onTransactionComplete = null }) => {
   }
 
   if (pendingWithdrawals.length === 0) {
-    return (
-      <div className="card">
-        <div className="card-body text-center">
-          <i className="fas fa-check-circle text-success mb-3" style={{ fontSize: '3rem' }}></i>
-          <h5>No Pending Withdrawals</h5>
-          <p className="text-muted">All your withdrawals have been processed!</p>
-        </div>
-      </div>
-    );
+    return null; // Don't render anything if no pending withdrawals
   }
 
   return (

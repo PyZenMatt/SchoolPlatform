@@ -1,31 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions,
-  Button,
-  TextField,
-  Typography,
-  Box,
+  Modal, 
+  Button as BootstrapButton,
+  Form,
   Alert,
-  Chip,
-  CircularProgress,
+  Badge,
+  Spinner,
   Card,
-  CardContent,
-  Grid,
-  IconButton,
-  Tooltip
-} from '@mui/material';
-import {
-  AccountBalanceWallet,
-  Send,
-  Refresh,
-  Close,
-  Info,
-  Warning,
-  CheckCircle
-} from '@mui/icons-material';
+  Row,
+  Col,
+  InputGroup
+} from 'react-bootstrap';
 import { BrowserProvider, Contract, formatEther, parseEther } from 'ethers';
 import './TeoCoinWithdrawal.scss';
 
@@ -349,216 +334,204 @@ const TeoCoinWithdrawal = ({ open, onClose, userBalance = 0 }) => {
     onClose();
   };
 
-  const handleAddTokenToWallet = async () => {
-    if (!window.ethereum) return;
-
-    try {
-      await window.ethereum.request({
-        method: 'wallet_watchAsset',
-        params: {
-          type: 'ERC20',
-          options: {
-            address: TEOCOIN_CONTRACT,
-            symbol: 'TEO',
-            decimals: 18,
-            image: 'https://via.placeholder.com/64/667eea/ffffff?text=TEO'
-          }
-        }
-      });
-      showAlert('TEO token added to wallet!', 'success');
-    } catch (error) {
-      showAlert('Failed to add token to wallet', 'error');
-    }
-  };
-
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
-      fullWidth
-      className="teocoin-withdrawal-dialog"
+    <Modal 
+      show={open} 
+      onHide={handleClose} 
+      size="lg"
+      centered
+      className="teocoin-withdrawal-modal"
     >
-      <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
-            <AccountBalanceWallet color="primary" />
-            <Typography variant="h6">TeoCoin Withdrawal</Typography>
-          </Box>
-          <IconButton onClick={handleClose} size="small">
-            <Close />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+      <Modal.Header closeButton className="bg-gradient-success text-white border-0">
+        <Modal.Title>
+          <i className="feather icon-send me-2"></i>
+          Prelievo TeoCoin
+        </Modal.Title>
+      </Modal.Header>
 
-      <DialogContent dividers>
+      <Modal.Body>
         {alert && (
-          <Alert severity={alert.severity} sx={{ mb: 2 }}>
+          <Alert variant={alert.severity === 'error' ? 'danger' : alert.severity === 'success' ? 'success' : 'info'} 
+                 dismissible 
+                 onClose={() => setAlert(null)}>
+            <i className="feather icon-info me-2"></i>
             {alert.message}
           </Alert>
         )}
 
         {/* Balance Overview */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="subtitle2" color="textSecondary">
-                  Platform Balance
-                </Typography>
-                <Typography variant="h5" color="primary">
-                  {dbBalance.toFixed(2)} TEO
-                </Typography>
-              </CardContent>
+        <Row className="mb-4">
+          <Col md={6}>
+            <Card className="border-0 shadow-sm">
+              <Card.Header className="bg-gradient-primary text-white border-0">
+                <h6 className="mb-0">
+                  <i className="feather icon-database me-2"></i>
+                  Saldo Piattaforma
+                </h6>
+              </Card.Header>
+              <Card.Body className="text-center">
+                <h3 className="text-primary mb-0">{dbBalance.toFixed(2)} TEO</h3>
+              </Card.Body>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      MetaMask Balance
-                    </Typography>
-                    <Typography variant="h5" color="secondary">
-                      {metamaskBalance.toFixed(2)} TEO
-                    </Typography>
-                  </Box>
-                  <Tooltip title="Refresh balances">
-                    <IconButton onClick={refreshBalances} size="small">
-                      <Refresh />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </CardContent>
+          </Col>
+          <Col md={6}>
+            <Card className="border-0 shadow-sm">
+              <Card.Header className="bg-gradient-secondary text-white border-0">
+                <div className="d-flex justify-content-between align-items-center">
+                  <h6 className="mb-0">
+                    <i className="feather icon-credit-card me-2"></i>
+                    Saldo MetaMask
+                  </h6>
+                  <BootstrapButton 
+                    variant="outline-light" 
+                    size="sm" 
+                    onClick={refreshBalances}
+                    title="Aggiorna saldi"
+                  >
+                    <i className="feather icon-refresh-cw"></i>
+                  </BootstrapButton>
+                </div>
+              </Card.Header>
+              <Card.Body className="text-center">
+                <h3 className="text-secondary mb-0">{metamaskBalance.toFixed(2)} TEO</h3>
+              </Card.Body>
             </Card>
-          </Grid>
-        </Grid>
+          </Col>
+        </Row>
 
         {/* Wallet Connection */}
         {!walletConnected ? (
-          <Box textAlign="center" sx={{ mb: 3 }}>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Connect your MetaMask wallet to start withdrawing TeoCoin
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
+          <div className="text-center mb-4">
+            <p className="mb-3">Connetti il tuo wallet MetaMask per iniziare il prelievo di TeoCoin</p>
+            <BootstrapButton
+              variant="primary"
+              size="lg"
               onClick={connectWallet}
               disabled={isProcessing}
-              startIcon={isProcessing ? <CircularProgress size={20} /> : <AccountBalanceWallet />}
             >
-              {isProcessing ? 'Connecting...' : 'Connect MetaMask'}
-            </Button>
-          </Box>
+              {isProcessing ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Connessione in corso...
+                </>
+              ) : (
+                <>
+                  <i className="feather icon-link me-2"></i>
+                  Connetti MetaMask
+                </>
+              )}
+            </BootstrapButton>
+          </div>
         ) : (
-          <Box sx={{ mb: 3 }}>
-            <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
-              <CheckCircle color="success" />
-              <Typography variant="body2">
-                Wallet connected: {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
-              </Typography>
-              <Chip 
-                label="Connected" 
-                color="success" 
-                size="small" 
-              />
-            </Box>
+          <div className="mb-4">
+            <div className="d-flex align-items-center mb-3">
+              <i className="feather icon-check-circle text-success me-2"></i>
+              <span className="me-2">
+                Wallet connesso: {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+              </span>
+              <Badge bg="success">Connesso</Badge>
+            </div>
 
             {/* Withdrawal Form */}
-            <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Request Withdrawal
-              </Typography>
-              
-              <TextField
-                fullWidth
-                label="Withdrawal Amount (TEO)"
-                type="number"
-                value={withdrawalAmount}
-                onChange={(e) => setWithdrawalAmount(e.target.value)}
-                inputProps={{ 
-                  min: 0.01, 
-                  max: dbBalance,
-                  step: 0.01 
-                }}
-                helperText={`Available: ${dbBalance.toFixed(2)} TEO`}
-                sx={{ mb: 2 }}
-              />
+            <Card className="border-0 bg-light mb-3">
+              <Card.Body>
+                <Card.Title>
+                  <i className="fas fa-paper-plane me-2"></i>
+                  Richiedi Prelievo
+                </Card.Title>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Importo Prelievo (TEO)</Form.Label>
+                  <InputGroup>
+                    <Form.Control
+                      type="number"
+                      value={withdrawalAmount}
+                      onChange={(e) => setWithdrawalAmount(e.target.value)}
+                      min="0.01"
+                      max={dbBalance}
+                      step="0.01"
+                      placeholder="Inserisci importo"
+                    />
+                    <InputGroup.Text>TEO</InputGroup.Text>
+                  </InputGroup>
+                  <Form.Text className="text-muted">
+                    Disponibile: {dbBalance.toFixed(2)} TEO
+                  </Form.Text>
+                </Form.Group>
 
-              <Box display="flex" gap={2}>
-                <Button
-                  variant="contained"
+                <BootstrapButton
+                  variant="primary"
                   onClick={handleWithdrawal}
                   disabled={isProcessing || !withdrawalAmount || parseFloat(withdrawalAmount) <= 0}
-                  startIcon={isProcessing ? <CircularProgress size={20} /> : <Send />}
-                  fullWidth
+                  className="w-100"
                 >
-                  {isProcessing ? 'Processing...' : 'Request Withdrawal'}
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  onClick={handleAddTokenToWallet}
-                  sx={{ minWidth: 'fit-content' }}
-                >
-                  Add TEO to Wallet
-                </Button>
-              </Box>
+                  {isProcessing ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Elaborazione...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane me-2"></i>
+                      Richiedi Prelievo
+                    </>
+                  )}
+                </BootstrapButton>
+              </Card.Body>
             </Card>
 
             {/* Withdrawal History */}
             {withdrawalHistory.length > 0 && (
-              <Card variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Recent Withdrawals
-                </Typography>
-                {withdrawalHistory.slice(0, 3).map((withdrawal, index) => (
-                  <Box 
-                    key={index}
-                    display="flex" 
-                    justifyContent="space-between" 
-                    alignItems="center"
-                    sx={{ py: 1, borderBottom: index < 2 ? '1px solid #eee' : 'none' }}
-                  >
-                    <Box>
-                      <Typography variant="body2">
-                        {withdrawal.amount} TEO
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {new Date(withdrawal.created_at).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Chip 
-                      label={withdrawal.status}
-                      color={
-                        withdrawal.status === 'completed' ? 'success' :
-                        withdrawal.status === 'pending' ? 'warning' : 'default'
-                      }
-                      size="small"
-                    />
-                  </Box>
-                ))}
+              <Card>
+                <Card.Header>
+                  <i className="fas fa-history me-2"></i>
+                  Prelievi Recenti
+                </Card.Header>
+                <Card.Body>
+                  {withdrawalHistory.slice(0, 3).map((withdrawal, index) => (
+                    <div 
+                      key={index}
+                      className={`d-flex justify-content-between align-items-center py-2 ${
+                        index < 2 ? 'border-bottom' : ''
+                      }`}
+                    >
+                      <div>
+                        <div className="fw-bold">{withdrawal.amount} TEO</div>
+                        <small className="text-muted">
+                          {new Date(withdrawal.created_at).toLocaleDateString('it-IT')}
+                        </small>
+                      </div>
+                      <Badge 
+                        bg={
+                          withdrawal.status === 'completed' ? 'success' :
+                          withdrawal.status === 'pending' ? 'warning' : 'secondary'
+                        }
+                      >
+                        {withdrawal.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </Card.Body>
               </Card>
             )}
-          </Box>
+          </div>
         )}
 
         {/* Information */}
-        <Alert severity="info" icon={<Info />}>
-          <Typography variant="body2">
-            Withdrawals are processed to the Polygon Amoy testnet. 
-            Make sure your MetaMask is connected to the correct network.
-          </Typography>
+        <Alert variant="info">
+          <i className="feather icon-info me-2"></i>
+          I prelievi vengono processati sulla rete Polygon Amoy testnet. 
+          Assicurati che MetaMask sia connesso alla rete corretta.
         </Alert>
-      </DialogContent>
+      </Modal.Body>
 
-      <DialogActions>
-        <Button onClick={handleClose}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <Modal.Footer className="border-0">
+        <BootstrapButton variant="outline-secondary" onClick={handleClose}>
+          <i className="feather icon-x me-2"></i>
+          Chiudi
+        </BootstrapButton>
+      </Modal.Footer>
+    </Modal>
   );
 };
 

@@ -20,8 +20,8 @@ class CourseLessonsView(APIView):
         # Allow access if user is staff, superuser, course teacher, or course is approved
         if not (user.is_staff or user.is_superuser or course.teacher == user) and not course.is_approved:
             raise PermissionDenied("Corso non approvato")
-        lessons = Lesson.objects.filter(course_id=course_id).order_by('order')
-        serializer = LessonListSerializer(lessons, many=True)
+        lessons = Lesson.objects.filter(course_id=course_id).prefetch_related('exercises').order_by('order')
+        serializer = LessonListSerializer(lessons, many=True, context={'request': request})
         return Response(serializer.data)
 
 

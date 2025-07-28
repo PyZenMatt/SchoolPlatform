@@ -72,7 +72,10 @@ class CourseListCreateView(generics.ListCreateAPIView):
             if not getattr(user_obj, 'is_approved', False):
                 raise PermissionDenied("Solo i teacher approvati possono creare corsi. Aspetta l'approvazione dell'admin.")
             
-            serializer.save(teacher=user_obj)
+            # Auto-approve courses for approved teachers
+            course = serializer.save(teacher=user_obj, is_approved=True)
+            logger.info(f"Course '{course.title}' created and auto-approved for teacher {user_obj.username}")
+            
         except PermissionDenied:
             raise  # Re-raise permission errors
         except Exception as e:
@@ -115,7 +118,10 @@ class CreateCourseAPI(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         try:
-            serializer.save(teacher=self.request.user)
+            user = self.request.user
+            # Auto-approve courses for approved teachers
+            course = serializer.save(teacher=user, is_approved=True)
+            logger.info(f"Course '{course.title}' created and auto-approved for teacher {user.username}")
         except Exception as e:
             logger.error(f"Error in CreateCourseAPI perform_create: {e}")
             raise

@@ -205,92 +205,16 @@ const DBStudentTeoCoinDashboard = () => {
         </Alert>
       )}
 
-      <Row>
-        {/* Recent Transactions - Full Width */}
-        <Col lg={12}>
-          <Card className="border-0 shadow-sm mb-3">
-            <Card.Header className="d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">
-                <i className="feather icon-activity text-primary me-2"></i>
-                Recent Transactions
-              </h5>
-              <Button 
-                variant="outline-primary" 
-                size="sm"
-                onClick={loadDashboardData}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Spinner animation="border" size="sm" />
-                ) : (
-                  <i className="feather icon-refresh-cw"></i>
-                )}
-                Refresh
-              </Button>
-            </Card.Header>
-            <Card.Body>
-              {dashboardData.recentTransactions.length === 0 ? (
-                <div className="text-center py-4">
-                  <i className="feather icon-clock text-muted" style={{ fontSize: '3rem' }}></i>
-                  <h6 className="text-muted mt-3">No recent transactions</h6>
-                  <p className="text-muted small mb-0">Your transactions will appear here</p>
-                </div>
-              ) : (
-                <div className="transaction-list">
-                  {dashboardData.recentTransactions
-                    .filter(transaction => {
-                      // Filter out staking transactions for students
-                      if (user?.role === 'student') {
-                        return !['stake', 'unstake'].includes(transaction.type);
-                      }
-                      return true;
-                    })
-                    .map((transaction, index) => (
-                    <div key={transaction.id || index} className="d-flex align-items-center justify-content-between py-3 border-bottom">
-                      <div className="d-flex align-items-center">
-                        <div className="me-3">
-                          <div className={`rounded-circle d-flex align-items-center justify-content-center text-white bg-${getTransactionColor(transaction.type)}`} 
-                               style={{ width: '40px', height: '40px' }}>
-                            <i className="feather icon-arrow-up-right"></i>
-                          </div>
-                        </div>
-                        <div>
-                          <h6 className="mb-1 fw-semibold">{transaction.description || 'TeoCoin Transaction'}</h6>
-                          <div className="d-flex align-items-center gap-2">
-                            <Badge bg={getTransactionColor(transaction.type)} className="small">
-                              {transaction.type}
-                            </Badge>
-                            <small className="text-muted">
-                              {formatDate(transaction.created_at)}
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-end">
-                        <div className={`fw-bold ${parseFloat(transaction.amount) >= 0 ? 'text-success' : 'text-danger'}`}>
-                          {parseFloat(transaction.amount) >= 0 ? '+' : ''}
-                          {parseFloat(transaction.amount).toFixed(2)} TEO
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Deposit and Withdrawal Components - Same Level */}
-      <Row className="mb-3">
-        <Col lg={6}>
+      {/* Deposit and Withdrawal Components - Better Layout */}
+      <Row className="mb-3 justify-content-center">
+        <Col lg={5} md={6} className="mb-3">
           <BurnDepositInterface 
             onTransactionComplete={(data) => {
               loadDashboardData();
             }}
           />
         </Col>
-        <Col lg={6}>
+        <Col lg={5} md={6} className="mb-3">
           <PendingWithdrawals 
             onTransactionComplete={(data) => {
               loadDashboardData();

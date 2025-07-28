@@ -397,12 +397,6 @@ const DattaTeoCoinWallet = () => {
               {/* Deposit TEO Tab */}
               <Tab.Pane eventKey="deposits">
                 <div className="deposits-section">
-                  <h6 className="mb-3">Deposit TEO from MetaMask to Platform</h6>
-                  <div className="alert alert-info mb-3">
-                    <i className="feather icon-info me-2"></i>
-                    <strong>How it works:</strong> Transfer TeoCoin tokens from your MetaMask wallet to your platform database balance. Once deposited, you can use them for staking and other platform features.
-                  </div>
-                  
                   {/* Use the existing BurnDepositInterface (but it's really just a deposit interface) */}
                   <BurnDepositInterface 
                     onTransactionComplete={() => {

@@ -1,13 +1,47 @@
 .courses-grid-modern {
+  // Utility classes
+  .cursor-pointer {
+    cursor: pointer;
+  }
+
+  .fs-1 {
+    font-size: 2.5rem !important;
+  }
+
+  .expanded-indicator {
+    font-size: 0.7rem;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+
   .course-card {
     border: 1px solid #e9ecef;
     border-radius: 16px;
     transition: all 0.3s ease;
     overflow: hidden;
+    cursor: pointer;
 
     &:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+      border-color: #04a9f5;
+
+      .course-image {
+        transform: scale(1.05);
+      }
+
+      .course-placeholder {
+        transform: scale(1.05);
+      }
+
+      .course-hover-overlay {
+        opacity: 1 !important;
+      }
     }
 
     .course-image-container {
@@ -29,10 +63,17 @@
         height: 100%;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        transition: transform 0.3s ease;
 
         i {
           font-size: 3rem;
         }
+      }
+
+      .course-hover-overlay {
+        border-radius: 15px 15px 0 0;
+        backdrop-filter: blur(5px);
+        transition: opacity 0.3s ease;
       }
 
       .category-badge {
@@ -45,20 +86,34 @@
         backdrop-filter: blur(10px);
         background: rgba(255, 255, 255, 0.9) !important;
         border: none;
-        width: 32px;
-        height: 32px;
+        transition: all 0.3s ease;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
 
-      &:hover .course-image {
-        transform: scale(1.05);
+        &:hover {
+          transform: scale(1.1);
+          background: rgba(4, 169, 245, 0.9) !important;
+          color: white;
+        }
       }
     }
 
     .course-header {
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: rgba(4, 169, 245, 0.02);
+      }
+
+      .course-title {
+        transition: color 0.3s ease;
+
+        &:hover {
+          color: #04a9f5 !important;
+        }
+      }
+
       .course-type-badge {
         font-size: 0.75rem;
       }

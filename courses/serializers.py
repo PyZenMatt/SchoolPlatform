@@ -8,14 +8,19 @@ from users.serializers import UserSerializer
 
 class LessonListSerializer(serializers.ModelSerializer):
     exercises_count = serializers.SerializerMethodField()
+    exercises = serializers.SerializerMethodField()
     lesson_type_display = serializers.CharField(source='get_lesson_type_display', read_only=True)
     
     class Meta:
         model = Lesson
-        fields = ['id', 'title', 'order', 'duration', 'lesson_type', 'lesson_type_display', 'exercises_count']
+        fields = ['id', 'title', 'order', 'duration', 'lesson_type', 'lesson_type_display', 'exercises_count', 'exercises']
     
     def get_exercises_count(self, obj):
         return obj.exercises.count()
+    
+    def get_exercises(self, obj):
+        from .serializers import ExerciseSerializer
+        return ExerciseSerializer(obj.exercises.all(), many=True, context=self.context).data
 
 class ExerciseSubmissionSerializer(serializers.ModelSerializer):
     average_score = serializers.FloatField(read_only=True)
